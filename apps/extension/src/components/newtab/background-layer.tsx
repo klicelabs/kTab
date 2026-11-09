@@ -7,9 +7,13 @@ import {
 } from "../../lib/wallpaper-presentation";
 import type { Settings } from "../../types";
 import "./wallpaper-transition.css";
-import { refreshWallpaper } from "../../services/wallpaper";
+import {
+	prepareNextWallpaper,
+	refreshWallpaper,
+} from "../../services/wallpaper";
 import { useImageStore } from "../../stores/image-store";
 import { useSetupStore } from "../../stores/setup-store";
+import { GlassSurface } from "./toolbar/glass-surface";
 
 function getInitialBackgroundCss(): string {
 	try {
@@ -23,7 +27,7 @@ function getInitialBackgroundCss(): string {
 			if (g) return g.css;
 		}
 		if (bg.type === "pexels") {
-			return `${cssUrl(WALLPAPERS[0].src)} center / cover no-repeat`;
+			return DEFAULT_BACKGROUND.color;
 		}
 		if (bg.type === "solid" && bg.color) {
 			return bg.color;
@@ -72,12 +76,14 @@ export function BackgroundLayer({
 	const getBackgroundImage = useImageStore((s) => s.getBackgroundImage);
 	const [bgCss, setBgCss] = useState<string>(getInitialBackgroundCss);
 	const currentCssRef = useRef(bgCss);
+	const hasPaintedImage = useRef(type !== "pexels");
 	const [outgoingCss, setOutgoingCss] = useState<string | null>(null);
 	const [displayedPhoto, setDisplayedPhoto] =
 		useState<Settings["background"]["pexelsPhoto"]>(null);
 	const commitBackground = useCallback((css: string) => {
 		if (currentCssRef.current === css) return;
-		setOutgoingCss(currentCssRef.current);
+		setOutgoingCss(hasPaintedImage.current ? currentCssRef.current : null);
+		hasPaintedImage.current = true;
 		currentCssRef.current = css;
 		setBgCss(css);
 	}, []);
@@ -100,6 +106,7 @@ export function BackgroundLayer({
 	}, [type, pexelsFrequency]);
 
 	const lastFetchedKeyRef = useRef<string>("");
+	const pendingRefreshRef = useRef<Promise<void> | null>(null);
 	const generationRef = useRef(0);
 
 	const resolveImage = useCallback(
@@ -167,33 +174,29 @@ export function BackgroundLayer({
 			}
 
 			if (type === "pexels") {
-				let loadedFromCache = false;
-				if (pexelsImageId) {
-					const css = await resolveImage(pexelsImageId);
-					if (!isCurrent()) return;
-					if (css) {
-						commitBackground(css);
-						setDisplayedPhoto(pexelsPhoto ?? null);
-						loadedFromCache = true;
-					}
-				}
-
-				// If pexelsImageId exists but failed to resolve from IDB, force refresh to recover cache
-				const needsCacheRecovery = Boolean(pexelsImageId && !loadedFromCache);
-
 				const fetchKey = `${pexelsQuery}|${pexelsFrequency}`;
-				if (lastFetchedKeyRef.current !== fetchKey || needsCacheRecovery) {
+				if (lastFetchedKeyRef.current !== fetchKey) {
 					lastFetchedKeyRef.current = fetchKey;
-					await refreshWallpaper(needsCacheRecovery);
-					if (!isCurrent()) return;
+					pendingRefreshRef.current = refreshWallpaper();
 				}
+				// StrictMode and store updates must await the same startup rotation.
+				await pendingRefreshRef.current;
+				if (!isCurrent()) return;
 
 				const fresh = useSetupStore.getState().settings.background;
-				if (fresh.pexelsImageId && fresh.pexelsImageId !== pexelsImageId) {
-					const css = await resolveImage(fresh.pexelsImageId);
+				const nextImageId = fresh.pexelsImageId ?? pexelsImageId;
+				if (nextImageId) {
+					const css = await resolveImage(nextImageId);
 					if (isCurrent() && css) {
 						commitBackground(css);
-						setDisplayedPhoto(fresh.pexelsPhoto ?? null);
+						setDisplayedPhoto(
+							(nextImageId === pexelsImageId
+								? pexelsPhoto
+								: fresh.pexelsPhoto) ?? null,
+						);
+						void prepareNextWallpaper().catch(() => undefined);
+					} else if (isCurrent()) {
+						await refreshWallpaper(true);
 					}
 				}
 				return;
@@ -295,17 +298,20 @@ export function BackgroundLayer({
 				) : null}
 			</div>
 			{displayedPhoto ? (
-				<aside
+				<GlassSurface
+					role="complementary"
+					variant="tooltip"
+					shape="control"
 					aria-label="Photo credits"
 					className={cn(
 						contained ? "absolute" : "fixed",
-						"bottom-3 left-4 z-10 max-w-[calc(100%-2rem)] rounded-md bg-black/65 px-2 py-1 text-white text-xs leading-relaxed",
+						"bottom-3 left-4 z-10 block max-w-[calc(100%-2rem)] px-3 py-1.5 text-xs leading-relaxed",
 					)}
 				>
 					Photo by{" "}
 					{photographerUrl ? (
 						<a
-							className="underline decoration-white/50 underline-offset-2 hover:decoration-white focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2"
+							className="underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
 							href={photographerUrl}
 							target="_blank"
 							rel="noopener noreferrer"
@@ -317,14 +323,14 @@ export function BackgroundLayer({
 					)}
 					{" on "}
 					<a
-						className="underline decoration-white/50 underline-offset-2 hover:decoration-white focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2"
+						className="underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
 						href={photoUrl}
 						target="_blank"
 						rel="noopener noreferrer"
 					>
 						Pexels
 					</a>
-				</aside>
+				</GlassSurface>
 			) : null}
 		</>
 	);

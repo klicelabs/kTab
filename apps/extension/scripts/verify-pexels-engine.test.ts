@@ -44,3 +44,23 @@ test("resetAll clears Pexels cache and prevents an in-flight image from restorin
 		output: "",
 	});
 });
+
+test("Pexels startup skips the old wallpaper and repeated searches retry", async () => {
+	const child = Bun.spawn(
+		[process.execPath, "run", "./scripts/fixtures/pexels-startup-scenario.tsx"],
+		{
+			cwd: fileURLToPath(new URL("../", import.meta.url)),
+			stdout: "pipe",
+			stderr: "pipe",
+		},
+	);
+	const [exitCode, stdout, stderr] = await Promise.all([
+		child.exited,
+		new Response(child.stdout).text(),
+		new Response(child.stderr).text(),
+	]);
+	expect({ exitCode, output: exitCode === 0 ? "" : stdout + stderr }).toEqual({
+		exitCode: 0,
+		output: "",
+	});
+});

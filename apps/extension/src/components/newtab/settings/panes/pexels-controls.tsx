@@ -7,6 +7,7 @@ import {
 	PEXELS_MAX_QUERY_LENGTH,
 } from "../../../../lib/pexels";
 import { cn } from "../../../../lib/utils";
+import { pexelsCreditUrl } from "../../../../lib/wallpaper-presentation";
 import { PEXELS_THEMES } from "../../../../lib/wallpaper-themes";
 import {
 	refreshWallpaper,
@@ -23,7 +24,6 @@ import {
 	SETTINGS_PAGE,
 	SETTINGS_RADIUS,
 } from "../shared/settings-tokens";
-import { SliderRow } from "../shared/slider-row";
 
 const FREQUENCIES: readonly { value: WallpaperFrequency; label: string }[] = [
 	{ value: "per-tab", label: "Every new tab" },
@@ -32,14 +32,6 @@ const FREQUENCIES: readonly { value: WallpaperFrequency; label: string }[] = [
 	{ value: "daylight", label: "Follow daylight" },
 	{ value: "locked", label: "Manual" },
 ];
-
-const POSITIONS = [
-	{ value: "center", label: "Center" },
-	{ value: "top", label: "Top" },
-	{ value: "bottom", label: "Bottom" },
-	{ value: "left", label: "Left" },
-	{ value: "right", label: "Right" },
-] as const;
 
 const THEME_TILE = cn(
 	"group squircle relative flex aspect-[4/3] min-w-0 overflow-hidden border border-neutral-900/10 bg-neutral-900/[0.04] text-left shadow-none transition-[filter,box-shadow] duration-150 focus-visible:outline-none dark:border-white/10 dark:bg-white/[0.04]",
@@ -78,6 +70,8 @@ export function PexelsDetailView(): ReactNode {
 	const message = useWallpaperStatus((state) => state.message);
 	const [draft, setDraft] = useState(background.pexelsQuery);
 	const loading = status === "loading";
+	const currentPhoto =
+		background.type === "pexels" ? background.pexelsPhoto : null;
 
 	useEffect(() => setDraft(background.pexelsQuery), [background.pexelsQuery]);
 
@@ -90,7 +84,7 @@ export function PexelsDetailView(): ReactNode {
 			refreshWallpaper(true).catch(() => undefined);
 			return;
 		}
-		if (normalized === normalizePexelsQuery(background.pexelsQuery)) return;
+
 		updateBackground({ pexelsQuery: normalized });
 		refreshWallpaper(true).catch(() => undefined);
 	}
@@ -185,38 +179,25 @@ export function PexelsDetailView(): ReactNode {
 						updateBackground({ pexelsFrequency: value });
 					}}
 				/>
-				<SelectRow
-					label="Framing"
-					icon="image"
-					value={background.pexelsPosition ?? "center"}
-					options={POSITIONS}
-					onChange={(value) => updateBackground({ pexelsPosition: value })}
-				/>
-				<SliderRow
-					label="Dim wallpaper"
-					icon="sun"
-					value={Math.max(0, 100 - background.brightness)}
-					suffix="%"
-					min={0}
-					max={60}
-					step={5}
-					onChange={(value) => updateBackground({ brightness: 100 - value })}
-				/>
-			</SectionCard>
-
-			<SectionCard>
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<a
-						href="https://www.pexels.com/"
-						target="_blank"
-						rel="noopener noreferrer"
-						className={cn(
-							"text-xs underline decoration-current/40 underline-offset-4 hover:decoration-current",
-							SETTINGS_FOCUS_RING,
-						)}
-					>
-						Photos from Pexels
-					</a>
+				<div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-neutral-900/10 border-t pt-3 dark:border-white/10">
+					<div className="min-w-0 flex-1 text-xs leading-relaxed">
+						<p className="font-medium">
+							{currentPhoto ? "Current photo" : "Choose a photo"}
+						</p>
+						<a
+							href={
+								pexelsCreditUrl(currentPhoto?.url) ?? "https://www.pexels.com/"
+							}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={cn(
+								"break-words underline decoration-current/40 underline-offset-4 hover:decoration-current",
+								SETTINGS_FOCUS_RING,
+							)}
+						>
+							{currentPhoto?.photographer ?? "Explore Pexels"}
+						</a>
+					</div>
 					<SettingsAction
 						icon="refresh"
 						onClick={() => {
@@ -234,18 +215,17 @@ export function PexelsDetailView(): ReactNode {
 					role="status"
 					aria-live="polite"
 					aria-atomic="true"
-					className="min-h-5 pt-2 text-xs leading-relaxed"
+					className={cn(
+						"text-xs leading-relaxed",
+						(loading || message) && "pt-3",
+					)}
 				>
-					{loading
-						? "Finding your next photograph…"
-						: (message ??
-							"Photos are chosen randomly. Your current wallpaper stays until the next is ready.")}
-				</p>
-				<p className="pt-1 text-xs leading-relaxed opacity-75">
-					Searches go to Pexels through Klice. Recent photos are saved on this
-					device for offline use.
+					{loading ? "Finding your next photograph…" : (message ?? "")}
 				</p>
 			</SectionCard>
+			<p className="px-2 text-neutral-600 text-xs leading-relaxed dark:text-neutral-300">
+				Search terms are shared with Pexels. Photos are saved on this device.
+			</p>
 		</div>
 	);
 }

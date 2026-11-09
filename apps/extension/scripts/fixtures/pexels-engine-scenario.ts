@@ -319,6 +319,48 @@ assert.equal(
 	"another cached theme can rotate during a query-scoped image cooldown",
 );
 assert.equal(requests, beforeFailureRequests + 1);
+// Preparing a photo never changes the displayed selection or spends another API call.
+firstTab.settings.background.pexelsQuery = "cinematic nature landscape";
+firstTab.settings.background.pexelsFrequency = "per-tab";
+secondTab.settings.background.pexelsFrequency = "per-tab";
+await (await import("../../src/lib/storage")).flushPersist();
+const beforePreparation = firstTab.settings.background.pexelsImageId;
+const apiBeforePreparation = requests;
+const downloadsBeforePreparation = downloads;
+await Promise.all([
+	firstModule.prepareNextWallpaper(),
+	tabs.run(secondTab, () => secondModule.prepareNextWallpaper()),
+]);
+assert.equal(
+	downloads,
+	downloadsBeforePreparation + 1,
+	"the successor is downloaded ahead of rotation",
+);
+assert.equal(firstTab.settings.background.pexelsImageId, beforePreparation);
+assert.equal(requests, apiBeforePreparation);
+const downloadsAfterPreparation = downloads;
+const preparedId = (
+	stored["klice-pexels-v1"] as { prepared: { imageId: string } }
+).prepared.imageId;
+await engine.refreshWallpaper();
+assert.equal(firstTab.settings.background.pexelsImageId, preparedId);
+assert.notEqual(firstTab.settings.background.pexelsImageId, beforePreparation);
+assert.equal(
+	downloads,
+	downloadsAfterPreparation,
+	"rotation consumes the already downloaded photo",
+);
+assert.equal(
+	images.size,
+	1,
+	"only the current image remains after consuming the prepared photo",
+);
+await engine.refreshWallpaper();
+assert.notEqual(
+	firstTab.settings.background.pexelsImageId,
+	preparedId,
+	"sequential new tabs rotate even less than a second apart",
+);
 const helpers = await import("../../src/lib/pexels");
 assert.equal(
 	helpers.normalizePexelsQuery("  Spider-Man   Japan "),

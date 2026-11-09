@@ -8,6 +8,7 @@
 		"scripts/**/*.test.ts",
 		"scripts/**/*.test.tsx",
 		"scripts/**/*.test.mts",
-		"scripts/fixtures/**/*.ts"
+		"scripts/fixtures/**/*.ts",
+		"scripts/fixtures/**/*.tsx"
 	]
 }

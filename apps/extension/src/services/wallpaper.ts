@@ -74,6 +74,7 @@ interface EngineState {
 	queues: Queue[];
 	recent: number[];
 	current: Selection | null;
+	prepared: Selection | null;
 	retryAt: number;
 	downloadBackoffs: { query: string; until: number }[];
 }
@@ -82,6 +83,7 @@ const emptyState = (): EngineState => ({
 	queues: [],
 	recent: [],
 	current: null,
+	prepared: null,
 	retryAt: 0,
 	downloadBackoffs: [],
 });
@@ -123,6 +125,14 @@ function normalizeEngine(value: unknown): EngineState {
 			typeof raw.retryAt === "number" && Number.isFinite(raw.retryAt)
 				? raw.retryAt
 				: 0,
+		prepared:
+			raw.prepared &&
+			typeof raw.prepared.query === "string" &&
+			typeof raw.prepared.imageId === "string" &&
+			Number.isFinite(raw.prepared.chosenAt) &&
+			isPexelsPhoto(raw.prepared.photo)
+				? raw.prepared
+				: null,
 		downloadBackoffs: Array.isArray(raw.downloadBackoffs)
 			? raw.downloadBackoffs
 					.filter(
@@ -378,6 +388,7 @@ export async function refreshWallpaper(force = false): Promise<void> {
 							typeof key === "string" &&
 							key.startsWith("pexels_") &&
 							key !== state.current?.imageId &&
+							key !== state.prepared?.imageId &&
 							key !== bg.pexelsImageId
 						)
 							await idbDelete(STORE_BG, key);
@@ -391,12 +402,11 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						sharedBytes &&
 						(shared.chosenAt >= requestedAt ||
 							(!force &&
-								(!shouldFetch(
+								!shouldFetch(
 									bg.pexelsFrequency,
 									shared.chosenAt,
 									shared.period,
-								) ||
-									requestedAt - shared.chosenAt < 1000)))
+								)))
 					) {
 						if (isCurrent()) await applySelection(shared);
 						return;
@@ -411,8 +421,18 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						(bg.pexelsImageId || sharedBytes)
 					)
 						return;
-					let queue = state.queues.find((q) => q.query === query);
+					const prepared =
+						state.prepared?.query === query ? state.prepared : null;
+					const preparedBytes = prepared
+						? await idbGet(STORE_BG, prepared.imageId)
+						: null;
+					let queue =
+						state.queues.find((q) => q.query === query) ??
+						(preparedBytes
+							? { query, photos: [], fetchedAt: Date.now(), page: 1 }
+							: undefined);
 					if (
+						!preparedBytes &&
 						state.downloadBackoffs.some(
 							(entry) => entry.query === query && entry.until > Date.now(),
 						)
@@ -420,7 +440,11 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						throw new Error(
 							"Photography is temporarily unavailable. Your current wallpaper is unchanged.",
 						);
-					if (queue?.noResults && Date.now() - queue.fetchedAt < 86_400_000) {
+					if (
+						!preparedBytes &&
+						queue?.noResults &&
+						Date.now() - queue.fetchedAt < 86_400_000
+					) {
 						useWallpaperStatus.setState({
 							status: "empty",
 							message:
@@ -429,9 +453,10 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						return;
 					}
 					if (
-						!queue ||
-						Date.now() - queue.fetchedAt > 86_400_000 ||
-						!queue.photos.length
+						!preparedBytes &&
+						(!queue ||
+							Date.now() - queue.fetchedAt > 86_400_000 ||
+							!queue.photos.length)
 					) {
 						try {
 							const fresh = await fetchQueue(
@@ -465,7 +490,10 @@ export async function refreshWallpaper(force = false): Promise<void> {
 					}
 					if (!queue || !isCurrent()) return;
 					// A short result set retains its newest half as history, so it can rotate without getting stuck.
-					let photo = choosePexelsPhoto(queue.photos, state.recent);
+					let photo =
+						preparedBytes && prepared
+							? prepared.photo
+							: choosePexelsPhoto(queue.photos, state.recent);
 					if (!photo)
 						photo = choosePexelsPhoto(
 							queue.photos,
@@ -485,7 +513,8 @@ export async function refreshWallpaper(force = false): Promise<void> {
 					);
 					let dataUrl: string;
 					try {
-						dataUrl = await downloadImage(url, controller.signal);
+						dataUrl =
+							preparedBytes || (await downloadImage(url, controller.signal));
 					} catch (error) {
 						// A broken image host/decoder pauses this query, without suspending other cached themes.
 						if (
@@ -508,7 +537,10 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						!(await persistedPreferencesMatch(query, initial.pexelsFrequency))
 					)
 						return;
-					const imageId = `pexels_${crypto.randomUUID()}`;
+					const imageId =
+						preparedBytes && prepared
+							? prepared.imageId
+							: `pexels_${crypto.randomUUID()}`;
 					await idbPut(STORE_BG, imageId, dataUrl);
 					if (!isCurrent()) {
 						await idbDelete(STORE_BG, imageId);
@@ -524,6 +556,8 @@ export async function refreshWallpaper(force = false): Promise<void> {
 							bg.pexelsFrequency === "daylight" ? getCurrentPeriod() : null,
 					};
 					state.current = selection;
+					const unusedPrepared = state.prepared;
+					state.prepared = null;
 					state.downloadBackoffs = state.downloadBackoffs.filter(
 						(entry) => entry.query !== query,
 					);
@@ -539,6 +573,10 @@ export async function refreshWallpaper(force = false): Promise<void> {
 						throw error;
 					}
 					await applySelection(selection);
+					if (unusedPrepared && unusedPrepared.imageId !== imageId)
+						await idbDelete(STORE_BG, unusedPrepared.imageId).catch(
+							() => undefined,
+						);
 					if (previous && previous.imageId !== imageId)
 						await idbDelete(STORE_BG, previous.imageId).catch(() => undefined);
 				},
@@ -563,4 +601,71 @@ export async function refreshWallpaper(force = false): Promise<void> {
 	} finally {
 		if (inFlight?.promise === promise) inFlight = null;
 	}
+}
+
+/** Cache one decoded successor from the existing batch, without changing the UI or calling the API. */
+export async function prepareNextWallpaper(): Promise<void> {
+	const bg = useSetupStore.getState().settings.background;
+	if (
+		bg.type !== "pexels" ||
+		bg.pexelsFrequency === "locked" ||
+		!navigator.locks
+	)
+		return;
+	const query = normalizePexelsQuery(bg.pexelsQuery);
+	const reset = getResetGeneration();
+	const valid = async () =>
+		getResetGeneration() === reset &&
+		matching(useSetupStore.getState().settings.background, query) &&
+		(await persistedPreferencesMatch(query, bg.pexelsFrequency));
+	await navigator.locks.request(LOCK_NAME, {}, async () => {
+		if (!(await valid())) return;
+		const state = await readState();
+		if (
+			state.prepared?.query === query &&
+			(await idbGet(STORE_BG, state.prepared.imageId))
+		)
+			return;
+		if (
+			state.downloadBackoffs.some(
+				(entry) => entry.query === query && entry.until > Date.now(),
+			)
+		)
+			return;
+		const queue = state.queues.find((q) => q.query === query);
+		const photo = queue && choosePexelsPhoto(queue.photos, state.recent);
+		if (!photo) return;
+		const data = await downloadImage(
+			wallpaperImageUrl(
+				photo,
+				window.innerWidth,
+				window.innerHeight,
+				window.devicePixelRatio,
+			),
+			AbortSignal.timeout(20_000),
+		);
+		if (!(await valid())) return;
+		const imageId = `pexels_${crypto.randomUUID()}`;
+		await idbPut(STORE_BG, imageId, data);
+		if (!(await valid())) {
+			await idbDelete(STORE_BG, imageId);
+			return;
+		}
+		const previous = state.prepared;
+		state.prepared = {
+			query,
+			photo,
+			imageId,
+			chosenAt: Date.now(),
+			period: null,
+		};
+		try {
+			await writeState(state);
+		} catch (error) {
+			await idbDelete(STORE_BG, imageId);
+			throw error;
+		}
+		if (previous)
+			await idbDelete(STORE_BG, previous.imageId).catch(() => undefined);
+	});
 }
