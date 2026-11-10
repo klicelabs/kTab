@@ -23,7 +23,7 @@ export default defineConfig({
 				data_collection_permissions: { required: ["none"] },
 			},
 		},
-		version: "1.3.4",
+		version: "1.3.5",
 		default_locale: "en",
 		description: "A personal browser dashboard for your new tab.",
 		permissions: [

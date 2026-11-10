@@ -1,6 +1,6 @@
 {
 	"name": "klice-start",
-	"version": "1.3.4",
+	"version": "1.3.5",
 	"private": true,
 	"description": "A personal browser dashboard for your new tab.",
 	"type": "module",
