@@ -1,6 +1,6 @@
 # Architecture
 
-Local-only MV3 extension. No backend, accounts, billing, sync. What follows is the repo as built, not the SaaS target.
+Local-first MV3 extension. Dashboard data stays on-device, with no accounts, billing, or sync. Pexels wallpaper search is the deliberate backend exception: a public Cloudflare Worker backed by D1.
 
 ## Stack
 
@@ -43,6 +43,12 @@ Normalization is load-bearing: `normalizeState` repairs folders (orphans→root,
 ## Permissions & MV3 specifics
 
 `storage, activeTab, tabs, contextMenus, bookmarks, webNavigation`; host `http/https`; optional `<all_urls>` (`thumbnail-permission.ts` — requested synchronously inside a refresh/Settings click so the browser's native prompt opens in the same gesture; after granting, the operation continues, and refusal/existing grants get distinct messages with no repeated prompts); `Alt+Shift+D` save command; Firefox gecko id pinned. No remote code, no eval; content scripts minimal by design.
+
+## Pexels photo service
+
+`apps/pexels-worker/` serves the public Pexels search proxy in production. D1 stores the 24-hour metadata cache, provider cooldown, and shared daily/hourly/custom-query budgets; Cloudflare's rate-limit binding caps requests by client IP. The Pexels API key is a Worker secret, never part of the extension. The extension sends only the search query and page to the proxy; photo bytes come directly from Pexels. The endpoint is public and has no caller authentication.
+
+Production builds use the Worker URL in `src/lib/pexels.ts`. A local `apps/extension/.env.local` override takes precedence, including during production builds, so release builds must override it with the deployed HTTPS URL or remove the local override.
 
 ## Screenshot capture path
 
@@ -102,4 +108,4 @@ In All/Web, a typed address or recognized website leads the results. `search-des
 
 ## What is NOT here (SaaS target, unimplemented)
 
-Sync, auth, billing/entitlements, multi-device, AI, dashboard write-parity, RLS/schema beyond the empty scaffold. `bts.jsonc`: `auth:none payments:none api:none backend:self dbSetup:supabase database:postgres orm:drizzle frontend:[next]`.
+General account services remain unimplemented: sync, auth, billing/entitlements, multi-device, AI, and dashboard write-parity. The D1 schema is limited to Pexels cache and quota operations; the Supabase scaffold remains unused. `bts.jsonc` describes the broader SaaS target, not the Pexels service.

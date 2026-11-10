@@ -2,6 +2,14 @@
 
 Audit/research date: 2026-11-07. The dashboard owns the wallpaper experience; Pexels supplies an optional background feature. No manual image collection or paid wallpaper tier is introduced.
 
+## Current production deployment (2026-11-10)
+
+Production now uses `apps/pexels-worker/`: Cloudflare Worker `klice-start-pexels` with D1 database `klice-start-pexels-cache`. The deployed endpoint is `https://klice-start-pexels.joaoliveiraam.workers.dev/api/pexels`. D1 stores the metadata cache, provider cooldown, and shared quota reservations. The Worker has a 120 requests/minute per-IP rate limit, a 150 upstream calls/hour ceiling, an 18,000 calls/31-day ceiling, and a 20 custom cache misses/hour ceiling. Cached results last 24 hours and may be served stale for up to seven days. `PEXELS_API_KEY` is a Cloudflare Worker secret.
+
+The extension sends only the search query and page to this public endpoint; it stores user settings and photos locally and fetches image bytes directly from Pexels. The endpoint has no caller authentication, so its limits bound resource use but do not prove a request came from the extension. A live smoke request returned HTTP 200 with 79 photos on 2026-11-10. Chrome and Firefox both use ordinary HTTPS `fetch`; production build configuration is covered below.
+
+The Node/Next implementation described in the audit sections below is retained for local development and regression coverage. It is no longer the supported production service.
+
 ## Existing flow and defects
 
 - `apps/web/src/app/api/pexels/route.ts` already held the server-only API key and searched the Pexels API. It selected one photo from only eight high-scoring candidates, requested a random page, had no shared cache, durable quota budget, concurrency coordination or abuse controls, and issued a second search when the first failed or returned no results. The second search silently replaced custom keywords with an unrelated category.
@@ -18,7 +26,7 @@ The [wallpaper-use guidance](https://help.pexels.com/hc/en-us/articles/440558886
 
 [Bonjourr's background UX](https://bonjourr.fr/fr/docs/customisation/backgrounds/) demonstrates uncomplicated source/search selection, manual next, frequencies, framing and fades. Its [settings reference](https://bonjourr.fr/docs/reference/settings-reference/) keeps brightness and frequency separate. Its [open-source server architecture](https://github.com/victrme/bonjourr-apis/blob/main/docs/SERVICES.md) separates provider conversion from backgrounds and uses shared persistent collections. We adopt those separation/cache principles; curated Daylight collections and additional providers are outside this feature. Klice preserves the user's search during Daylight rather than choosing a different collection.
 
-## Proxy contract and safeguards
+## Legacy Next.js proxy contract and safeguards (audit baseline)
 
 POST `/api/pexels`: `{ "query": "cinematic nature landscape", "page": 1 }`. Query is Unicode-normalized, whitespace-collapsed, lowercased and bounded to 80 characters. Missing/empty query uses Nature. Pages are integers 1–5. Bodies are read with a 2 KiB limit. Each upstream call requests exactly 80 landscape/large results; returned candidates must be horizontal and at least 1920×1080, with HTTPS Pexels photo/photographer/image URLs.
 
@@ -33,7 +41,7 @@ Success: `{ photos, query, page, cached, stale, rateLimit? }`. Photos retain the
 
 The endpoint is public. A determined attacker can deny custom-search availability within its small budget, or saturate the host. These safeguards bound upstream consumption; they do not prove a caller is a legitimate extension installation. For larger public deployments use the existing hosting provider's free request/connection limits, a request-body timeout and optional account-based controls. No extension-embedded secret can solve this. No paid rate-limit service or new dependency is added.
 
-## Configuration
+## Legacy Next.js proxy configuration (local only)
 
 Server (`apps/web/.env.local` for local Next development; host environment for production):
 
@@ -49,25 +57,25 @@ Keep the API key server-only, outside source control, frontend environment varia
 
 Run Next with `bun run dev` from `apps/web` (port 3001). Set `VITE_PEXELS_PROXY_URL=http://localhost:3001/api/pexels` for extension development, and the deployed HTTPS endpoint for extension production. The extension stores query/history/images locally; it sends only the search/page to the proxy and fetches image bytes directly from the Pexels image CDN. The proxy sees normal connection information; Pexels sees the server's API searches and the user's image-CDN request/IP. No bookmarks or browsing history are sent.
 
-**Supported production deployment:** one Node host with a persistent writable volume; multiple Node workers on that same host may share it. The process must be able to atomically create lock directories and rename state files. Independent disks or multiple hosts do not share the budget and are unsupported. The current route explicitly disables upstream access on detected Vercel, AWS Lambda and Netlify environments, even if a directory is provided; ephemeral serverless files are not a shared persistent cache. Without suitable storage or an API key it returns 503; the extension retains its last background or uses the bundled fallback. Deploying the web workspace to Vercel alone does not enable this service.
+This single-host Node setup was the previous production design and is superseded by the Cloudflare Worker above. The Next route remains useful for local development and regression tests; do not use it as the production proxy.
 
-After an unclean process termination, `request.lock` may remain. Recovery requires stopping **all** proxy workers using the directory, confirming none can resume an in-progress request, removing only the `request.lock` directory and its ownership marker, then restarting the workers. Retain `state.json`: it contains the consumed quota reservations. Never delete or replace a lock while any worker can still be running. This fail-closed recovery deliberately favors quota correctness over automatic recovery based on wall-clock age.
+For the legacy Node route only, an unclean process termination may leave `request.lock`. Recovery requires stopping **all** proxy workers using the directory, confirming none can resume an in-progress request, removing only the `request.lock` directory and its ownership marker, then restarting the workers. Retain `state.json`: it contains consumed quota reservations. Never delete or replace a lock while any worker can still be running.
 
-A future multi-host deployment needs a genuinely shared transactional budget/cache (for example infrastructure already operated by the project), not a process-local map or `/tmp`. That is a deployment decision, not an additional paid dependency bundled into this feature.
+The legacy filesystem design above remains single-host only. Production cache and quota state now use D1, shared by the Cloudflare Worker deployment.
 
 ## Costs, scale and validation
 
-Pexels API access is [free with default limits](https://help.pexels.com/hc/en-us/articles/47677890260761-Is-the-Pexels-API-free-to-use). Do not assume unlimited access; [limit increases are currently paused](https://help.pexels.com/hc/en-us/articles/900005852323-How-do-I-get-unlimited-requests) as checked on the audit date. Hosting/storage/network charges depend on the existing host and are not made free by this implementation.
+Pexels API access is [free with default limits](https://help.pexels.com/hc/en-us/articles/47677890260761-Is-the-Pexels-API-free-to-use). Do not assume unlimited access; [limit increases are currently paused](https://help.pexels.com/hc/en-us/articles/900005852323-How-do-I-get-unlimited-requests) as checked on the audit date. Cloudflare usage remains subject to the account's plan and current usage limits; the implementation does not guarantee zero charges.
 
 Six themes × five pages × one fresh batch/day is at most 30 upstream calls/day when every page is requested. Each can serve many users and many rotations from its local batch. Twenty unique custom cache misses/hour is at most 480/day before global ceilings apply; spelling normalization and shared cache usually reduce that. User count alone does not determine API cost: unique query/page cache misses do. User rotation frequency is intentionally independent of API-call frequency.
 
-Server regression tests live in `apps/extension/scripts/verify-pexels-proxy.test.ts` and cover durable cache reuse/concurrency, input bounds, normalization, empty results, photo filtering, missing configuration, 429/stale handling, provider quota headers, global/custom budgets, corrupt-state fail-closed behavior and credential-safe errors. Run from the repository root with `bun test apps/extension/scripts/verify-pexels-proxy.test.ts`. Server typecheck: `bunx tsc --noEmit -p apps/web/tsconfig.json`.
+Legacy Next route regression tests live in `apps/extension/scripts/verify-pexels-proxy.test.ts`. Worker tests are in `apps/pexels-worker/scripts/worker.test.ts` (`bun run test`), and its typecheck is `bun run typecheck` from `apps/pexels-worker`.
 
 ## Wallpaper picker
 
 Pexels is a source card in the existing wallpaper grid. Opening it navigates to a dedicated settings view without changing the background. Selecting a theme, submitting a search or requesting the next photo activates Pexels; going back preserves the current preferences. Six representative, 320×240 Pexels CDN thumbnails share the library cards’ proportions and selection treatment. They use lazy image loading and browser HTTP caching, consume no API searches, and show a neutral fallback on image errors. These previews are illustrative; wallpaper selection remains random. Opening the library contacts the Pexels image CDN for its source preview, and opening the detail view may load the six theme previews (normal CDN connection information/IP applies).
 
-Validation for this branch: 327 product tests passed; extension and web TypeScript checks passed; Chrome and Firefox production builds passed. Feature-scoped Biome has no errors (seven existing optional-chain warnings in storage); the repository-wide check remains failing and is not a release gate claimed as passed. Isolated pane previews at 440px light and 320px dark loaded all six CDN thumbnails with no horizontal overflow. A source review verified Back focus restoration. Installed-extension end-to-end behavior on Chrome/Firefox and a live production proxy with a configured key were not verified in this environment.
+Historical UI validation (2026-11-09): 327 product tests passed; extension and web TypeScript checks passed; Chrome and Firefox production builds passed. Installed-extension end-to-end behavior on Chrome/Firefox and a live production proxy were not verified at that time.
 
 ## Local verification and navigation correction
 
@@ -75,7 +83,7 @@ Pexels is a first-class settings page. The existing header displays Pexels, and 
 
 Local verification needs two running processes: `bun run dev` in `apps/web` (port 3001, reads its existing server-only `PEXELS_API_KEY`) and `bun run dev` in `apps/extension` (port 5555). An ignored `apps/extension/.env.local` may set `VITE_PEXELS_PROXY_URL=http://localhost:3001/api/pexels` for local dev and production-output testing. Release builds MUST override this with the deployed HTTPS service URL or remove that local override; localhost requires the service running on the user's own machine and is not a public deployment. Neither the key nor local environment files belong in extension artifacts or source commits.
 
-On 2026-11-07 the local service initially refused connections, and the installed production extension reported online photography unconfigured. Starting the existing web service and rebuilding with its local URL returned 79 eligible Nature photos. The installed Chrome extension then downloaded and displayed a Pexels photo with photographer/Pexels credits. This proves the local setup; deployment for other users remains separate.
+On 2026-11-07 the local service initially refused connections, and the installed production extension reported online photography unconfigured. Starting the existing web service and rebuilding with its local URL returned 79 eligible Nature photos. The installed Chrome extension then downloaded and displayed a Pexels photo with photographer/Pexels credits. This records the local setup at that time; the Cloudflare production rollout is documented above.
 
 
 ## Search, startup and panel refinement (2026-11-09)

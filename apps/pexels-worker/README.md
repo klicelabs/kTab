@@ -14,8 +14,10 @@ From this folder:
 3. Run `bunx wrangler secret put PEXELS_API_KEY` and enter the Pexels key in
    Wrangler's secure prompt.
 4. Run `bun run deploy`. Wrangler prints the public `workers.dev` URL.
-5. Set `VITE_PEXELS_PROXY_URL` to `<workers.dev URL>/api/pexels` when building
-   the extension for the store.
+5. Production extension builds use this Worker URL by default. An existing
+   `apps/extension/.env.local` can override it even in production builds; set
+   `VITE_PEXELS_PROXY_URL` to this Worker URL for release builds, or remove the
+   local override. Keep the localhost value only for local development.
 
 Do not put the Pexels key in `wrangler.toml`, source code, or extension build
 variables. Rotate it in the Pexels account and replace the Cloudflare secret if

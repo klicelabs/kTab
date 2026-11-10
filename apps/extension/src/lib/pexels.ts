@@ -2,7 +2,9 @@ export const PEXELS_DEFAULT_QUERY = "cinematic nature landscape 4k";
 export const PEXELS_MAX_QUERY_LENGTH = 80;
 export const PEXELS_PROXY_BASE =
 	import.meta.env.VITE_PEXELS_PROXY_URL ||
-	(import.meta.env.DEV ? "http://localhost:3001/api/pexels" : "");
+	(import.meta.env.DEV
+		? "http://localhost:3001/api/pexels"
+		: "https://klice-start-pexels.joaoliveiraam.workers.dev/api/pexels");
 export function pexelsProxyUrl(): string {
 	return PEXELS_PROXY_BASE;
 }
