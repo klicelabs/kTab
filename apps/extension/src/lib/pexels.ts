@@ -1,4 +1,4 @@
-export const PEXELS_DEFAULT_QUERY = "cinematic nature landscape";
+export const PEXELS_DEFAULT_QUERY = "cinematic nature landscape 4k";
 export const PEXELS_MAX_QUERY_LENGTH = 80;
 export const PEXELS_PROXY_BASE =
 	import.meta.env.VITE_PEXELS_PROXY_URL ||
@@ -91,7 +91,7 @@ export function wallpaperImageUrl(
 	url.searchParams.set("cs", "tinysrgb");
 	url.searchParams.set("fit", "max");
 	url.searchParams.set("w", String(target));
-	url.searchParams.set("q", "85");
+	url.searchParams.set("q", "92");
 	url.searchParams.delete("h");
 	return url.toString();
 }

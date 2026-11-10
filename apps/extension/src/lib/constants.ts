@@ -195,7 +195,7 @@ export const DEFAULT_BACKGROUND: BackgroundSettings = {
 	blur: 0,
 	brightness: 100,
 	opacity: 100,
-	pexelsQuery: "cinematic nature landscape",
+	pexelsQuery: "cinematic nature landscape 4k",
 	pexelsFrequency: "daily" as WallpaperFrequency,
 	pexelsPreviousFrequency: null,
 	pexelsLastFetched: null,

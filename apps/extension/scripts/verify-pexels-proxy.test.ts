@@ -101,9 +101,21 @@ describe("durable Pexels proxy", () => {
 		expect(first.status).toBe(200);
 		expect(f.url().searchParams.get("per_page")).toBe("80");
 		expect(f.url().searchParams.get("orientation")).toBe("landscape");
+		expect(f.url().searchParams.get("query")).toBe("japan 4k");
 		const second = await new PexelsProxy(f.options).handle(request("japan"));
 		expect((await second.json()).cached).toBe(true);
 		expect(f.count()).toBe(1);
+	});
+	test("a transient upstream failure does not cool down other searches", async () => {
+		const f = await fixture();
+		f.result(() => {
+			throw new TypeError("network offline");
+		});
+		expect((await f.proxy.handle(request("japan"))).status).toBe(503);
+		f.result(() => Response.json({ photos: [photo] }));
+		expect((await f.proxy.handle(request("earth"))).status).toBe(200);
+		expect(f.url().searchParams.get("query")).toBe("earth 4k");
+		expect(f.count()).toBe(2);
 	});
 	test("coalesces simultaneous requests with a durable lock", async () => {
 		const f = await fixture();
@@ -200,7 +212,7 @@ describe("durable Pexels proxy", () => {
 		expect((await res.json()).photos).toEqual([]);
 		await f.proxy.handle(request("Spider-Man"));
 		expect(f.count()).toBe(1);
-		expect(f.url().searchParams.get("query")).toBe("spider-man");
+		expect(f.url().searchParams.get("query")).toBe("spider-man 4k");
 	});
 	test("filters portrait, low-resolution and non-Pexels URLs", async () => {
 		const f = await fixture();

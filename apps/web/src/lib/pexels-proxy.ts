@@ -10,9 +10,17 @@ import {
 } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
-export const DEFAULT_PEXELS_QUERY = "cinematic nature landscape";
+export const DEFAULT_PEXELS_QUERY = "cinematic nature landscape 4k";
 const PRESETS = new Set([
 	DEFAULT_PEXELS_QUERY,
+	"cinematic nature landscape",
+	"cinematic nature landscape 4k",
+	"mountain landscape cinematic 4k",
+	"beach ocean landscape 4k",
+	"planet earth from space 4k",
+	"cinematic city skyline architecture 4k",
+	"minimalist landscape clean composition 4k",
+	// Legacy selections remain first-class presets for people upgrading in place.
 	"mountain landscape",
 	"beach ocean landscape",
 	"space nebula stars",
@@ -437,7 +445,7 @@ export class PexelsProxy {
 		if (!PRESETS.has(query)) state.customCalls.push(now);
 		await this.save(directory, state);
 		const params = new URLSearchParams({
-			query,
+			query: /(?:^|\s)4k(?:\s|$)/i.test(query) ? query : `${query} 4k`,
 			page: String(page),
 			per_page: "80",
 			orientation: "landscape",
@@ -483,7 +491,7 @@ export class PexelsProxy {
 				rateLimit: state.rateLimit,
 			});
 		} catch (error) {
-			state.blockedUntil = Math.max(state.blockedUntil, now + 60_000);
+			// A transport or provider error for one query does not block other searches.
 			await this.save(directory, state);
 			if (cached) return reply(true);
 			throw error;

@@ -7,6 +7,7 @@ import {
 	PEXELS_MAX_QUERY_LENGTH,
 } from "../src/lib/pexels";
 import { normalizeState } from "../src/lib/storage";
+import { PEXELS_THEMES } from "../src/lib/wallpaper-themes";
 
 test("extension queries meet the proxy's 80-character boundary after Unicode normalization", () => {
 	expect(PEXELS_MAX_QUERY_LENGTH).toBe(80);
@@ -34,4 +35,11 @@ test("persisted query migration retains valid preferences and bounds legacy long
 			normalizeProxyQuery(normalizePexelsQuery(query)),
 		).not.toThrow();
 	}
+});
+
+test("curated photo themes use 4K queries and replace Space with Earth", () => {
+	expect(PEXELS_THEMES.map(({ id }) => id)).toContain("earth");
+	expect(PEXELS_THEMES.map(({ id }) => id)).not.toContain("space");
+	for (const theme of PEXELS_THEMES)
+		expect(theme.query).toMatch(/(?:^|\s)4k(?:\s|$)/i);
 });

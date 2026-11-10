@@ -76,6 +76,7 @@ interface EngineState {
 	current: Selection | null;
 	prepared: Selection | null;
 	retryAt: number;
+	requestBackoffs: { query: string; until: number }[];
 	downloadBackoffs: { query: string; until: number }[];
 }
 const emptyState = (): EngineState => ({
@@ -85,6 +86,7 @@ const emptyState = (): EngineState => ({
 	current: null,
 	prepared: null,
 	retryAt: 0,
+	requestBackoffs: [],
 	downloadBackoffs: [],
 });
 
@@ -125,6 +127,17 @@ function normalizeEngine(value: unknown): EngineState {
 			typeof raw.retryAt === "number" && Number.isFinite(raw.retryAt)
 				? raw.retryAt
 				: 0,
+		requestBackoffs: Array.isArray(raw.requestBackoffs)
+			? raw.requestBackoffs
+					.filter(
+						(entry) =>
+							entry &&
+							typeof entry.query === "string" &&
+							Number.isFinite(entry.until) &&
+							entry.until > Date.now(),
+					)
+					.slice(-4)
+			: [],
 		prepared:
 			raw.prepared &&
 			typeof raw.prepared.query === "string" &&
@@ -248,11 +261,15 @@ async function fetchQueue(
 		throw new Error(
 			"Online photography isn't configured yet. Your current wallpaper is available offline.",
 		);
-	if (Date.now() < state.retryAt)
+	if (
+		state.requestBackoffs.some(
+			(entry) => entry.query === query && entry.until > Date.now(),
+		)
+	)
 		throw new Error(
-			"Photography is temporarily unavailable. Your current wallpaper is unchanged.",
+			"This search is temporarily unavailable. Your current wallpaper is unchanged.",
 		);
-	const resetGeneration = getResetGeneration();
+	let retryDelayMs = 15_000;
 	try {
 		const response = await fetch(pexelsProxyUrl(), {
 			method: "POST",
@@ -264,13 +281,13 @@ async function fetchQueue(
 		});
 		if (!response.ok) {
 			const delay = Number(response.headers.get("Retry-After"));
-			state.retryAt =
-				Date.now() +
-				Math.min(
-					86_400_000,
-					Math.max(30, Number.isFinite(delay) ? delay : 300) * 1000,
-				);
-			await writeState(state);
+			retryDelayMs =
+				response.status === 429
+					? 0
+					: Math.min(
+							86_400_000,
+							Math.max(15, Number.isFinite(delay) ? delay : 15) * 1000,
+						);
 			throw new Error(
 				response.status === 429
 					? "Photography is taking a break. Your current wallpaper is unchanged."
@@ -299,19 +316,18 @@ async function fetchQueue(
 		}
 		return { query, photos, fetchedAt: Date.now(), page };
 	} catch (error) {
-		// Provider failures are shared across queries, but apply only when another API call is needed.
-		// Cached batches remain usable while requests are suspended.
+		// A failed request briefly suppresses only its query, never all themes.
+		const background = useSetupStore.getState().settings.background;
 		if (
+			retryDelayMs > 0 &&
 			!signal.aborted &&
-			getResetGeneration() === resetGeneration &&
-			Date.now() >= state.retryAt &&
-			matching(useSetupStore.getState().settings.background, query) &&
-			(await persistedPreferencesMatch(
-				query,
-				useSetupStore.getState().settings.background.pexelsFrequency,
-			))
+			matching(background, query) &&
+			(await persistedPreferencesMatch(query, background.pexelsFrequency))
 		) {
-			state.retryAt = Date.now() + 60_000;
+			state.requestBackoffs = state.requestBackoffs
+				.filter((entry) => entry.query !== query && entry.until > Date.now())
+				.slice(-3)
+				.concat({ query, until: Date.now() + retryDelayMs });
 			await writeState(state);
 		}
 		throw error;

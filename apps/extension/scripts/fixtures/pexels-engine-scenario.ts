@@ -254,11 +254,18 @@ await Promise.all([
 assert.equal(
 	requests,
 	beforeTransport + 1,
-	"rejected proxy fetch has one shared retry cooldown",
+	"concurrent tabs share one rejected proxy fetch",
+);
+firstTab.settings.background.pexelsQuery = "cities";
+await engine.refreshWallpaper(true);
+assert.equal(
+	requests,
+	beforeTransport + 2,
+	"a failed query does not block another theme or search",
 );
 // An expired batch may be reused after transport failure without retrying the API on each Next.
-clearBackoff();
 firstTab.settings.background.pexelsQuery = "cinematic nature landscape";
+await engine.refreshWallpaper(true);
 const natureQueue = (
 	stored["klice-pexels-v1"] as {
 		queues: { query: string; fetchedAt: number }[];

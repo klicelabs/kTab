@@ -4,42 +4,42 @@ export const PEXELS_THEMES = [
 	{
 		id: "nature",
 		label: "Nature",
-		query: "cinematic nature landscape",
+		query: "cinematic nature landscape 4k",
 		preview:
 			"https://images.pexels.com/photos/167699/pexels-photo-167699.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
 		id: "mountains",
 		label: "Mountains",
-		query: "mountain landscape",
+		query: "mountain landscape cinematic 4k",
 		preview:
 			"https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
 		id: "ocean",
 		label: "Ocean",
-		query: "beach ocean landscape",
+		query: "beach ocean landscape 4k",
 		preview:
 			"https://images.pexels.com/photos/189349/pexels-photo-189349.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
-		id: "space",
-		label: "Space",
-		query: "space nebula stars",
+		id: "earth",
+		label: "Earth",
+		query: "planet earth from space 4k",
 		preview:
-			"https://images.pexels.com/photos/2150/sky-space-dark-galaxy.jpg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
+			"https://images.pexels.com/photos/87651/earth-blue-planet-globe-planet-87651.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
 		id: "cities",
 		label: "Cities",
-		query: "city architecture landscape",
+		query: "cinematic city skyline architecture 4k",
 		preview:
 			"https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
 		id: "minimal",
 		label: "Minimal",
-		query: "minimalist landscape",
+		query: "minimalist landscape clean composition 4k",
 		preview:
 			"https://images.pexels.com/photos/1323550/pexels-photo-1323550.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},

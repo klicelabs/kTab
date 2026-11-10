@@ -50,6 +50,9 @@ Object.assign(globalThis, {
 		disconnect() {}
 		unobserve() {}
 	},
+	requestAnimationFrame: (callback: FrameRequestCallback) =>
+		setTimeout(() => callback(Date.now()), 0) as unknown as number,
+	cancelAnimationFrame: (handle: number) => clearTimeout(handle),
 });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 useSetupStore.getState().updateBackground({

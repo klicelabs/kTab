@@ -7,7 +7,7 @@ test("legacy default query migrates to Nature without changing the selected back
 	const setup = structuredClone(DEFAULT_SETUP);
 	setup.settings.background.pexelsQuery = "curated wallpaper";
 	const bg = normalizeState(setup).settings.background;
-	expect(bg.pexelsQuery).toBe("cinematic nature landscape");
+	expect(bg.pexelsQuery).toBe("cinematic nature landscape 4k");
 	expect(bg.type).toBe(setup.settings.background.type);
 	expect(bg.wallpaperId).toBe(setup.settings.background.wallpaperId);
 	expect(bg.pexelsPosition).toBe("center");
