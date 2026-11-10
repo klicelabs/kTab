@@ -1,6 +1,6 @@
 # Decisions (pending only)
 
-Locked context: local-only MV3, no backend/accounts/billing. Supabase (Postgres + Drizzle) scaffolded, unused. Past verdicts live in `perf/diagnosis.md` §8.
+Locked context: local-first MV3, no accounts/billing/sync. The Pexels wallpaper feature is the only backend exception and uses Cloudflare Workers + D1 for its public proxy/cache; this does not decide the backend for Pro. Supabase (Postgres + Drizzle) is scaffolded, unused. Past verdicts live in `perf/diagnosis.md` §8.
 
 ### D1 — Backend for Pro
 **Status:** pending

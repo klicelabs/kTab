@@ -2,7 +2,7 @@
 
 Klice Start is a Personal Browser Dashboard: a calm, beautiful, controlled beginning to every browser session. Not a speed dial, not a bookmark manager. Judged on beauty, orientation, ownership, continuity.
 
-Current state: single-device, local-only MV3 extension. No backend, sync, accounts, AI. Anything below describing sync/AI/multi-device is a directional bet, not shipped reality.
+Current state: single-device, local-first MV3 extension with no accounts, sync, billing, or AI. Dashboard data stays on-device. Pexels wallpapers use a public Cloudflare Worker + D1 proxy: only the search query and page go to the proxy; image bytes are fetched directly from Pexels. Anything below describing sync/AI/multi-device is a directional bet, not shipped reality.
 
 ## Mission & values
 

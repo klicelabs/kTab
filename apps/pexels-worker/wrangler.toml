@@ -1,0 +1,19 @@
+name = "klice-start-pexels"
+account_id = "609565aaaf2af89c1b31a42101aeb481"
+main = "src/index.ts"
+compatibility_date = "2026-11-10"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "klice-start-pexels-cache"
+database_id = "10597abb-a678-4d5e-b511-53df58156d61"
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "PEXELS_LIMITER"
+namespace_id = "7415129"
+
+[ratelimits.simple]
+limit = 120
+period = 60
