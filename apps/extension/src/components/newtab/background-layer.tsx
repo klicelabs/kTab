@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DEFAULT_BACKGROUND, GRADIENTS, WALLPAPERS } from "../../lib/constants";
+import { glassForeground } from "../../lib/glass";
 import { cn, cssUrl } from "../../lib/utils";
 import {
 	decodeWallpaper,
@@ -13,6 +14,7 @@ import {
 } from "../../services/wallpaper";
 import { useImageStore } from "../../stores/image-store";
 import { useSetupStore } from "../../stores/setup-store";
+import { useAppearance } from "./appearance-provider";
 import { GlassSurface } from "./toolbar/glass-surface";
 
 function getInitialBackgroundCss(): string {
@@ -50,6 +52,7 @@ export function BackgroundLayer({
 }: {
 	contained?: boolean;
 }) {
+	const { isLiquid } = useAppearance();
 	const type = useSetupStore((s) => s.settings.background.type);
 	const imageId = useSetupStore((s) => s.settings.background.imageId);
 	const wallpaperId = useSetupStore((s) => s.settings.background.wallpaperId);
@@ -65,6 +68,16 @@ export function BackgroundLayer({
 	const pexelsQuery = useSetupStore((s) => s.settings.background.pexelsQuery);
 	const pexelsFrequency = useSetupStore(
 		(s) => s.settings.background.pexelsFrequency,
+	);
+	const creditTextClassName = cn(
+		"min-w-0",
+		isLiquid ? glassForeground("secondary") : "text-muted-foreground",
+	);
+	const creditLinkClassName = cn(
+		"transition-colors focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2",
+		isLiquid
+			? "hover:text-[var(--klice-glass-foreground-primary)]"
+			: "hover:text-foreground",
 	);
 	const previewBackgroundImage = useImageStore((s) => s.previewBackgroundImage);
 	const previewBackgroundColor = useImageStore((s) => s.previewBackgroundColor);
@@ -300,36 +313,37 @@ export function BackgroundLayer({
 			{displayedPhoto ? (
 				<GlassSurface
 					role="complementary"
-					variant="tooltip"
-					shape="control"
+					variant="toolbar"
 					aria-label="Photo credits"
 					className={cn(
 						contained ? "absolute" : "fixed",
-						"bottom-3 left-4 z-10 block max-w-[calc(100%-2rem)] px-3 py-1.5 text-xs leading-relaxed",
+						"bottom-3 left-4 z-10 max-w-[calc(100%-2rem)] px-3 py-1.5 text-xs leading-relaxed",
 					)}
 				>
-					Photo by{" "}
-					{photographerUrl ? (
+					<span className={creditTextClassName}>
+						Photo by{" "}
+						{photographerUrl ? (
+							<a
+								className={creditLinkClassName}
+								href={photographerUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{displayedPhoto.photographer}
+							</a>
+						) : (
+							displayedPhoto.photographer
+						)}
+						{" on "}
 						<a
-							className="underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
-							href={photographerUrl}
+							className={creditLinkClassName}
+							href={photoUrl}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{displayedPhoto.photographer}
+							Pexels
 						</a>
-					) : (
-						displayedPhoto.photographer
-					)}
-					{" on "}
-					<a
-						className="underline decoration-current/50 underline-offset-2 hover:decoration-current focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
-						href={photoUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Pexels
-					</a>
+					</span>
 				</GlassSurface>
 			) : null}
 		</>

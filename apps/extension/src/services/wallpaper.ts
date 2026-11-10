@@ -20,6 +20,7 @@ import {
 	WALLPAPER_LOCK_NAME,
 	WALLPAPER_STATE_KEY,
 } from "../lib/wallpaper-coordination";
+import { PEXELS_RANDOM_QUERY, PEXELS_THEMES } from "../lib/wallpaper-themes";
 import { useSetupStore } from "../stores/setup-store";
 import type { BackgroundSettings, WallpaperFrequency } from "../types";
 
@@ -108,7 +109,9 @@ function normalizeEngine(value: unknown): EngineState {
 					.slice(-4)
 					.map((q) => ({
 						...q,
-						photos: q.photos.filter(isPexelsPhoto).slice(0, 80),
+						photos: q.photos
+							.filter(isPexelsPhoto)
+							.slice(0, q.query === PEXELS_RANDOM_QUERY ? 480 : 80),
 						page: Math.max(1, Math.min(5, q.page || 1)),
 					}))
 			: [],
@@ -168,7 +171,13 @@ async function writeState(state: EngineState): Promise<void> {
 }
 
 function matching(bg: BackgroundSettings, query: string): boolean {
-	return bg.type === "pexels" && normalizePexelsQuery(bg.pexelsQuery) === query;
+	if (bg.type !== "pexels") return false;
+	const selectedQuery = normalizePexelsQuery(bg.pexelsQuery);
+	return (
+		selectedQuery === query ||
+		(selectedQuery === PEXELS_RANDOM_QUERY &&
+			PEXELS_THEMES.some((theme) => theme.query === query))
+	);
 }
 async function applySelection(selection: Selection): Promise<void> {
 	const bg = useSetupStore.getState().settings.background;
@@ -251,7 +260,7 @@ async function downloadImage(
 	return dataUrl;
 }
 
-async function fetchQueue(
+async function fetchSingleQueue(
 	query: string,
 	page: number,
 	state: EngineState,
@@ -332,6 +341,45 @@ async function fetchQueue(
 		}
 		throw error;
 	}
+}
+
+async function fetchQueue(
+	query: string,
+	page: number,
+	state: EngineState,
+	signal: AbortSignal,
+): Promise<Queue | null> {
+	if (query !== PEXELS_RANDOM_QUERY)
+		return fetchSingleQueue(query, page, state, signal);
+
+	const categoryQueues = await Promise.all(
+		PEXELS_THEMES.map((theme) =>
+			fetchSingleQueue(theme.query, page, state, signal),
+		),
+	);
+	const uniquePhotos = Array.from(
+		new Map(
+			categoryQueues
+				.flatMap((queue) => queue?.photos ?? [])
+				.map((photo) => [photo.id, photo]),
+		).values(),
+	);
+	for (let index = uniquePhotos.length - 1; index > 0; index--) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		const current = uniquePhotos[index];
+		const next = uniquePhotos[swapIndex];
+		if (current && next) {
+			uniquePhotos[index] = next;
+			uniquePhotos[swapIndex] = current;
+		}
+	}
+	return {
+		query,
+		photos: uniquePhotos,
+		fetchedAt: Date.now(),
+		page,
+		noResults: uniquePhotos.length === 0,
+	};
 }
 
 let generation = 0;

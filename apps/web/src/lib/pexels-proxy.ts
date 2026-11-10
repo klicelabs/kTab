@@ -18,7 +18,9 @@ const PRESETS = new Set([
 	"mountain landscape cinematic 4k",
 	"beach ocean landscape 4k",
 	"planet earth from space 4k",
+	"cinematic city 4k",
 	"cinematic city skyline architecture 4k",
+	"minimalist landscape 4k",
 	"minimalist landscape clean composition 4k",
 	// Legacy selections remain first-class presets for people upgrading in place.
 	"mountain landscape",

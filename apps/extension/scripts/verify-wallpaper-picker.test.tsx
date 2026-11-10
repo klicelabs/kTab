@@ -212,7 +212,7 @@ test("Pexels opens from a library card and preserves custom query and frequency"
 	expect(
 		document.getElementById("pexels-query-input")?.getAttribute("value"),
 	).toBe("Spider-Man Japan");
-	expect(document.querySelectorAll("[data-pexels-theme]")).toHaveLength(6);
+	expect(document.querySelectorAll("[data-pexels-theme]")).toHaveLength(7);
 	expect(document.getElementById("settings-panel-title")?.textContent).toBe(
 		"Pexels",
 	);
@@ -221,7 +221,7 @@ test("Pexels opens from a library card and preserves custom query and frequency"
 		document.querySelectorAll(
 			'fieldset img[src^="https://images.pexels.com/"]',
 		),
-	).toHaveLength(6);
+	).toHaveLength(12);
 	// AnimatePresence may retain the outgoing library while its exit completes.
 	expect(document.querySelectorAll("h2")).toHaveLength(1);
 	expect(document.body.textContent).toContain("Next photo");

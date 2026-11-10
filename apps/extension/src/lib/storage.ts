@@ -510,6 +510,14 @@ function normalizeBackground(
 		(effectiveType === "image" && imageId
 			? { id: imageId, name: "Uploaded wallpaper" }
 			: null);
+	const savedPexelsQuery =
+		typeof raw.pexelsQuery === "string" ? raw.pexelsQuery : "";
+	const migratedPexelsQuery =
+		savedPexelsQuery === "cinematic city skyline architecture 4k"
+			? "cinematic city 4k"
+			: savedPexelsQuery === "minimalist landscape clean composition 4k"
+				? "minimalist landscape 4k"
+				: savedPexelsQuery;
 	const normalizedWallpaperId =
 		rawType === "wallpaper" &&
 		effectiveType === "wallpaper" &&
@@ -555,10 +563,8 @@ function normalizeBackground(
 		brightness: finiteOrDefault(raw.brightness, defaults.brightness, 40, 140),
 		opacity: finiteOrDefault(raw.opacity, defaults.opacity, 20, 100),
 		pexelsQuery:
-			typeof raw.pexelsQuery === "string" &&
-			raw.pexelsQuery.trim() &&
-			raw.pexelsQuery !== "curated wallpaper"
-				? raw.pexelsQuery.slice(0, PEXELS_MAX_QUERY_LENGTH)
+			migratedPexelsQuery.trim() && migratedPexelsQuery !== "curated wallpaper"
+				? migratedPexelsQuery.slice(0, PEXELS_MAX_QUERY_LENGTH)
 				: defaults.pexelsQuery,
 		pexelsFrequency: frequency,
 		pexelsPreviousFrequency: previousFrequency,

@@ -8,7 +8,10 @@ import {
 } from "../../../../lib/pexels";
 import { cn } from "../../../../lib/utils";
 import { pexelsCreditUrl } from "../../../../lib/wallpaper-presentation";
-import { PEXELS_THEMES } from "../../../../lib/wallpaper-themes";
+import {
+	PEXELS_RANDOM_QUERY,
+	PEXELS_THEMES,
+} from "../../../../lib/wallpaper-themes";
 import {
 	refreshWallpaper,
 	useWallpaperStatus,
@@ -17,6 +20,7 @@ import { useSetupStore } from "../../../../stores/setup-store";
 import type { WallpaperFrequency } from "../../../../types";
 import { SectionCard } from "../shared/section-card";
 import { SelectRow } from "../shared/select-row";
+import { SettingRow } from "../shared/setting-row";
 import { SettingsAction } from "../shared/settings-action";
 import {
 	SETTINGS_FOCUS_RING,
@@ -68,23 +72,34 @@ export function PexelsDetailView(): ReactNode {
 	const updateBackground = useSetupStore((state) => state.updateBackground);
 	const status = useWallpaperStatus((state) => state.status);
 	const message = useWallpaperStatus((state) => state.message);
-	const [draft, setDraft] = useState(background.pexelsQuery);
+	const [draft, setDraft] = useState(
+		background.pexelsQuery === PEXELS_RANDOM_QUERY
+			? ""
+			: background.pexelsQuery,
+	);
 	const loading = status === "loading";
 	const currentPhoto =
 		background.type === "pexels" ? background.pexelsPhoto : null;
 
-	useEffect(() => setDraft(background.pexelsQuery), [background.pexelsQuery]);
+	useEffect(
+		() =>
+			setDraft(
+				background.pexelsQuery === PEXELS_RANDOM_QUERY
+					? ""
+					: background.pexelsQuery,
+			),
+		[background.pexelsQuery],
+	);
 
 	function selectQuery(query: string) {
 		if (!query.trim()) return;
 		const normalized = normalizePexelsQuery(query);
-		setDraft(normalized);
+		setDraft(normalized === PEXELS_RANDOM_QUERY ? "" : normalized);
 		if (background.type !== "pexels") {
 			updateBackground({ type: "pexels", pexelsQuery: normalized });
 			refreshWallpaper(true).catch(() => undefined);
 			return;
 		}
-
 		updateBackground({ pexelsQuery: normalized });
 		refreshWallpaper(true).catch(() => undefined);
 	}
@@ -100,7 +115,15 @@ export function PexelsDetailView(): ReactNode {
 						Themes
 					</legend>
 					<div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7.5rem),1fr))] gap-2.5">
-						{PEXELS_THEMES.map((theme) => {
+						{[
+							...PEXELS_THEMES,
+							{
+								id: "random",
+								label: "Random",
+								query: PEXELS_RANDOM_QUERY,
+								preview: PEXELS_THEMES[0].preview,
+							},
+						].map((theme) => {
 							const selected =
 								background.type === "pexels" &&
 								normalizePexelsQuery(background.pexelsQuery) === theme.query;
@@ -116,7 +139,25 @@ export function PexelsDetailView(): ReactNode {
 									)}
 									data-pexels-theme={theme.id}
 								>
-									<ThemeThumb src={theme.preview} alt="" />
+									{theme.id === "random" ? (
+										<span
+											aria-hidden="true"
+											className="absolute inset-0 grid grid-cols-3 grid-rows-2"
+										>
+											{PEXELS_THEMES.map((category) => (
+												<img
+													key={category.id}
+													src={category.preview}
+													alt=""
+													loading="lazy"
+													decoding="async"
+													className="size-full object-cover"
+												/>
+											))}
+										</span>
+									) : (
+										<ThemeThumb src={theme.preview} alt="" />
+									)}
 									<span
 										aria-hidden="true"
 										className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
@@ -179,27 +220,33 @@ export function PexelsDetailView(): ReactNode {
 						updateBackground({ pexelsFrequency: value });
 					}}
 				/>
-				<div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-neutral-900/10 border-t pt-3 dark:border-white/10">
-					<div className="min-w-0 flex-1 text-xs leading-relaxed">
-						<p className="font-medium">
-							{currentPhoto ? "Current photo" : "Choose a photo"}
-						</p>
-						<a
-							href={
-								pexelsCreditUrl(currentPhoto?.url) ?? "https://www.pexels.com/"
-							}
-							target="_blank"
-							rel="noopener noreferrer"
-							className={cn(
-								"break-words underline decoration-current/40 underline-offset-4 hover:decoration-current",
-								SETTINGS_FOCUS_RING,
-							)}
-						>
-							{currentPhoto?.photographer ?? "Explore Pexels"}
-						</a>
-					</div>
+				<SettingRow
+					label={
+						<span className="flex min-w-0 flex-col gap-0.5 text-left">
+							<span>{currentPhoto ? "Current photo" : "Choose a photo"}</span>
+							<a
+								href={
+									pexelsCreditUrl(currentPhoto?.url) ??
+									"https://www.pexels.com/"
+								}
+								target="_blank"
+								rel="noopener noreferrer"
+								className={cn(
+									"max-w-full truncate font-normal text-neutral-600 text-xs leading-relaxed underline decoration-current/40 underline-offset-4 hover:decoration-current dark:text-neutral-300",
+									SETTINGS_FOCUS_RING,
+								)}
+							>
+								{currentPhoto?.photographer ?? "Explore Pexels"}
+							</a>
+						</span>
+					}
+					icon="image"
+				>
 					<SettingsAction
-						icon="refresh"
+						icon={loading ? "loader" : "refresh"}
+						className={
+							loading ? "[&_[data-icon=inline-start]]:animate-spin" : undefined
+						}
 						onClick={() => {
 							if (background.type !== "pexels") {
 								updateBackground({ type: "pexels" });
@@ -210,17 +257,14 @@ export function PexelsDetailView(): ReactNode {
 					>
 						{loading ? "Loading photo…" : "Next photo"}
 					</SettingsAction>
-				</div>
+				</SettingRow>
 				<p
 					role="status"
 					aria-live="polite"
 					aria-atomic="true"
-					className={cn(
-						"text-xs leading-relaxed",
-						(loading || message) && "pt-3",
-					)}
+					className={cn("text-xs leading-relaxed", message && "pt-3")}
 				>
-					{loading ? "Finding your next photograph…" : (message ?? "")}
+					{message ?? ""}
 				</p>
 			</SectionCard>
 			<p className="px-2 text-neutral-600 text-xs leading-relaxed dark:text-neutral-300">

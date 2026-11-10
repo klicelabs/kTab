@@ -32,18 +32,20 @@ export const PEXELS_THEMES = [
 	{
 		id: "cities",
 		label: "Cities",
-		query: "cinematic city skyline architecture 4k",
+		query: "cinematic city 4k",
 		preview:
 			"https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 	{
 		id: "minimal",
 		label: "Minimal",
-		query: "minimalist landscape clean composition 4k",
+		query: "minimalist landscape 4k",
 		preview:
 			"https://images.pexels.com/photos/1323550/pexels-photo-1323550.jpeg?auto=compress&cs=tinysrgb&w=320&h=240&fit=crop",
 	},
 ] as const;
+
+export const PEXELS_RANDOM_QUERY = "random";
 
 export type PexelsTheme = (typeof PEXELS_THEMES)[number];
 
