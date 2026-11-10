@@ -71,6 +71,10 @@ export default defineConfig({
 			"pi-session-*.html",
 			// Local legacy artifact, not part of the extension's source tree.
 			"apps/_old-background.ts",
+			// Local benchmark outputs and investigation captures can include old
+			// release archives; they are not source code for the AMO submission.
+			"apps/extension/scripts/results/**",
+			"pexels-*.png",
 		],
 	},
 	vite: () => ({
