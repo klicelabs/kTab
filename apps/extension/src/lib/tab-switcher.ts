@@ -36,8 +36,11 @@ export interface SwitcherTab {
 
 /**
  * Material inputs so the overlay renders the SAME Liquid Glass family as the
- * newtab toolbar. The background reads these from the persisted setup; the
- * client resolves `colorScheme: "auto"` against the live system preference.
+ * newtab toolbar. The background reads these from the persisted setup. The
+ * overlay always renders the DARK material system in every theme — the light
+ * frost read washed-out on wallpapers — while the selection container always
+ * wears its milky light variant. `colorScheme` stays part of the payload
+ * contract for the day a per-theme switch is wanted again.
  */ export interface SwitcherAppearance {
 	colorScheme: "auto" | "light" | "dark";
 	liquid: boolean;
@@ -154,16 +157,6 @@ const DEFAULT_APPEARANCE: SwitcherAppearance = {
 	accent: "blue",
 };
 
-function resolveDark(colorScheme: SwitcherAppearance["colorScheme"]): boolean {
-	if (colorScheme === "dark") return true;
-	if (colorScheme === "light") return false;
-	return (
-		typeof window !== "undefined" &&
-		typeof window.matchMedia === "function" &&
-		window.matchMedia("(prefers-color-scheme: dark)").matches
-	);
-}
-
 /**
  * Build the overlay stylesheet from the shared glass recipe.
  *
@@ -201,84 +194,77 @@ function bandFrostMask(span: number): string {
 }
 
 function buildStyles(appearance: SwitcherAppearance): string {
-	const dark = resolveDark(appearance.colorScheme);
 	const liquid = appearance.liquid;
 	const t = Math.min(100, Math.max(0, appearance.intensity)) / 100;
 	const bandBlur = 20 + 12 * t;
-	// The band wears the DARK frost treatment in both themes: the near-neutral
-	// light recipe read washed-out on wallpapers, while the dark one keeps the
-	// chromatic bleed that makes the haze feel alive. Only the veil tint stays
-	// theme-aware (white frost under light ink).
+	// The whole overlay renders the DARK material system in every theme: the
+	// near-neutral light frost read washed-out on wallpapers, while the dark
+	// one keeps the chromatic bleed that makes the haze feel alive. Ink, veils
+	// and fallbacks below are the dark palette; only the selection container
+	// keeps its own milky light material.
 	const bandSaturation = 1.08 + 0.22 * t;
 	const bandBrightness = 0.97 - 0.06 * t;
 	const frameBlur = 1.5 + 3.5 * t;
-	// The selection container wears the LIGHT toolbar recipe in both themes:
-	// the smoked dark veil read too transparent around a thumbnail, while the
-	// milky veil gives the selection a solid, readable body.
+	// The selection container wears the LIGHT toolbar recipe: the smoked dark
+	// veil read too transparent around a thumbnail, while the milky veil gives
+	// the selection a solid, readable body.
 	const frameSaturation = 1.01 + 0.08 * t;
 	const frameBrightness = 1.02 + 0.01 * t;
 
-	const ink = dark ? "#f4f6fb" : "#1b1d23";
-	const inkMuted = dark ? "rgba(226,231,242,0.72)" : "rgba(40,44,55,0.66)";
-	const hairlineStrong = dark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.16)";
+	const ink = "#f4f6fb";
+	const inkMuted = "rgba(226,231,242,0.72)";
+	const hairlineStrong = "rgba(255,255,255,0.20)";
 	// The highlight wears the toolbar tier's hairline in its light form
-	// (black/10) in both themes — part of the milky container material.
+	// (black/10) — part of the milky container material.
 	const highlightHairline = "rgba(0,0,0,0.10)";
 
-	const bandVeil = dark
-		? `rgba(10,12,18,${(15 + t * 9) / 100})`
-		: `rgba(255,255,255,${(28 + t * 12) / 100})`;
-	// Bevel belongs to the container's light material in both themes.
+	const bandVeil = `rgba(10,12,18,${(15 + t * 9) / 100})`;
+	// Bevel belongs to the container's light material.
 	const bevel =
 		"inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -10px 22px -10px rgba(60,90,140,0.08), inset 0.5px 0 0 rgba(0,0,0,0.045), inset -0.5px 0 0 rgba(0,0,0,0.035)";
-	const previewFallback = dark
-		? "linear-gradient(150deg,#333c50,#232a38)"
-		: "linear-gradient(150deg,#e9edf5,#d7dce8)";
+	const previewFallback = "linear-gradient(150deg,#333c50,#232a38)";
 
 	const bandFilter = liquid
 		? `backdrop-filter:blur(${bandBlur}px) saturate(${bandSaturation}) brightness(${bandBrightness});-webkit-backdrop-filter:blur(${bandBlur}px) saturate(${bandSaturation}) brightness(${bandBrightness});`
 		: "";
 	const bandBackground = liquid
 		? bandVeil
-		: dark
-			? "rgba(24,26,32,0.94)"
-			: "rgba(248,249,252,0.95)";
+		: "rgba(24,26,32,0.94)";
 	const frameFilter = liquid
 		? `backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});-webkit-backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});`
 		: "";
-	// ~380px dissolve at typical band heights; the ramp lives inside the band's
-	// negative inset so full frost strength arrives before the cards begin.
-	const bandMask = bandFrostMask(30);
-	const bandMaskCompact = bandFrostMask(28);
+	// ~340px dissolve at typical band heights; the ramp lives inside the band's
+	// negative inset so full frost strength arrives at or before the cards, and
+	// the shorter inset keeps the haze from reaching too far above and below.
+	const bandMask = bandFrostMask(26);
+	const bandMaskCompact = bandFrostMask(24);
 	const selectedBackground = liquid
-		? // Milky light toolbar veil in both themes — see frameSaturation.
+		? // Milky light toolbar veil — see frameSaturation.
 			`rgba(255,255,255,${(34 + t * 10) / 100})`
-		: dark
-			? "rgba(40,44,54,0.96)"
-			: "rgba(255,255,255,0.98)";
+		: "rgba(40,44,54,0.96)";
 
 	return `
-:host{all:initial;color-scheme:${dark ? "dark" : "light"};font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:host{all:initial;color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
 .klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px;overflow:hidden}
 .stage{position:relative;display:flex;width:100%;max-width:min(1200px,100%);max-height:100%}
-.band{position:absolute;inset:-420px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:${bandMask};mask-image:${bandMask}}
-.grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:${dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.24)"} transparent}
+.band{position:absolute;inset:-300px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:${bandMask};mask-image:${bandMask}}
+.grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.28) transparent}
 .grid::-webkit-scrollbar{width:8px}
-.grid::-webkit-scrollbar-thumb{border-radius:99px;background:${dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.22)"}}
-.grid::-webkit-scrollbar-thumb:hover{background:${dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.34)"}}
+.grid::-webkit-scrollbar-thumb{border-radius:99px;background:rgba(255,255,255,0.24)}
+.grid::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.4)}
 .card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
 .frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:26px;corner-shape:squircle;background:transparent}
 .highlight{position:absolute;left:0;top:0;border:0.5px solid ${highlightHairline};border-radius:26px;corner-shape:squircle;background:${selectedBackground};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6);pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1)}
 .highlight.on{opacity:1}
-.preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:18px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}}
+.preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:18px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06)}
 .preview img{width:100%;height:100%;object-fit:cover}
 .preview .fallback{font-size:30px;font-weight:650;color:${inkMuted}}
-.close{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;corner-shape:squircle;background:transparent;color:${dark ? "rgba(255,255,255,0.88)" : "rgba(15,18,26,0.62)"};opacity:0;transition:opacity .15s ease,background-color .15s ease,color .15s ease;cursor:pointer}
+.close{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;corner-shape:squircle;background:transparent;color:rgba(255,255,255,0.88);opacity:0;transition:opacity .15s ease,background-color .15s ease,color .15s ease;cursor:pointer}
 .card:hover .close,.close:focus-visible{opacity:1}
 .close:hover{background:rgba(235,60,60,0.16);color:#ff5f57}
 .close:focus-visible{outline:1px solid ${hairlineStrong};outline-offset:2px}
-.close svg{display:block;filter:drop-shadow(0 1px 1.5px ${dark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)"})}
+.close svg{display:block;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.5))}
 .caption{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 8px 0;text-align:left}
 .favicon{width:14px;height:14px;flex:none;object-fit:contain;border-radius:4px;corner-shape:squircle}
 .tabtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:550;letter-spacing:-.01em;color:${ink};opacity:.9}
@@ -287,7 +273,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card:focus-visible{outline:none}
 @supports not (corner-shape:squircle){.frame{border-radius:15px}.preview{border-radius:11px}.close{border-radius:8px}.highlight{border-radius:15px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-190px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:21px}.preview{border-radius:15px}.highlight{border-radius:21px}.caption{padding:4px 6px 0}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-150px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:21px}.preview{border-radius:15px}.highlight{border-radius:21px}.caption{padding:4px 6px 0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
