@@ -149,6 +149,18 @@ export function IconAppTile({
 				className,
 			)}
 			{...(mini ? { "data-mini": "true" } : {})}
+			data-icon-source={resolved.source ?? undefined}
+			title={
+				resolved.credit
+					? [
+							`Icon by ${resolved.credit}`,
+							resolved.uploadedBy ? `uploaded by ${resolved.uploadedBy}` : null,
+							resolved.creditUrl || "macOSicons.com",
+						]
+							.filter(Boolean)
+							.join(" · ")
+					: undefined
+			}
 		>
 			{media}
 		</div>

@@ -33,10 +33,13 @@ export const ICON_CACHE_MAX_ENTRIES = 600;
 export type IconTreatment = "glyph" | "full";
 
 export type IconSource =
+	| "macosicons"
 	| "svgl"
 	| "shadow-touch"
 	| "manifest"
 	| "rel-icon"
+	| "simple-icons"
+	| "google-favicon"
 	| "provider"
 	| "probe";
 
@@ -55,6 +58,10 @@ export interface IconCacheEntry {
 	 */
 	width: number;
 	height: number;
+	/** Creator attribution retained for macOSicons assets. */
+	credit?: string;
+	creditUrl?: string;
+	uploadedBy?: string;
 	/** To be re-probed past this stamp. */
 	fetchedAt: number;
 }
@@ -143,15 +150,21 @@ function sanitizeEntry(raw: unknown): IconCacheEntry | null {
 		treatment: value.kind === "image" ? value.treatment : "glyph",
 		width: typeof value.width === "number" ? value.width : 0,
 		height: typeof value.height === "number" ? value.height : 0,
+		credit: typeof value.credit === "string" ? value.credit : undefined,
+		creditUrl: typeof value.creditUrl === "string" ? value.creditUrl : undefined,
+		uploadedBy: typeof value.uploadedBy === "string" ? value.uploadedBy : undefined,
 		fetchedAt: value.fetchedAt,
 	};
 }
 
 const KNOWN_SOURCES: readonly IconSource[] = [
+	"macosicons",
 	"svgl",
 	"shadow-touch",
 	"manifest",
 	"rel-icon",
+	"simple-icons",
+	"google-favicon",
 	"provider",
 	"probe",
 ];

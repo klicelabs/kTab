@@ -9,9 +9,10 @@
 // "perch-db" is the legacy database name; kept so existing installs retain
 // their thumbnails and backgrounds after the rename to kTab.
 export const DB_NAME = "perch-db";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 export const STORE_THUMBS = "thumbnails";
 export const STORE_BG = "backgrounds";
+export const STORE_ICONS = "icons";
 
 export type ImageStoreName = typeof STORE_THUMBS | typeof STORE_BG;
 export interface ImageWrite {
@@ -36,6 +37,8 @@ export function openIDB(): Promise<IDBDatabase> {
 				db.createObjectStore(STORE_THUMBS);
 			if (!db.objectStoreNames.contains(STORE_BG))
 				db.createObjectStore(STORE_BG);
+			if (!db.objectStoreNames.contains(STORE_ICONS))
+				db.createObjectStore(STORE_ICONS);
 		};
 		req.onsuccess = () => {
 			const db = req.result;
@@ -128,6 +131,63 @@ export async function idbClearStores(stores: ImageStoreName[]): Promise<void> {
 	const db = await openIDB();
 	const tx = db.transaction(stores, "readwrite");
 	for (const store of stores) tx.objectStore(store).clear();
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	return promise;
+}
+
+export interface CachedIconBlob {
+	/** Asset URL ties the blob to the resolver record that selected it. */
+	src: string;
+	fetchedAt: number;
+	blob: Blob;
+}
+
+/** Persist one resolved icon as an image Blob, separate from settings JSON. */
+export async function putIconBlob(
+	key: string,
+	value: CachedIconBlob,
+	shouldWrite: () => boolean = () => true,
+): Promise<void> {
+	const db = await openIDB();
+	if (!shouldWrite()) return;
+	const tx = db.transaction(STORE_ICONS, "readwrite");
+	tx.objectStore(STORE_ICONS).put(value, key);
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	tx.onabort = () => reject(tx.error ?? new Error("Icon cache write aborted."));
+	return promise;
+}
+
+/** Read a cached icon Blob for a domain. */
+export async function getIconBlob(key: string): Promise<CachedIconBlob | null> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_ICONS, "readonly");
+	const req = tx.objectStore(STORE_ICONS).get(key);
+	const { promise, resolve, reject } =
+		Promise.withResolvers<CachedIconBlob | null>();
+	req.onsuccess = () => {
+		const value = req.result as CachedIconBlob | undefined;
+		resolve(
+			value &&
+				typeof value.src === "string" &&
+				typeof value.fetchedAt === "number" &&
+				value.blob instanceof Blob
+				? value
+				: null,
+		);
+	};
+	req.onerror = () => reject(req.error);
+	return promise;
+}
+
+/** Remove every locally cached resolved icon. */
+export async function clearIconBlobs(): Promise<void> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_ICONS, "readwrite");
+	tx.objectStore(STORE_ICONS).clear();
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	tx.oncomplete = () => resolve();
 	tx.onerror = () => reject(tx.error);

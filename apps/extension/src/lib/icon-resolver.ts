@@ -5,19 +5,20 @@
  * persisted in the icon cache store (see stores/icon-cache-store.ts) so later
  * sessions render instantly:
  *
- *   1. Site app icon       — the site's OWN app icon: an apple-touch-icon or
+ *   1. macOSicons (opt-in) — personal API key, native artwork and attribution.
+ *   2. Simple Icons + Google S2 (opt-in) — the requested remote fallback chain.
+ *   3. Site app icon      — the site's OWN app icon: an apple-touch-icon or
  *                            a Web App Manifest "any" icon at app scale
  *                            (≥96px). Opaque app-scale squares paint
  *                            edge-to-edge, which is the home-screen look.
  *                            Manifest "monochrome" entries are alpha masks
  *                            (the spec discards their colour) and are never
  *                            shown; "maskable" entries rank just below.
- *   2. SVGL brand art      — curated vector marks (kind "svg") for brands
+ *   4. SVGL brand art     — curated vector marks (kind "svg") for brands
  *                            that ship no app icon of their own.
- *   3. Site glyph          — vector logo, small raster, /favicon.ico.
- *   4. DuckDuckGo ip3      — the only provider with a verifiable miss (404),
- *                            unlike Google S2 which answers 200 for anything.
- *   5. Negative record     — letter-mark fallback stays deterministic, and a
+ *   5. Site glyph          — vector logo, small raster, /favicon.ico.
+ *   6. DuckDuckGo ip3      — fallback when online sources are disabled.
+ *   7. Negative record     — letter-mark fallback stays deterministic, and a
  *                            dead-end site is never re-probed on every open.
  *
  * Every network step fails independently. A dead network yields NO record
@@ -28,6 +29,11 @@
  * (install-time host permissions cover the cross-origin fetches it needs).
  */
 
+import {
+	getMacOSiconsSettings,
+	type MacOSiconsHit,
+	searchMacOSicons,
+} from "../services/macosicons";
 import { fetchAllSvgs } from "../services/svgl";
 import {
 	type IconSource,
@@ -137,6 +143,9 @@ export type ProbeOutcome =
 			/** Natural pixel size of the asset (0 = unknown / vector). */
 			width: number;
 			height: number;
+			credit?: string;
+			creditUrl?: string;
+			uploadedBy?: string;
 	  }
 	| { kind: "missed" } /* page reachable, nothing usable anywhere */
 	| { kind: "unreachable" }; /* network refused — record NOTHING */
@@ -151,6 +160,162 @@ export type ProviderOutcome =
 	  }
 	| { kind: "missed" } /* real 404 — DDG verified the domain has no icon */
 	| { kind: "unreachable" };
+
+const DOMAIN_BRAND_NAMES: Record<string, string> = {
+	"chat.openai.com": "ChatGPT",
+	"chatgpt.com": "ChatGPT",
+	"discord.com": "Discord",
+	"docs.google.com": "Google Docs",
+	"drive.google.com": "Google Drive",
+	"figma.com": "Figma",
+	"github.com": "GitHub",
+	"linear.app": "Linear",
+	"mail.google.com": "Gmail",
+	"m.youtube.com": "YouTube",
+	"notion.so": "Notion",
+	"reddit.com": "Reddit",
+	"slack.com": "Slack",
+	"open.spotify.com": "Spotify",
+	"twitter.com": "X",
+	"x.com": "X",
+	"youtu.be": "YouTube",
+};
+
+const SIMPLE_ICON_SLUGS: Record<string, string> = {
+	"chat.openai.com": "openai",
+	"chatgpt.com": "openai",
+	"discord.com": "discord",
+	"docs.google.com": "googledocs",
+	"drive.google.com": "googledrive",
+	"figma.com": "figma",
+	"github.com": "github",
+	"linear.app": "linear",
+	"mail.google.com": "gmail",
+	"m.youtube.com": "youtube",
+	"notion.so": "notion",
+	"reddit.com": "reddit",
+	"slack.com": "slack",
+	"open.spotify.com": "spotify",
+	"twitter.com": "x",
+	"x.com": "x",
+	"youtu.be": "youtube",
+};
+
+const MULTIPART_PUBLIC_SUFFIXES = new Set([
+	"co.uk",
+	"com.ar",
+	"com.au",
+	"com.br",
+	"com.cn",
+	"com.mx",
+	"com.sg",
+	"co.jp",
+	"co.nz",
+	"co.za",
+]);
+
+function rootDomainLabel(domainKey: string): string {
+	const labels = domainKey.toLowerCase().replace(/^www\./, "").split(".");
+	if (labels.length < 2) return labels[0] ?? "";
+	const suffix = labels.slice(-2).join(".");
+	const index = labels.length - (MULTIPART_PUBLIC_SUFFIXES.has(suffix) ? 3 : 2);
+	return labels[index] ?? labels[0] ?? "";
+}
+
+/** Brand label used by both macOSicons search and the Simple Icons fallback. */
+export function iconBrandName(domainKey: string): string {
+	const domain = domainKey.toLowerCase().replace(/^www\./, "");
+	return (
+		DOMAIN_BRAND_NAMES[domain] ??
+		rootDomainLabel(domain)
+			.split(/[-_]+/)
+			.filter(Boolean)
+			.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+			.join(" ")
+	);
+}
+
+/** Simple Icons CDN URL for a domain's normalized brand slug. */
+export function simpleIconsUrl(domainKey: string): string | null {
+	const domain = domainKey.toLowerCase().replace(/^www\./, "");
+	const slug = SIMPLE_ICON_SLUGS[domain] ?? rootDomainLabel(domain);
+	if (!/^[a-z0-9-]+$/.test(slug)) return null;
+	return `https://cdn.simpleicons.org/${encodeURIComponent(slug)}`;
+}
+
+/** Google S2's high-resolution favicon endpoint used as the final fallback. */
+export function googleHQFaviconUrl(domainKey: string, size = 128): string | null {
+	const domain = domainKey.toLowerCase().replace(/^www\./, "");
+	if (!domain || /[^a-z0-9.-]/.test(domain)) return null;
+	const url = new URL("https://www.google.com/s2/favicons");
+	url.searchParams.set("domain", domain);
+	url.searchParams.set("sz", String(size));
+	return url.toString();
+}
+
+/** Primary external rung. The API key is read from this user's local settings. */
+export async function probeMacOSicons(
+	domainKey: string,
+	measure: (assetUrl: string) => Promise<DecodedAsset | null> = measureAsset,
+): Promise<(Extract<ProbeOutcome, { kind: "resolved" }> & { hit: MacOSiconsHit }) | null> {
+	const settings = await getMacOSiconsSettings();
+	if (!settings.enabled || !settings.apiKey || !domainKey) return null;
+	const hit = await searchMacOSicons(iconBrandName(domainKey), settings.apiKey);
+	if (!hit) return null;
+	const decoded = await measure(hit.lowResPngUrl);
+	if (!decoded) return null;
+	return {
+		kind: "resolved",
+		source: "macosicons",
+		href: hit.lowResPngUrl,
+		// macOSicons assets already carry their app icon silhouette.
+		treatment: "full",
+		quality: "app",
+		width: decoded.naturalWidth,
+		height: decoded.naturalHeight,
+		hit,
+	};
+}
+
+/** Resolve a Simple Icons CDN mark when the provider setting is enabled. */
+export async function probeSimpleIcons(
+	domainKey: string,
+	measure: (assetUrl: string) => Promise<DecodedAsset | null> = measureAsset,
+): Promise<ProviderOutcome> {
+	const href = simpleIconsUrl(domainKey);
+	if (!href) return { kind: "missed" };
+	const decoded = await measure(href);
+	if (!decoded) return { kind: "missed" };
+	return {
+		kind: "resolved",
+		href,
+		treatment: "glyph",
+		width: decoded.naturalWidth,
+		height: decoded.naturalHeight,
+	};
+}
+
+/** Resolve Google's 128px favicon as the final online provider fallback. */
+export async function probeProviderGoogle(
+	domainKey: string,
+	measure: (assetUrl: string) => Promise<DecodedAsset | null> = measureAsset,
+): Promise<ProviderOutcome> {
+	const href = googleHQFaviconUrl(domainKey);
+	if (!href) return { kind: "missed" };
+	const decoded = await measure(href);
+	if (!decoded) return { kind: "missed" };
+	if (
+		Math.min(decoded.naturalWidth, decoded.naturalHeight) < MIN_PROVIDER_SIZE
+	)
+		return { kind: "missed" };
+	return {
+		kind: "resolved",
+		href,
+		treatment: "glyph",
+		width: decoded.naturalWidth,
+		height: decoded.naturalHeight,
+	};
+}
 
 /* ── pure helpers (unit-tested) ────────────────────────────────────────────── */
 
@@ -849,10 +1014,65 @@ export async function resolveIconForDomain(
 	if (!domainKey || !isAbsoluteHttpUrl(url)) return;
 	const { model } = useIconCacheStore.getState();
 	const fetchedAt = Date.now();
+	const onlineSources = await getMacOSiconsSettings();
 
-	// Rung 1 — the site's own app icon (HTML probe: apple-touch, manifest).
+	// macOSicons has first choice only after the user enables online sources
+	// and supplies their own key. The API's terms prohibit a shared key in an
+	// end-user extension.
+	if (onlineSources.enabled && onlineSources.apiKey) {
+		const macos = await probeMacOSicons(domainKey, measure);
+		if (macos) {
+			model(domainKey, {
+				kind: "image",
+				source: "macosicons",
+				src: macos.href,
+				treatment: macos.treatment,
+				width: macos.width,
+				height: macos.height,
+				credit: macos.hit.credit,
+				creditUrl: macos.hit.creditUrl,
+				uploadedBy: macos.hit.uploadedBy,
+				fetchedAt,
+			});
+			return;
+		}
+	}
+
+	// The opt-in remote fallback chain is ordered explicitly: Simple Icons,
+	// then Google's high-resolution favicon endpoint.
+	if (onlineSources.enabled) {
+		const simple = await probeSimpleIcons(domainKey, measure);
+		if (simple.kind === "resolved") {
+			model(domainKey, {
+				kind: "image",
+				source: "simple-icons",
+				src: simple.href,
+				treatment: simple.treatment,
+				width: simple.width,
+				height: simple.height,
+				fetchedAt,
+			});
+			return;
+		}
+
+		const google = await probeProviderGoogle(domainKey, measure);
+		if (google.kind === "resolved") {
+			model(domainKey, {
+				kind: "image",
+				source: "google-favicon",
+				src: google.href,
+				treatment: google.treatment,
+				width: google.width,
+				height: google.height,
+				fetchedAt,
+			});
+			return;
+		}
+	}
+
+	// Keep the original local and site-owned resolver as the final fallback.
 	const probe = await probeSiteIcons(url, measure);
-	if (probe.kind === "unreachable") return;
+	if (probe.kind === "unreachable" && !onlineSources.enabled) return;
 	if (probe.kind === "resolved" && probe.quality === "app") {
 		model(domainKey, {
 			kind: "image",
@@ -882,7 +1102,7 @@ export async function resolveIconForDomain(
 		return;
 	}
 
-	// Rung 3 — the site's own glyph (vector logo / small raster / ico).
+	// Site-owned glyph (vector logo / small raster / ico).
 	if (probe.kind === "resolved") {
 		model(domainKey, {
 			kind: "image",
@@ -896,7 +1116,7 @@ export async function resolveIconForDomain(
 		return;
 	}
 
-	// Rung 4 — provider with a verifiable miss.
+	// DuckDuckGo remains the final provider with a verifiable miss (404).
 	const provider = await probeProviderDdg(domainKey, measure);
 	if (provider.kind === "resolved") {
 		model(domainKey, {

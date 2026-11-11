@@ -60,12 +60,19 @@ const {
 	extractSiteIconCandidates,
 	interpretTreatment,
 	manifestCandidates,
+	iconBrandName,
+	googleHQFaviconUrl,
 	parsePurpose,
 	parseSizes,
 	resolveIconForDomain,
 	scoreCandidate,
+	simpleIconsUrl,
 } = await import("../src/lib/icon-resolver");
 const { useIconCacheStore } = await import("../src/stores/icon-cache-store");
+const {
+	saveMacOSiconsSettings,
+	searchMacOSicons,
+} = await import("../src/services/macosicons");
 
 const OPAQUE_FULL: DecodedAsset = {
 	naturalWidth: 180,
@@ -485,5 +492,149 @@ describe("icon resolution ladder (end-to-end records)", () => {
 		await resolveIconForDomain("chrome", "chrome://settings/", FULL_MEASURE);
 		await resolveIconForDomain("", "https://example.com/", FULL_MEASURE);
 		expect(Object.keys(records()) ?? []).toHaveLength(0);
+	});
+
+	test("online provider URLs normalize common brand names", () => {
+		expect(iconBrandName("github.com")).toBe("GitHub");
+		expect(iconBrandName("chatgpt.com")).toBe("ChatGPT");
+		expect(simpleIconsUrl("github.com")).toBe(
+			"https://cdn.simpleicons.org/github",
+		);
+		expect(simpleIconsUrl("linear.app")).toBe(
+			"https://cdn.simpleicons.org/linear",
+		);
+		expect(googleHQFaviconUrl("github.com")).toContain("sz=128");
+		expect(googleHQFaviconUrl("bad domain")).toBeNull();
+	});
+
+	test("macOSicons searches use the personal key and reject unsafe asset URLs", async () => {
+		const requests: Array<{ url: string; init?: RequestInit }> = [];
+		const hit = await searchMacOSicons(
+			"GitHub",
+			"personal-key",
+			(async (input, init) => {
+				requests.push({ url: String(input), init });
+				return new Response(
+					JSON.stringify({
+						hits: [
+							{ lowResPngUrl: "http://insecure.example/icon.png" },
+							{
+								appName: "GitHub",
+								lowResPngUrl: "https://cdn.example/icon.png",
+								credit: "Example Artist",
+								creditUrl: "javascript:alert(1)",
+								uploadedBy: "uploader",
+							},
+						],
+					}),
+					{ status: 200, headers: { "content-type": "application/json" } },
+				);
+			}) as typeof fetch,
+		);
+
+		expect(requests).toHaveLength(1);
+		expect(requests[0]?.url).toBe("https://api.macosicons.com/api/v1/search");
+		expect(requests[0]?.init?.method).toBe("POST");
+		expect(new Headers(requests[0]?.init?.headers).get("x-api-key")).toBe(
+			"personal-key",
+		);
+		expect(requests[0]?.init?.body).toBe(JSON.stringify({ query: "GitHub" }));
+		expect(hit).toMatchObject({
+			lowResPngUrl: "https://cdn.example/icon.png",
+			credit: "Example Artist",
+			creditUrl: "",
+			uploadedBy: "uploader",
+		});
+	});
+
+	test("macOSicons is skipped without opt-in and Simple Icons only runs after opt-in", async () => {
+		const measured: string[] = [];
+		await saveMacOSiconsSettings({ enabled: false, apiKey: "" });
+		globalThis.fetch = (async (input: unknown) => {
+			const url = String(input);
+			if (url === "https://github.com/")
+				return new Response("<html><head></head><body></body></html>");
+			if (url === "https://api.svgl.app") return new Response("[]");
+			if (url.includes("duckduckgo.com")) return new Response("", { status: 404 });
+			return new Response("", { status: 404 });
+		}) as typeof fetch;
+		await resolveIconForDomain("github.com", "https://github.com/", async (src) => {
+			measured.push(src);
+			return src.includes("simpleicons")
+				? { naturalWidth: 256, naturalHeight: 256, opaqueEdgeRatio: 0.1 }
+				: null;
+		});
+		expect(measured).not.toContain("https://cdn.simpleicons.org/github");
+		expect(records()["github.com"]).toMatchObject({
+			kind: "none",
+			source: "provider",
+		});
+
+		measured.length = 0;
+		await saveMacOSiconsSettings({ enabled: true, apiKey: "" });
+		await resolveIconForDomain("github.com", "https://github.com/", async (src) => {
+			measured.push(src);
+			return src.includes("simpleicons")
+				? { naturalWidth: 256, naturalHeight: 256, opaqueEdgeRatio: 0.1 }
+				: null;
+		});
+		expect(measured).toContain("https://cdn.simpleicons.org/github");
+		expect(records()["github.com"]).toMatchObject({
+			kind: "image",
+			source: "simple-icons",
+			src: "https://cdn.simpleicons.org/github",
+		});
+	});
+
+	test("macOSicons is the first icon rung when a user key is configured", async () => {
+		await saveMacOSiconsSettings({ enabled: true, apiKey: "personal-key" });
+		const calls: string[] = [];
+		globalThis.fetch = (async (input: unknown) => {
+			calls.push(String(input));
+			return new Response(
+				JSON.stringify({
+					hits: [
+						{
+							appName: "GitHub",
+							lowResPngUrl: "https://cdn.example/github.png",
+							credit: "Creator",
+							creditUrl: "https://creator.example/",
+							uploadedBy: "Uploader",
+						},
+					],
+				}),
+				{ status: 200, headers: { "content-type": "application/json" } },
+			);
+		}) as typeof fetch;
+		await resolveIconForDomain("github.com", "https://github.com/", async (src) =>
+			src === "https://cdn.example/github.png"
+				? { naturalWidth: 512, naturalHeight: 512, opaqueEdgeRatio: 1 }
+				: null,
+		);
+		expect(calls).toEqual(["https://api.macosicons.com/api/v1/search"]);
+		expect(records()["github.com"]).toMatchObject({
+			kind: "image",
+			source: "macosicons",
+			credit: "Creator",
+			creditUrl: "https://creator.example/",
+			uploadedBy: "Uploader",
+		});
+	});
+
+	test("Google S2 is used after Simple Icons misses", async () => {
+		await saveMacOSiconsSettings({ enabled: true, apiKey: "" });
+		const measured: string[] = [];
+		await resolveIconForDomain("unknown.example", "https://unknown.example/", async (src) => {
+			measured.push(src);
+			return src.includes("google.com/s2/favicons")
+				? { naturalWidth: 128, naturalHeight: 128, opaqueEdgeRatio: 0.6 }
+				: null;
+		});
+		expect(measured[0]).toBe("https://cdn.simpleicons.org/unknown");
+		expect(measured[1]).toContain("https://www.google.com/s2/favicons?domain=unknown.example&sz=128");
+		expect(records()["unknown.example"]).toMatchObject({
+			kind: "image",
+			source: "google-favicon",
+		});
 	});
 });

@@ -10,6 +10,7 @@ import {
 	type IconTreatment,
 	useIconCacheStore,
 } from "../stores/icon-cache-store";
+import { useIconBlobUrl } from "./use-icon-blob-url";
 
 export type ResolvedIconStatus = "svg" | "image" | "letter" | "baseline";
 
@@ -24,6 +25,10 @@ export interface ResolvedIconState {
 	/** Natural pixel size of the source asset (0 = unknown / vector). */
 	width: number;
 	height: number;
+	/** macOSicons attribution retained with the cached result. */
+	credit?: string;
+	creditUrl?: string;
+	uploadedBy?: string;
 }
 
 export interface ResolvedIconOptions {
@@ -68,6 +73,10 @@ export function useResolvedIcon(
 			(record.kind === "none" ? ICON_CACHE_NEGATIVE_TTL_MS : ICON_CACHE_TTL_MS)
 		: false;
 	const underage = !override && !fresh;
+	const blobUrl = useIconBlobUrl(
+		domainKey,
+		!override && record?.kind === "image" ? record.src : null,
+	);
 
 	useEffect(() => {
 		if (!underage || !domainKey || !isAbsoluteHttpUrl(url)) return;
@@ -116,12 +125,15 @@ export function useResolvedIcon(
 		if (record.kind === "image") {
 			return {
 				status: "image",
-				imageSrc: record.src,
+				imageSrc: blobUrl ?? record.src,
 				svgXml: null,
 				treatment: record.treatment,
 				source: record.source,
 				width: record.width ?? 0,
 				height: record.height ?? 0,
+				credit: record.credit,
+				creditUrl: record.creditUrl,
+				uploadedBy: record.uploadedBy,
 			};
 		}
 		// Negative record: a deterministic letter-mark instead of a generic

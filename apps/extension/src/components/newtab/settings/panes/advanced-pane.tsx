@@ -10,7 +10,10 @@ import { Icon, type IconName } from "@ktab/ui/icons/icon";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SETTINGS_SCOPE_CLASS } from "../../../../lib/context-scope";
+import { clearIconBlobCache } from "../../../../lib/icon-blob-cache";
 import { cn } from "../../../../lib/utils";
+import { clearMacOSiconsSettings } from "../../../../services/macosicons";
+import { useIconCacheStore } from "../../../../stores/icon-cache-store";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { Card } from "../../../../types";
 import { useAppearance } from "../../appearance-provider";
@@ -18,6 +21,7 @@ import { SectionCard } from "../shared/section-card";
 import { SettingRow } from "../shared/setting-row";
 import { SettingsAction } from "../shared/settings-action";
 import { SETTINGS_PAGE, SETTINGS_RADIUS } from "../shared/settings-tokens";
+import { IconProviderSettings } from "./icon-provider-settings";
 
 interface AdvancedPaneProps {
 	onCloseParent?: () => void;
@@ -60,6 +64,9 @@ export function AdvancedPane({ onCloseParent }: AdvancedPaneProps) {
 		setIsResetting(true);
 		try {
 			await resetAll();
+			useIconCacheStore.setState({ records: {} });
+			await clearIconBlobCache();
+			await clearMacOSiconsSettings();
 			setConfirmResetOpen(false);
 			onCloseParent?.();
 		} finally {
@@ -90,6 +97,8 @@ export function AdvancedPane({ onCloseParent }: AdvancedPaneProps) {
 					))}
 				</div>
 			</SectionCard>
+
+			<IconProviderSettings />
 
 			{/* Developer seed (development builds only — tree-shaken from prod) */}
 			{import.meta.env.DEV ? (
@@ -174,7 +183,8 @@ export function AdvancedPane({ onCloseParent }: AdvancedPaneProps) {
 							This deletes {cards.length} bookmark
 							{cards.length === 1 ? "" : "s"} across {folders.length} folder
 							{folders.length === 1 ? "" : "s"}, your custom wallpaper, and
-							every cached preview. This can&rsquo;t be undone.
+							every cached preview and site icon, plus your saved macOSicons key.
+							This can&rsquo;t be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className="pt-2">
