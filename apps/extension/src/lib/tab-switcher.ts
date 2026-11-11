@@ -1,3 +1,5 @@
+import { SPRING_LAYOUT } from "@klice-start/ui/lib/ease";
+import { animate } from "motion";
 import type { AccentColor } from "../types";
 import { ext } from "./extension-api";
 import {
@@ -28,8 +30,7 @@ export interface SwitcherTab {
  * Material inputs so the overlay renders the SAME Liquid Glass family as the
  * newtab toolbar. The background reads these from the persisted setup; the
  * client resolves `colorScheme: "auto"` against the live system preference.
- */
-export interface SwitcherAppearance {
+ */ export interface SwitcherAppearance {
 	colorScheme: "auto" | "light" | "dark";
 	liquid: boolean;
 	intensity: number;
@@ -158,9 +159,10 @@ function resolveDark(colorScheme: SwitcherAppearance["colorScheme"]): boolean {
  *
  * The band is a broad, softly masked frost — deliberately softer and blurrier
  * than the in-app surface tiers so the card row sits in a premium haze rather
- * than a panel. Each card reuses the toolbar-tier glass (clear blur + veil +
- * hairline + inset bevel) as a frame around ONLY the thumbnail; the title sits
- * outside the frame, left-aligned. No accent ring: selection reads as glass.
+ * than a panel. Each card keeps a transparent frame around ONLY the thumbnail
+ * (title outside, left-aligned); selection is a single toolbar-tier glass
+ * container (`.highlight`) that glides between frames like a segmented
+ * control, driven by motion's vanilla `animate` with SPRING_LAYOUT.
  *
  * Every shape is a squircle, calibrated like `KliceShape`: the larger radius
  * renders in engines with `corner-shape`, and the `@supports` fallback swaps
@@ -178,14 +180,11 @@ function buildStyles(appearance: SwitcherAppearance): string {
 
 	const ink = dark ? "#f4f6fb" : "#1b1d23";
 	const inkMuted = dark ? "rgba(226,231,242,0.72)" : "rgba(40,44,55,0.66)";
-	const hairline = dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
 	const hairlineStrong = dark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.16)";
 
 	const toolbarVeil = dark
 		? `rgba(0,0,0,${(10 + t * 8) / 100})`
 		: `rgba(255,255,255,${(34 + t * 10) / 100})`;
-	const hoverVeil = dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.26)";
-	const followGlow = dark ? "rgba(255,255,255,0.55)" : "rgba(15,23,42,0.30)";
 	const bandVeil = dark
 		? `rgba(10,12,18,${(15 + t * 9) / 100})`
 		: `rgba(255,255,255,${(28 + t * 12) / 100})`;
@@ -224,11 +223,9 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .grid::-webkit-scrollbar-thumb{border-radius:99px;background:${dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.22)"}}
 .grid::-webkit-scrollbar-thumb:hover{background:${dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.34)"}}
 .card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
-.frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:22px;corner-shape:squircle;background:transparent;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease}
-.frame::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:radial-gradient(120px circle at var(--mx,50%) var(--my,50%),${followGlow},transparent 65%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1);pointer-events:none}
-.card:hover .frame{background:${hoverVeil};border-color:${hairline}}
-.card:hover .frame::before{opacity:1}
-.card[aria-selected=true] .frame{background:${selectedBackground};border-color:${hairlineStrong};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6)}
+.frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:22px;corner-shape:squircle;background:transparent}
+.highlight{position:absolute;left:0;top:0;border:0.5px solid ${hairlineStrong};border-radius:22px;corner-shape:squircle;background:${selectedBackground};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6);pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1)}
+.highlight.on{opacity:1}
 .preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:14px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}}
 .preview img{width:100%;height:100%;object-fit:cover}
 .preview .fallback{font-size:30px;font-weight:650;color:${inkMuted}}
@@ -243,9 +240,9 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card[aria-selected=true] .tabtitle{opacity:1}
 .empty{padding:40px 28px;text-align:center;font-size:13px;color:${inkMuted}}
 .card:focus-visible{outline:none}
-@supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}}
+@supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}.highlight{border-radius:13px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-110px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-110px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}.highlight{border-radius:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
@@ -299,6 +296,10 @@ export function mountTabSwitcher(
 	grid.setAttribute("role", "listbox");
 	grid.setAttribute("aria-label", "Open tabs");
 	grid.setAttribute("aria-orientation", "horizontal");
+	const highlight = document.createElement("div");
+	highlight.className = "highlight";
+	highlight.setAttribute("aria-hidden", "true");
+	grid.append(highlight);
 
 	let selected = Math.max(
 		0,
@@ -398,12 +399,9 @@ export function mountTabSwitcher(
 			const live = payload.tabs.indexOf(tab);
 			if (live !== -1) activate(live);
 		});
-		card.addEventListener("mousemove", (event) => {
+		card.addEventListener("mousemove", () => {
 			const live = payload.tabs.indexOf(tab);
 			if (live !== -1 && live !== selected) updateSelection(live);
-			const rect = frame.getBoundingClientRect();
-			frame.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-			frame.style.setProperty("--my", `${event.clientY - rect.top}px`);
 		});
 		cards.push(card);
 		grid.append(card);
@@ -421,6 +419,38 @@ export function mountTabSwitcher(
 	shadow.append(style, scrim);
 	document.documentElement.append(host);
 
+	// Segmented-control highlight: one glass container glides between the
+	// cards' frames, following hover and keyboard selection.
+	let highlightAnimation: { stop: () => void } | null = null;
+	let highlightShown = false;
+	const reduceMotion = window.matchMedia(
+		"(prefers-reduced-motion: reduce)",
+	).matches;
+
+	const moveHighlight = (glide: boolean) => {
+		const card = cards[selected];
+		const frame = card?.firstElementChild as HTMLElement | undefined;
+		if (!card || !frame) {
+			highlightShown = false;
+			highlight.classList.remove("on");
+			return;
+		}
+		highlight.style.width = `${frame.offsetWidth}px`;
+		highlight.style.height = `${frame.offsetHeight}px`;
+		const x = card.offsetLeft + frame.offsetLeft;
+		const y = card.offsetTop + frame.offsetTop;
+		highlightAnimation?.stop();
+		if (glide && !reduceMotion) {
+			highlightAnimation = animate(highlight, { x, y }, SPRING_LAYOUT);
+		} else {
+			highlight.style.transform = `translate(${x}px, ${y}px)`;
+		}
+		if (!highlightShown) {
+			highlightShown = true;
+			highlight.classList.add("on");
+		}
+	};
+
 	const updateSelection = (next: number) => {
 		if (!cards.length) return;
 		selected = (next + cards.length) % cards.length;
@@ -429,6 +459,7 @@ export function mountTabSwitcher(
 		});
 		cards[selected].focus({ preventScroll: true });
 		cards[selected].scrollIntoView({ block: "nearest", inline: "nearest" });
+		moveHighlight(true);
 	};
 
 	const keydown = (event: KeyboardEvent) => {
@@ -489,6 +520,7 @@ export function mountTabSwitcher(
 	cleanup = () => {
 		if (cleanedUp) return;
 		cleanedUp = true;
+		highlightAnimation?.stop();
 		document.removeEventListener("keydown", keydown, true);
 		document.removeEventListener("keyup", keyup, true);
 		document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -503,6 +535,7 @@ export function mountTabSwitcher(
 	window.addEventListener("blur", onWindowBlur);
 	scrim.addEventListener("click", onScrimClick);
 	cards[selected]?.focus({ preventScroll: true });
+	moveHighlight(false);
 	if (activateOnMount && cards.length) activate(selected);
 	return cleanup;
 }
