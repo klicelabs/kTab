@@ -45,6 +45,11 @@ import {
 	getSearchSuggestions,
 	type SearchSuggestions,
 } from "./search-suggestions";
+import {
+	buildTemplateSearchUrl,
+	resolveSearchTemplate,
+	type SearchTemplate,
+} from "./search-templates";
 import { useSearchPosition } from "./use-search-position";
 import {
 	canRestoreSearchFocus,
@@ -88,6 +93,9 @@ export const UnifiedSearch = forwardRef<
 	const [query, setQuery] = useState("");
 	const { phase, open, present, show, hide } = useSearchPresence();
 	const [scope, setScope] = useState<SearchScope>("all");
+	const [activeTemplate, setActiveTemplate] = useState<SearchTemplate | null>(
+		null,
+	);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [catalogue, setCatalogue] = useState<SiteDestination[]>([]);
 	const [response, setResponse] = useState<{
@@ -169,25 +177,54 @@ export const UnifiedSearch = forwardRef<
 		() => findDestination(query),
 		[findDestination, query],
 	);
+	const templateCandidate = activeTemplate
+		? null
+		: resolveSearchTemplate(query);
 	const suggestions =
 		response?.query === query && response.engineId === engine.id
 			? response.values
 			: EMPTY_SUGGESTIONS;
-	const groups = useMemo(
-		() =>
-			buildSearchGroups({
-				query,
-				scope,
-				local,
-				cards,
-				folders,
-				quickLinks,
-				destination,
-				suggestions: suggestions.queries,
-				navigation: suggestions.navigation,
-			}),
-		[query, scope, local, cards, folders, quickLinks, destination, suggestions],
-	);
+	const groups = useMemo(() => {
+		if (activeTemplate) {
+			const searchQuery = query.trim();
+			return searchQuery
+				? [
+						{
+							id: "site-search",
+							label: activeTemplate.label,
+							items: [
+								{
+									type: "web" as const,
+									id: `site-search:${activeTemplate.id}`,
+									query: searchQuery,
+								},
+							],
+						},
+					]
+				: [];
+		}
+		return buildSearchGroups({
+			query,
+			scope,
+			local,
+			cards,
+			folders,
+			quickLinks,
+			destination,
+			suggestions: suggestions.queries,
+			navigation: suggestions.navigation,
+		});
+	}, [
+		activeTemplate,
+		query,
+		scope,
+		local,
+		cards,
+		folders,
+		quickLinks,
+		destination,
+		suggestions,
+	]);
 	const items = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 	const activeIndex = activeSearchIndex(items, activeId, !!query.trim());
 	const activeItem = items[activeIndex];
@@ -249,6 +286,7 @@ export const UnifiedSearch = forwardRef<
 		wasPresent.current = false;
 		setQuery("");
 		setScope("all");
+		setActiveTemplate(null);
 		setActiveId(null);
 		setResponse(null);
 		if (restoreFocusRef.current) {
@@ -319,7 +357,13 @@ export const UnifiedSearch = forwardRef<
 	useEffect(() => {
 		if (!open || !available) return;
 		setResponse(null);
-		if (query.trim().length < 2 || (scope !== "all" && scope !== "web")) return;
+		if (
+			activeTemplate ||
+			templateCandidate ||
+			query.trim().length < 2 ||
+			(scope !== "all" && scope !== "web")
+		)
+			return;
 		const controller = new AbortController();
 		const timer = window.setTimeout(() => {
 			void getSearchSuggestions(engine, query, controller.signal).then(
@@ -333,7 +377,15 @@ export const UnifiedSearch = forwardRef<
 			controller.abort();
 			window.clearTimeout(timer);
 		};
-	}, [engine, open, query, scope, available]);
+	}, [
+		activeTemplate,
+		templateCandidate,
+		engine,
+		open,
+		query,
+		scope,
+		available,
+	]);
 
 	const navigate = useCallback(
 		(url: string) => {
@@ -347,6 +399,10 @@ export const UnifiedSearch = forwardRef<
 		[openInNewTab, close],
 	);
 	const selectItem = (item: SearchItem) => {
+		if (activeTemplate && (item.type === "web" || item.type === "suggestion")) {
+			navigate(buildTemplateSearchUrl(activeTemplate, item.query));
+			return;
+		}
 		switch (item.type) {
 			case "folder":
 				onNavigateFolder(item.data.id);
@@ -367,6 +423,29 @@ export const UnifiedSearch = forwardRef<
 	};
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		if (event.nativeEvent.isComposing) return;
+		if (
+			event.key === "Tab" &&
+			!event.shiftKey &&
+			!event.altKey &&
+			!event.ctrlKey &&
+			!event.metaKey &&
+			templateCandidate
+		) {
+			event.preventDefault();
+			setActiveTemplate(templateCandidate);
+			setQuery("");
+			setActiveId(null);
+			setResponse(null);
+			return;
+		}
+		if (event.key === "Backspace" && activeTemplate && query === "") {
+			event.preventDefault();
+			setActiveTemplate(null);
+			setScope("all");
+			setActiveId(null);
+			setResponse(null);
+			return;
+		}
 		if (event.key === "Escape") {
 			event.preventDefault();
 			event.stopPropagation();
@@ -460,7 +539,9 @@ export const UnifiedSearch = forwardRef<
 			case "web":
 				return {
 					title: item.query,
-					detail: `Search with ${engine.label}`,
+					detail: activeTemplate
+						? `Search ${activeTemplate.label}`
+						: `Search with ${engine.label}`,
 					icon: "search" as const,
 				};
 			case "suggestion":
@@ -556,6 +637,28 @@ export const UnifiedSearch = forwardRef<
 								}}
 							>
 								{icon}
+								{activeTemplate && (
+									<button
+										type="button"
+										className={cn(
+											"ktab-search-template-badge",
+											ktabShape("pill"),
+										)}
+										aria-label={`Remove ${activeTemplate.label} search`}
+										title={`Remove ${activeTemplate.label} search`}
+										onClick={() => {
+											setActiveTemplate(null);
+											setQuery("");
+											setScope("all");
+											setActiveId(null);
+											setResponse(null);
+											inputRef.current?.focus({ preventScroll: true });
+										}}
+									>
+										<span>{activeTemplate.label}</span>
+										<Icon name="x" size={12} aria-hidden="true" />
+									</button>
+								)}
 								<input
 									ref={inputRef}
 									data-unified-search-input
@@ -567,23 +670,46 @@ export const UnifiedSearch = forwardRef<
 										setActiveId(null);
 									}}
 									onKeyDown={handleKeyDown}
-									placeholder={placeholder}
-									aria-label="Search saved pages or the web"
+									placeholder={
+										activeTemplate
+											? `Search ${activeTemplate.label}`
+											: placeholder
+									}
+									aria-label={
+										activeTemplate
+											? `Search ${activeTemplate.label}`
+											: "Search saved pages or the web"
+									}
 									aria-expanded={open}
 									aria-controls="ktab-search-results"
 									aria-activedescendant={
-										activeItem
-											? `ktab-search-option-${activeIndex}`
-											: undefined
+										activeItem ? `ktab-search-option-${activeIndex}` : undefined
 									}
 									aria-autocomplete="list"
 									aria-describedby={
-										!items.length ? "ktab-search-empty-help" : undefined
+										[
+											templateCandidate && query.trim()
+												? "ktab-search-template-hint"
+												: null,
+											!items.length ? "ktab-search-empty-help" : null,
+										]
+											.filter(Boolean)
+											.join(" ") || undefined
 									}
 									autoComplete="off"
 									autoCapitalize="off"
 									spellCheck={false}
 								/>
+								{templateCandidate && query.trim() && (
+									<span
+										id="ktab-search-template-hint"
+										className="ktab-search-tab-hint"
+										title={`Search ${templateCandidate.label}`}
+									>
+										<kbd>Tab</kbd>
+										<span>{templateCandidate.label}</span>
+									</span>
+								)}
 								{query ? (
 									<button
 										type="button"
@@ -614,23 +740,25 @@ export const UnifiedSearch = forwardRef<
 							shape="searchResults"
 							className="ktab-search-results-panel"
 						>
-							<fieldset className="ktab-search-scopes" aria-label="Search in">
-								{SCOPES.map((filter) => (
-									<button
-										type="button"
-										key={filter.id}
-										aria-pressed={scope === filter.id}
-										className={cn("ktab-search-scope", ktabShape("pill"))}
-										onClick={() => {
-											setScope(filter.id);
-											setActiveId(null);
-											inputRef.current?.focus({ preventScroll: true });
-										}}
-									>
-										{filter.label}
-									</button>
-								))}
-							</fieldset>
+							{!activeTemplate && (
+								<fieldset className="ktab-search-scopes" aria-label="Search in">
+									{SCOPES.map((filter) => (
+										<button
+											type="button"
+											key={filter.id}
+											aria-pressed={scope === filter.id}
+											className={cn("ktab-search-scope", ktabShape("pill"))}
+											onClick={() => {
+												setScope(filter.id);
+												setActiveId(null);
+												inputRef.current?.focus({ preventScroll: true });
+											}}
+										>
+											{filter.label}
+										</button>
+									))}
+								</fieldset>
+							)}
 							<div ref={listRef} className="ktab-search-results-list">
 								<div
 									id="ktab-search-results"
@@ -698,18 +826,22 @@ export const UnifiedSearch = forwardRef<
 									<div className="ktab-search-empty">
 										<Icon name="search" size={22} aria-hidden="true" />
 										<p role="status">
-											{query.trim()
-												? `No ${scope === "folders" ? "folders" : "saved pages"} found`
-												: scope === "web"
-													? `Search with ${engine.label}`
-													: "Your library starts here"}
+											{activeTemplate
+												? `Search on ${activeTemplate.label}`
+												: query.trim()
+													? `No ${scope === "folders" ? "folders" : "saved pages"} found`
+													: scope === "web"
+														? `Search with ${engine.label}`
+														: "Your library starts here"}
 										</p>
 										<span id="ktab-search-empty-help">
-											{query.trim()
-												? "Try a shorter name, a website, or search the web."
-												: scope === "web"
-													? "Type a question, a search, or a website address."
-													: "Save a page or add a folder to find it here."}
+											{activeTemplate
+												? "Type a query and press Enter to search this site."
+												: query.trim()
+													? "Try a shorter name, a website, or search the web."
+													: scope === "web"
+														? "Type a question, a search, or a website address."
+														: "Save a page or add a folder to find it here."}
 										</span>
 										{query.trim() && (
 											<button
@@ -729,9 +861,11 @@ export const UnifiedSearch = forwardRef<
 							</div>
 							<div className="ktab-search-footer">
 								<span role="status" aria-live="polite">
-									{query.trim()
-										? `${items.length} ${items.length === 1 ? "result" : "results"}`
-										: "Find your next destination"}
+									{activeTemplate
+										? `Search ${activeTemplate.label}`
+										: query.trim()
+											? `${items.length} ${items.length === 1 ? "result" : "results"}`
+											: "Find your next destination"}
 								</span>
 								<button
 									type="button"
@@ -741,7 +875,7 @@ export const UnifiedSearch = forwardRef<
 										if (activeItem) selectItem(activeItem);
 									}}
 								>
-									Open <kbd>↵</kbd>
+									{activeTemplate ? "Search" : "Open"} <kbd>↵</kbd>
 								</button>
 							</div>
 						</GlassSurface>
