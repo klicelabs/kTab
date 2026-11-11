@@ -1,7 +1,7 @@
 import { type DragEvent, useState } from "react";
 import { useSetupStore } from "../stores/setup-store";
 
-const QUICK_LINK_DRAG_TYPE = "application/x-klice-quick-link";
+const QUICK_LINK_DRAG_TYPE = "application/x-ktab-quick-link";
 type DropTarget = { id: string; position: "before" | "after" };
 
 export function useQuickLinkReorder(axis: "horizontal" | "vertical") {

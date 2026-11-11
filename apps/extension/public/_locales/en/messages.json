@@ -1,4 +1,4 @@
 {
-  "appName": { "message": "Klice Start" },
-  "appDesc": { "message": "A personal browser dashboard for your new tab." }
+  "appName": { "message": "kTab" },
+  "appDesc": { "message": "A minimal, high-performance new tab extension & speed dial." }
 }

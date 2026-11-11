@@ -2,9 +2,9 @@
 
 // beui.dev/components/motion/file-tree
 
-import { SharedLayoutBg } from "@klice-start/ui/components/motion/shared-layout-bg";
-import { EASE_OUT, SPRING_LAYOUT, SPRING_SWAP } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { SharedLayoutBg } from "@ktab/ui/components/motion/shared-layout-bg";
+import { EASE_OUT, SPRING_LAYOUT, SPRING_SWAP } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 import { ChevronRight, File, Folder, FolderOpen } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {

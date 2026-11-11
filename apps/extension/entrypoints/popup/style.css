@@ -1,8 +1,17 @@
+html,
+body,
+#root {
+	/* tokens.css sizes the newtab as a fixed viewport; the popup must instead
+	   shrink to its content so Chrome picks the natural window height. */
+	height: auto;
+	overflow: visible;
+}
+
 body {
-	width: 300px;
+	width: 320px;
 	margin: 0;
-	background: #141416;
-	color: #f5f5f7;
+	background: var(--background, #1d1d1d);
+	color: var(--foreground, #f5f5f7);
 	font-family:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
 		"Segoe UI Variable", "Segoe UI", system-ui, sans-serif, "Apple Color Emoji",
@@ -11,4 +20,21 @@ body {
 
 * {
 	box-sizing: border-box;
+}
+
+/* Success feedback lives in the button itself: the check pops in as the
+   surface morphs. Runs once, no fill, so no compositing residue. */
+@keyframes ktab-icon-pop {
+	from {
+		transform: scale(0.4);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.ktab-icon-pop {
+	animation: ktab-icon-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }

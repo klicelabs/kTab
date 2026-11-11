@@ -1,6 +1,6 @@
 # Product
 
-Klice Start is a Personal Browser Dashboard: a calm, beautiful, controlled beginning to every browser session. Not a speed dial, not a bookmark manager. Judged on beauty, orientation, ownership, continuity.
+kTab is a Personal Browser Dashboard: a calm, beautiful, controlled beginning to every browser session. Not a speed dial, not a bookmark manager. Judged on beauty, orientation, ownership, continuity.
 
 Current state: single-device, local-first MV3 extension with no accounts, sync, billing, or AI. Dashboard data stays on-device. Pexels wallpapers use a public Cloudflare Worker + D1 proxy: only the search query and page go to the proxy; image bytes are fetched directly from Pexels. Anything below describing sync/AI/multi-device is a directional bet, not shipped reality.
 
@@ -55,7 +55,7 @@ Empty/loading/error states that guide and recover. Every mouse action keyboard-r
 
 ## AI canon (binding when AI ships)
 
-Proposes; user disposes. Optional with a non-AI path. Transparent and undoable. Space never changes shape without consent. Never blocks core workflows. Must pass the remove-AI test. AI strengthens Klice Start and never becomes Klice Start.
+Proposes; user disposes. Optional with a non-AI path. Transparent and undoable. Space never changes shape without consent. Never blocks core workflows. Must pass the remove-AI test. AI strengthens kTab and never becomes kTab.
 
 ## Brand & tone (binding on first public surface)
 

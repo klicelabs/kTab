@@ -157,7 +157,7 @@ function isValidItemDrop(
  */
 declare global {
 	// eslint-disable-next-line no-var
-	var __kliceDndGestureEpoch: number | undefined;
+	var __ktabDndGestureEpoch: number | undefined;
 }
 
 export function useGridDnd(handlers: GridDndHandlers) {
@@ -311,8 +311,8 @@ export function useGridDnd(handlers: GridDndHandlers) {
 	const handleItemDragStart = useCallback(
 		(ref: ItemRef) => (e: DragEvent) => {
 			const effectiveRef = handlersRef.current.onItemDragStart?.(ref, e) ?? ref;
-			globalThis.__kliceDndGestureEpoch =
-				(globalThis.__kliceDndGestureEpoch ?? 0) + 1;
+			globalThis.__ktabDndGestureEpoch =
+				(globalThis.__ktabDndGestureEpoch ?? 0) + 1;
 			dragRef.current = effectiveRef;
 			// Fresh gesture: any stale cancel from a previous drag is void.
 			gestureRef.current = { id: gestureRef.current.id + 1, cancelled: false };
@@ -359,7 +359,7 @@ export function useGridDnd(handlers: GridDndHandlers) {
 		const handleDragEnd = () => {
 			// D4/NPD-4: the gesture ended — cross-window drops arriving now
 			// carry a stale payload this document never started.
-			globalThis.__kliceDndGestureEpoch = 0;
+			globalThis.__ktabDndGestureEpoch = 0;
 			resetDragCancelled();
 			// L8: window-level backstop for the frozen group as well.
 			clearFrozenDragGroup();
@@ -529,7 +529,7 @@ export function useGridDnd(handlers: GridDndHandlers) {
 			const isLiveGesture = !gestureRef.current.cancelled;
 			// D4/NPD-4: a zero epoch means no live same-document gesture —
 			// this payload arrived from another window; refuse.
-			if (!globalThis.__kliceDndGestureEpoch) return;
+			if (!globalThis.__ktabDndGestureEpoch) return;
 			const dragged =
 				dragRef.current ?? (isLiveGesture ? resolveDrag(e) : null);
 			// Preserve the hover stamp until the final edge decision. Clearing it
@@ -629,7 +629,7 @@ export function useGridDnd(handlers: GridDndHandlers) {
 			// cannot resurrect a cancelled gesture from the dataTransfer payload.
 			const isLiveGesture = !gestureRef.current.cancelled;
 			// D4/NPD-4: refuse cross-window payloads (no same-document epoch).
-			if (!globalThis.__kliceDndGestureEpoch) return;
+			if (!globalThis.__ktabDndGestureEpoch) return;
 			const dragged =
 				dragRef.current ?? (isLiveGesture ? resolveDrag(e) : null);
 			// Same full settle as item drops (see handleItemDrop).
@@ -680,8 +680,8 @@ export function useGridDnd(handlers: GridDndHandlers) {
 						id: gestureRef.current.id + 1,
 						cancelled: false,
 					};
-					globalThis.__kliceDndGestureEpoch =
-						(globalThis.__kliceDndGestureEpoch ?? 0) + 1;
+					globalThis.__ktabDndGestureEpoch =
+						(globalThis.__ktabDndGestureEpoch ?? 0) + 1;
 					dragRef.current = effectiveRef;
 					lastApplied.current = null;
 					autoscroll.setContainer(undefined);

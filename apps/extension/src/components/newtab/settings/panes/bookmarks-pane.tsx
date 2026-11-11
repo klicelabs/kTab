@@ -5,17 +5,17 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@klice-start/ui/components/dialog";
+} from "@ktab/ui/components/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@klice-start/ui/components/dropdown-menu";
-import { Input } from "@klice-start/ui/components/input";
-import { Switch } from "@klice-start/ui/components/switch";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/dropdown-menu";
+import { Input } from "@ktab/ui/components/input";
+import { Switch } from "@ktab/ui/components/switch";
+import { Icon } from "@ktab/ui/icons/icon";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { findBookmarkInFolder } from "../../../../lib/bookmark-match";
@@ -1083,7 +1083,7 @@ export function BookmarksPane({ initialAction }: BookmarksPaneProps) {
 				<SettingRow
 					label="Import from file"
 					icon="file-import"
-					tooltip="Reads a browser bookmarks HTML file or a Klice backup."
+					tooltip="Reads a browser bookmarks HTML file or a kTab backup."
 				>
 					<SettingsAction
 						icon="file-import"
@@ -1295,7 +1295,7 @@ export function BookmarksPane({ initialAction }: BookmarksPaneProps) {
 						>
 							<label
 								className={cn(
-									"flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors",
+									"flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors",
 									!importWantsReplace
 										? "bg-flat-sunken-raised text-flat-ink"
 										: "text-flat-ink-muted hover:bg-flat-sunken-raised/60",
@@ -1304,7 +1304,7 @@ export function BookmarksPane({ initialAction }: BookmarksPaneProps) {
 							>
 								<input
 									type="radio"
-									name="klice-import-mode"
+									name="ktab-import-mode"
 									checked={!importWantsReplace}
 									onChange={() => setImportWantsReplace(false)}
 									className="sr-only"
@@ -1323,7 +1323,7 @@ export function BookmarksPane({ initialAction }: BookmarksPaneProps) {
 							</label>
 							<label
 								className={cn(
-									"flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors",
+									"flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13px] transition-colors",
 									importWantsReplace
 										? "bg-flat-sunken-raised text-flat-ink"
 										: "text-flat-ink-muted hover:bg-flat-sunken-raised/60",
@@ -1332,7 +1332,7 @@ export function BookmarksPane({ initialAction }: BookmarksPaneProps) {
 							>
 								<input
 									type="radio"
-									name="klice-import-mode"
+									name="ktab-import-mode"
 									checked={importWantsReplace}
 									onChange={() => setImportWantsReplace(true)}
 									className="sr-only"

@@ -13,8 +13,8 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@klice-start/ui/lib/utils",
-    "ui": "@klice-start/ui/components",
+    "utils": "@ktab/ui/lib/utils",
+    "ui": "@ktab/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

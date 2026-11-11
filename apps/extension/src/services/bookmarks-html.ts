@@ -1,7 +1,7 @@
 /**
  * Bookmarks interop via the Netscape Bookmark File Format — the HTML format
  * produced by Chrome (chrome://bookmarks → Export) and Firefox (Manage
- * Bookmarks → Export), and accepted by both browsers on import. Klice Start
+ * Bookmarks → Export), and accepted by both browsers on import. kTab
  * exports its folder tree + cards in that shape and imports the same format back.
  *
  * Import parses with DOMParser on a detached document (never the live page),
@@ -63,8 +63,8 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Export Klice Start's folders and cards as a Netscape Bookmark File, downloaded
- * as `klice-start-bookmarks.html`. Hierarchy is preserved (roots → children via
+ * Export kTab's folders and cards as a Netscape Bookmark File, downloaded
+ * as `ktab-bookmarks.html`. Hierarchy is preserved (roots → children via
  * parentId) and empty folders are included so the structure round-trips.
  */
 export function serializeBookmarksHtml(
@@ -157,7 +157,7 @@ export async function exportBookmarksHtml(): Promise<void> {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;
-	a.download = "klice-start-bookmarks.html";
+	a.download = "ktab-bookmarks.html";
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
@@ -168,7 +168,7 @@ function isAllowedScheme(href: string): boolean {
 }
 
 /**
- * Merge a normalized bookmark tree into Klice Start as folders + cards.
+ * Merge a normalized bookmark tree into kTab as folders + cards.
  * Plans purely, then commits a single store update (plus the repaired
  * ordering) so a failed import can never leave a half-written library.
  * See lib/bookmark-merge for the merge rules.
@@ -278,7 +278,7 @@ export interface BookmarkImportOptions {
 
 /**
  * Import a Netscape Bookmark File (as exported by Chrome or Firefox) into
- * Klice Start as folders + cards. Throws when the file contains no folders
+ * kTab as folders + cards. Throws when the file contains no folders
  * or links. Merge semantics are provided by {@link mergeBookmarkTree};
  * replace mode swaps the whole library via {@link replaceBookmarkLibrary}.
  */
@@ -292,7 +292,7 @@ export async function importBookmarksHtml(
 }
 
 /**
- * Import the browser's own bookmark tree (chrome.bookmarks) into Klice Start.
+ * Import the browser's own bookmark tree (chrome.bookmarks) into kTab.
  * The native root containers ("Bookmarks Bar", "Other Bookmarks", Firefox's
  * "Bookmarks Menu" and "Mobile Bookmarks") are containers, not user folders:
  * their children are hoisted to the top level, and a hoisted container's

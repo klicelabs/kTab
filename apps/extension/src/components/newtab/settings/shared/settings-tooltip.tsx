@@ -1,5 +1,5 @@
-import { Tooltip } from "@klice-start/ui/components/motion/tooltip";
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Tooltip } from "@ktab/ui/components/motion/tooltip";
+import { Icon } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { glassShape } from "../../../../lib/glass";
 import { cn } from "../../../../lib/utils";

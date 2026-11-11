@@ -133,9 +133,9 @@ test("search URL results use the actual Home app tile and its shared art pipelin
 		),
 	);
 	expect(
-		document.querySelector(".klice-search-app-icon.icon-app-tile"),
+		document.querySelector(".ktab-search-app-icon.icon-app-tile"),
 	).not.toBeNull();
-	expect(document.querySelector(".klice-search-result-icon")).toBeNull();
+	expect(document.querySelector(".ktab-search-result-icon")).toBeNull();
 	const plain = parseHTML(
 		renderToStaticMarkup(createElement(SearchResultIcon, { icon: "search" })),
 	);

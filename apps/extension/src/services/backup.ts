@@ -106,7 +106,7 @@ export async function exportBackup(): Promise<void> {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;
-	a.download = "klice-start-backup.json";
+	a.download = "ktab-backup.json";
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
@@ -130,11 +130,11 @@ export async function importBackup(fileText: string): Promise<void> {
 		try {
 			return JSON.parse(fileText);
 		} catch {
-			throw new Error("That file is not a valid Klice backup.");
+			throw new Error("That file is not a valid kTab backup.");
 		}
 	})();
 	if (!isRecord(parsed)) {
-		throw new Error("That file is not a valid Klice backup.");
+		throw new Error("That file is not a valid kTab backup.");
 	}
 
 	const setup = validateSetupShape(parsed);

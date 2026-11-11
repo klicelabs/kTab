@@ -75,7 +75,7 @@ const api = {
 			get: async () =>
 				mode === "fatal"
 					? {}
-					: { "klice-refresh-batch": mode === "adopted" ? adopted : stale },
+					: { "ktab-refresh-batch": mode === "adopted" ? adopted : stale },
 			set: async () => {},
 			remove: async () => {
 				sessionCleared = true;

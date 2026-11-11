@@ -2,9 +2,9 @@
 
 // beui.dev/components/motion/button
 
-import { EASE_OUT, SPRING_PRESS } from "@klice-start/ui/lib/ease";
-import { useHoverCapable } from "@klice-start/ui/lib/hooks/use-hover-capable";
-import { cn } from "@klice-start/ui/lib/utils";
+import { EASE_OUT, SPRING_PRESS } from "@ktab/ui/lib/ease";
+import { useHoverCapable } from "@ktab/ui/lib/hooks/use-hover-capable";
+import { cn } from "@ktab/ui/lib/utils";
 import {
 	AnimatePresence,
 	type HTMLMotionProps,

@@ -89,7 +89,7 @@ function classifySubtree(fnName) {
 }
 
 const SNAPSHOT = () => {
-	const r = window.__kliceTimeline;
+	const r = window.__ktabTimeline;
 	return { commits: r.commitLog.length, gaps: r.gaps.length, dT: performance.now() };
 };
 
@@ -97,7 +97,7 @@ async function waitQuiet(page, pre) {
 	return page
 		.waitForFunction(
 			(pre) => {
-				const r = window.__kliceTimeline;
+				const r = window.__ktabTimeline;
 				if (!r) return false;
 				const now = performance.now();
 				if (now < pre.dT + 120) return false;
@@ -128,7 +128,7 @@ async function waitQuiet(page, pre) {
  */
 async function extractWindowWithGap(page, pre) {
 	return page.evaluate((pre) => {
-		const r = window.__kliceTimeline;
+		const r = window.__ktabTimeline;
 		const inMark = r.inputMarks.find((m) => m.t >= pre.dT - 2) ?? null;
 		const inputT = inMark ? inMark.t : null;
 		const t0 = inputT ?? -1e9;

@@ -2,18 +2,18 @@
 
 // beui.dev/components/motion/range-slider
 
-import { SPRING_GLIDE } from "@klice-start/ui/lib/ease";
+import { SPRING_GLIDE } from "@ktab/ui/lib/ease";
 import {
 	type SliderOptions,
 	snapSliderValue,
 	useSlider,
-} from "@klice-start/ui/lib/hooks/use-slider";
+} from "@ktab/ui/lib/hooks/use-slider";
 import {
 	capturePointer,
 	releasePointer,
 	TOUCH_GESTURE_CLASS,
-} from "@klice-start/ui/lib/touch";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/touch";
+import { cn } from "@ktab/ui/lib/utils";
 import {
 	animate,
 	motion,

@@ -5,7 +5,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@klice-start/ui/components/dialog";
+} from "@ktab/ui/components/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SETTINGS_SCOPE_CLASS } from "../../lib/context-scope";

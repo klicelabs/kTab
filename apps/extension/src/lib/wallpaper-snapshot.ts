@@ -1,5 +1,5 @@
 import type { BackgroundSettings } from "../types";
-import { DEFAULT_BACKGROUND, WALLPAPERS } from "./constants";
+import { cleanSurfaceCss, DEFAULT_BACKGROUND, WALLPAPERS } from "./constants";
 import { cssUrl } from "./utils";
 
 /**
@@ -20,7 +20,8 @@ export const WALLPAPER_SNAPSHOT_KEY = "wallpaper-snapshot";
 export type WallpaperSnapshot =
 	| { type: "bundled"; id: string }
 	| { type: "custom"; id: string }
-	| { type: "solid"; color: string };
+	| { type: "solid"; color: string }
+	| { type: "none" };
 
 /** Only strict hex colours may reach a <style> payload (stored data is untrusted). */
 const HEX_COLOR = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
@@ -37,6 +38,7 @@ export const WALLPAPER_SNAPSHOT_NEUTRAL: string = DEFAULT_BACKGROUND.color;
 export function snapshotFromBackground(bg: unknown): WallpaperSnapshot | null {
 	if (!bg || typeof bg !== "object") return null;
 	const b = bg as Partial<BackgroundSettings>;
+	if (b.type === "none") return { type: "none" };
 	if (
 		b.type === "wallpaper" &&
 		typeof b.wallpaperId === "string" &&
@@ -67,7 +69,8 @@ export function writeWallpaperSnapshot(bg: unknown): void {
 	try {
 		if (typeof localStorage === "undefined") return;
 		const snap = snapshotFromBackground(bg);
-		if (snap) localStorage.setItem(WALLPAPER_SNAPSHOT_KEY, JSON.stringify(snap));
+		if (snap)
+			localStorage.setItem(WALLPAPER_SNAPSHOT_KEY, JSON.stringify(snap));
 		else localStorage.removeItem(WALLPAPER_SNAPSHOT_KEY);
 	} catch {
 		// Mirror is best-effort only.
@@ -83,6 +86,7 @@ function isSnapshot(value: unknown): value is WallpaperSnapshot {
 	if (v.type === "solid") {
 		return typeof v.color === "string" && HEX_COLOR.test(v.color);
 	}
+	if (v.type === "none") return true;
 	return false;
 }
 
@@ -105,6 +109,7 @@ export function readWallpaperSnapshot(): WallpaperSnapshot | null {
  * null (default path).
  */
 export function snapshotToCss(snap: WallpaperSnapshot): string | null {
+	if (snap.type === "none") return cleanSurfaceCss(false);
 	if (snap.type === "solid") return snap.color;
 	if (snap.type === "custom") return WALLPAPER_SNAPSHOT_NEUTRAL;
 	if (snap.type === "bundled") {
@@ -115,7 +120,7 @@ export function snapshotToCss(snap: WallpaperSnapshot): string | null {
 }
 
 /** Id of the throwaway <style> that carries frame 1 over React's inline default. */
-export const WALLPAPER_PREHYDRATE_STYLE_ID = "klice-wallpaper-prehydrate";
+export const WALLPAPER_PREHYDRATE_STYLE_ID = "ktab-wallpaper-prehydrate";
 
 /**
  * Paint frame 1 before React mounts. `#bg-layer` does not exist yet, and
@@ -132,9 +137,16 @@ export function applyWallpaperPrehydrate(): void {
 		if (!snap) return;
 		const css = snapshotToCss(snap);
 		if (!css) return;
+		// "none" is theme-aware: resolve the dark recipe via the OS scheme for
+		// the pre-React frames (exact for colorScheme "auto", the default;
+		// React owns the inline style again on first render).
+		const darkRule =
+			snap.type === "none"
+				? `@media (prefers-color-scheme:dark){#bg-layer{background:${cleanSurfaceCss(true)} !important;}}`
+				: "";
 		const el = document.createElement("style");
 		el.id = WALLPAPER_PREHYDRATE_STYLE_ID;
-		el.textContent = `#bg-layer{background:${css} !important;}`;
+		el.textContent = `#bg-layer{background:${css} !important;}${darkRule}`;
 		document.head.appendChild(el);
 	} catch {
 		// Fall back to the default first paint.

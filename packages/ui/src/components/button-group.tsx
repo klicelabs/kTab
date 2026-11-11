@@ -2,17 +2,17 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@klice-start/ui/lib/utils";
+import { cn } from "@ktab/ui/lib/utils";
 
 import { Separator } from "./separator";
 
 const buttonGroupVariants = cva(
-	"klice-button-group flex w-fit items-stretch *:focus-visible:relative *:focus-visible:z-10 has-[>[data-slot=button-group]]:gap-2 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-lg [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1",
+	"ktab-button-group flex w-fit items-stretch *:focus-visible:relative *:focus-visible:z-10 has-[>[data-slot=button-group]]:gap-2 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-lg [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1",
 	{
 		variants: {
 			orientation: {
 				// The seam is squared by the group; the OUTER ends of the first
-				// and last segment are owned by `.klice-button-group` in
+				// and last segment are owned by `.ktab-button-group` in
 				// globals.css, which resolves them from the group's own radius.
 				// Deliberately not `!`: an important utility here would outrank
 				// that contract and reintroduce the fixed 10px right corner that

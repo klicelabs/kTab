@@ -1,4 +1,4 @@
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Icon } from "@ktab/ui/icons/icon";
 import { useClock } from "../../hooks/use-clock";
 import { wallpaperText } from "../../lib/glass";
 import { cn } from "../../lib/utils";
@@ -24,7 +24,7 @@ export function RestMode({ onExit }: RestModeProps) {
 				<p
 					className={`${wallpaperText("muted")} rest-mode-eyebrow font-medium text-xs uppercase tracking-[0.24em]`}
 				>
-					Klice Start
+					kTab
 				</p>
 				<time
 					className={cn(
@@ -50,7 +50,7 @@ export function RestMode({ onExit }: RestModeProps) {
 					onClick={onExit}
 					className={`${wallpaperText("primary")} rest-mode-cta mt-10 inline-flex h-10 items-center gap-2 rounded-full px-5 font-medium text-sm`}
 				>
-					Enter Klice
+					Enter kTab
 					<Icon name="chevron-right" size={15} />
 				</button>
 				<p className={`${wallpaperText("muted")} mt-5 text-[11px]`}>

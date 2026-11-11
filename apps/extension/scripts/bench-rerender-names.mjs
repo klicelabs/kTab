@@ -47,7 +47,7 @@ for (let i = 0; i < RUNS; i += 1) {
 		// fires — wait for the second commit (hydration re-render) instead.
 		await page
 			.waitForFunction(
-				() => (window.__kliceTimeline?.commitLog?.length ?? 0) >= 2,
+				() => (window.__ktabTimeline?.commitLog?.length ?? 0) >= 2,
 				null,
 				{ timeout: 20000 },
 			)
@@ -55,7 +55,7 @@ for (let i = 0; i < RUNS; i += 1) {
 		await page.waitForTimeout(700);
 
 		const run = await page.evaluate(() => {
-			const r = window.__kliceTimeline;
+			const r = window.__ktabTimeline;
 			const log = r.commitLog;
 			const first = log.length ? log[0].t : 0;
 			const last = log.length ? log[log.length - 1].t + 1 : Number.POSITIVE_INFINITY;

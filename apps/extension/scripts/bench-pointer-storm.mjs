@@ -1,5 +1,5 @@
 /**
- * Drag event storm / write coalescing benchmark for the Klice Start newtab.
+ * Drag event storm / write coalescing benchmark for the kTab newtab.
  *
  * The grid DnD uses native HTML5 drag (draggable + onDragOver). During a
  * native drag the browser replaces pointermove with the drag event stream,
@@ -148,7 +148,7 @@ async function pointerDrag(page, from, to, { steps = 60, holdMs = 120 } = {}) {
  */
 async function measureDrag(page, from, to, { steps = 60 } = {}) {
 	await page.evaluate(() => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		const s = window.__dragStats;
 		r.reset();
 		r.enabled = true;
@@ -166,7 +166,7 @@ async function measureDrag(page, from, to, { steps = 60 } = {}) {
 	await page.waitForTimeout(900); // coalescing flush (200ms) + settle
 	const durationMs = Math.round(performance.now() - t0);
 	return page.evaluate((durMs) => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		const s = window.__dragStats;
 		r.enabled = false;
 		r.endedAt = performance.now();

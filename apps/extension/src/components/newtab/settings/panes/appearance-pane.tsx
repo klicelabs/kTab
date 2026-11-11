@@ -1,13 +1,18 @@
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Icon } from "@ktab/ui/icons/icon";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ACCENT_OPTIONS } from "../../../../lib/accent";
-import { GRADIENTS, WALLPAPERS } from "../../../../lib/constants";
+import {
+	cleanSurfaceCss,
+	GRADIENTS,
+	WALLPAPERS,
+} from "../../../../lib/constants";
 import { clampGlassIntensity } from "../../../../lib/glass";
 import { cn } from "../../../../lib/utils";
 import { useImageStore } from "../../../../stores/image-store";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { Settings } from "../../../../types";
+import { useAppearance } from "../../appearance-provider";
 import { ToolbarIconButton } from "../../toolbar/toolbar-icon-button";
 import { SectionCard } from "../shared/section-card";
 import { SegmentedControl } from "../shared/segmented-control";
@@ -77,6 +82,7 @@ function CurrentWallpaperPreview({
 	className,
 }: CurrentWallpaperPreviewProps & { className?: string }) {
 	const getBackgroundImage = useImageStore((state) => state.getBackgroundImage);
+	const { resolvedDark } = useAppearance();
 	const [imageUrl, setImageUrl] = useState<string | null>(null);
 	const activeImageId =
 		background.type === "image"
@@ -137,13 +143,18 @@ function CurrentWallpaperPreview({
 			style={{
 				background:
 					gradient?.css ??
-					(background.type === "solid" ? background.color : "#27272a"),
+					(background.type === "solid"
+						? background.color
+						: background.type === "none"
+							? cleanSurfaceCss(resolvedDark)
+							: "#27272a"),
 			}}
 		/>
 	);
 }
 
 function getCurrentWallpaperLabel(background: Settings["background"]): string {
+	if (background.type === "none") return "None";
 	if (background.type === "solid") return "Solid colour";
 	if (background.type === "gradient") {
 		return (
@@ -214,7 +225,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 												SETTINGS_RADIUS.surface,
 												mode.shell,
 												selected &&
-													"ring-2 ring-[var(--klice-accent)] ring-offset-2 ring-offset-white dark:ring-offset-[#252525]",
+													"ring-2 ring-[var(--ktab-accent)] ring-offset-2 ring-offset-white dark:ring-offset-[#252525]",
 											)}
 										>
 											{mode.value === "auto" ? (
@@ -275,7 +286,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 											}
 											className={cn(
 												SETTINGS_RADIUS.pill,
-												"bg-[var(--klice-accent)] px-2.5 py-1 font-medium text-[11px] text-[var(--klice-accent-foreground)] leading-none",
+												"bg-[var(--ktab-accent)] px-2.5 py-1 font-medium text-[11px] text-[var(--ktab-accent-foreground)] leading-none",
 											)}
 										>
 											{mode.label}
@@ -312,7 +323,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 										"size-6 rounded-full p-0.5 transition-[box-shadow,transform] duration-150 hover:scale-105 active:scale-95 motion-reduce:transition-none",
 										SETTINGS_FOCUS_RING,
 										selected &&
-											"ring-2 ring-[var(--klice-accent)] ring-offset-1 ring-offset-white dark:ring-offset-[#252525]",
+											"ring-2 ring-[var(--ktab-accent)] ring-offset-1 ring-offset-white dark:ring-offset-[#252525]",
 									)}
 								>
 									<span

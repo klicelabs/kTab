@@ -1,6 +1,6 @@
-import { LiquidGlass } from "@klice-start/ui/components/liquid-glass";
-import { glassVariantStyles } from "@klice-start/ui/lib/glass-variants";
-import { flatSurface } from "@klice-start/ui/lib/surface";
+import { LiquidGlass } from "@ktab/ui/components/liquid-glass";
+import { glassVariantStyles } from "@ktab/ui/lib/glass-variants";
+import { flatSurface } from "@ktab/ui/lib/surface";
 import {
 	type CSSProperties,
 	type HTMLAttributes,
@@ -53,7 +53,7 @@ const ROLE_SHAPE: Record<GlassTier, GlassShape> = {
 };
 
 /**
- * The single material entry point for product chrome — `KliceGlassSurface`.
+ * The single material entry point for product chrome — `KtabGlassSurface`.
  *
  * Components request a semantic ROLE (hero / toolbar / surface / search /
  * menu / tooltip / nested); raw glasscn details (liquid-refract vs liquid
@@ -110,7 +110,7 @@ export function GlassSurface({
 					data-glass-role={variant}
 					data-glass-tone={resolvedDark ? "dark" : "light"}
 					className={cn(
-						"relative overflow-hidden text-[var(--klice-glass-foreground-primary)]",
+						"relative overflow-hidden text-[var(--ktab-glass-foreground-primary)]",
 						surfaceClassName,
 						glassVariantStyles[glassVariant],
 					)}
@@ -191,7 +191,7 @@ function ViewportGlassTile({
 
 /**
  * Canonical product name for the shared material primitive. `GlassSurface`
- * remains as the historical alias; new code should read `KliceGlassSurface`
- * as the `KliceTheme → tokens → roles → primitives → components` layer.
+ * remains as the historical alias; new code should read `KtabGlassSurface`
+ * as the `KtabTheme → tokens → roles → primitives → components` layer.
  */
-export const KliceGlassSurface = GlassSurface;
+export const KtabGlassSurface = GlassSurface;

@@ -13,7 +13,7 @@
   "$schema": "https://r2.better-t-stack.dev/schema.json",
   "version": "3.36.3",
   "createdAt": "2026-07-15T12:19:16.891Z",
-  "reproducibleCommand": "bun create better-t-stack@latest klice-start --frontend next --backend self --runtime none --database postgres --orm drizzle --api none --auth none --payments none --addons biome fumadocs mcp skills turborepo wxt --examples ai --db-setup supabase --web-deploy vercel --server-deploy none --git --package-manager bun --install",
+  "reproducibleCommand": "bun create better-t-stack@latest ktab --frontend next --backend self --runtime none --database postgres --orm drizzle --api none --auth none --payments none --addons biome fumadocs mcp skills turborepo wxt --examples ai --db-setup supabase --web-deploy vercel --server-deploy none --git --package-manager bun --install",
   "database": "postgres",
   "orm": "drizzle",
   "backend": "self",

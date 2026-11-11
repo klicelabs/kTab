@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@klice-start/ui/icons/icon";
+import { Icon, type IconName } from "@ktab/ui/icons/icon";
 import { memo } from "react";
 import { cn } from "../../../../lib/utils";
 import type { SettingsPaneId } from "../settings-types";

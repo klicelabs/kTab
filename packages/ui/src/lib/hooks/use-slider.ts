@@ -1,6 +1,6 @@
 "use client";
 
-import { capturePointer, releasePointer } from "@klice-start/ui/lib/touch";
+import { capturePointer, releasePointer } from "@ktab/ui/lib/touch";
 import {
 	type KeyboardEvent,
 	type PointerEvent,

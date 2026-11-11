@@ -1,5 +1,5 @@
-import { Switch } from "@klice-start/ui/components/switch";
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Switch } from "@ktab/ui/components/switch";
+import { Icon } from "@ktab/ui/icons/icon";
 import { useState } from "react";
 import { useQuickLinkReorder } from "../../hooks/use-quick-link-reorder";
 import { cn } from "../../lib/utils";

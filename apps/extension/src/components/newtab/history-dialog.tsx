@@ -4,8 +4,8 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@klice-start/ui/components/dialog";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/dialog";
+import { Icon } from "@ktab/ui/icons/icon";
 import { describeHistoryAction } from "../../lib/history";
 import { cn } from "../../lib/utils";
 import { useHistoryStore } from "../../stores/history-store";

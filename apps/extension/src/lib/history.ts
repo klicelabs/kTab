@@ -1,5 +1,5 @@
 /**
- * Command-history vocabulary for Klice Start.
+ * Command-history vocabulary for kTab.
  *
  * Every reversible operation is a compact inverse-data entry (never a full
  * app snapshot): affected container key arrays plus affected entity parents,

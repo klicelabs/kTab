@@ -5,9 +5,9 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@klice-start/ui/components/dialog";
-import { Input } from "@klice-start/ui/components/input";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/dialog";
+import { Input } from "@ktab/ui/components/input";
+import { Icon } from "@ktab/ui/icons/icon";
 import { useEffect, useState } from "react";
 import { SETTINGS_SCOPE_CLASS } from "../../lib/context-scope";
 import { glassShape } from "../../lib/glass";
@@ -148,7 +148,7 @@ export function QuickLinkEditorDialog({
 								glassShape("control"),
 								SETTINGS_ACTION_PRIMARY,
 								SETTINGS_FOCUS_RING,
-								"bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] hover:brightness-95 disabled:pointer-events-none disabled:opacity-40",
+								"bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] hover:brightness-95 disabled:pointer-events-none disabled:opacity-40",
 							)}
 						>
 							<Icon name="check" size={14} aria-hidden="true" />

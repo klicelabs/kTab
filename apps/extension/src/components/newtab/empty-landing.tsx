@@ -1,7 +1,7 @@
-import { LiquidGlass } from "@klice-start/ui/components/liquid-glass";
-import { Button as MotionButton } from "@klice-start/ui/components/motion/button/base";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
+import { LiquidGlass } from "@ktab/ui/components/liquid-glass";
+import { Button as MotionButton } from "@ktab/ui/components/motion/button/base";
+import { Icon } from "@ktab/ui/icons/icon";
+import { ktabShape } from "@ktab/ui/lib/shapes";
 import { Fragment } from "react";
 import {
 	glassFocusRing,
@@ -128,7 +128,7 @@ export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 						<div
 							className={cn(
 								"relative flex size-[68px] items-center justify-center",
-								kliceShape("section"),
+								ktabShape("section"),
 								glassMaterial(false, "panel"),
 								"text-muted-foreground",
 							)}

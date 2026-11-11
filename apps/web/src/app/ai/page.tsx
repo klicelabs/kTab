@@ -1,27 +1,27 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { env } from "@klice-start/env/web";
-import { Bubble, BubbleContent } from "@klice-start/ui/components/bubble";
-import { Button } from "@klice-start/ui/components/button";
+import { env } from "@ktab/env/web";
+import { Bubble, BubbleContent } from "@ktab/ui/components/bubble";
+import { Button } from "@ktab/ui/components/button";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@klice-start/ui/components/empty";
+} from "@ktab/ui/components/empty";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupTextarea,
-} from "@klice-start/ui/components/input-group";
+} from "@ktab/ui/components/input-group";
 import {
   Message,
   MessageContent as MessageBody,
   MessageHeader,
-} from "@klice-start/ui/components/message";
+} from "@ktab/ui/components/message";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -29,8 +29,8 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
-} from "@klice-start/ui/components/message-scroller";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@klice-start/ui/components/tooltip";
+} from "@ktab/ui/components/message-scroller";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ktab/ui/components/tooltip";
 import { DefaultChatTransport } from "ai";
 import { ArrowUpIcon, Loader2, MessageCircleDashedIcon, RotateCwIcon } from "lucide-react";
 import { useState, type FormEvent, type KeyboardEvent } from "react";

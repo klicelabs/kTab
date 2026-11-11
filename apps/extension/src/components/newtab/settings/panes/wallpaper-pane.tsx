@@ -8,16 +8,17 @@ import {
 	ColorPickerPreset,
 	ColorPickerPresets,
 	ColorPickerTrigger,
-} from "@klice-start/ui/components/motion/color-picker";
+} from "@ktab/ui/components/motion/color-picker";
 import {
 	FileUpload,
 	type FileUploadItem,
-} from "@klice-start/ui/components/motion/file-upload";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/motion/file-upload";
+import { Icon } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+	cleanSurfaceCss,
 	GRADIENTS,
 	MAX_BACKGROUND_IMAGE_BYTES,
 	WALLPAPERS,
@@ -28,6 +29,7 @@ import { PEXELS_LIBRARY_PREVIEW } from "../../../../lib/wallpaper-themes";
 import { useImageStore } from "../../../../stores/image-store";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { CustomWallpaper, Settings } from "../../../../types";
+import { useAppearance } from "../../appearance-provider";
 import { SectionCard } from "../shared/section-card";
 import { SettingsAction } from "../shared/settings-action";
 import {
@@ -39,7 +41,8 @@ import {
 type WallpaperLibraryItem =
 	| { kind: "wallpaper"; id: string; label: string; thumb: string }
 	| { kind: "gradient"; id: string; label: string; css: string }
-	| { kind: "solid"; id: "solid"; label: string; css: string };
+	| { kind: "solid"; id: "solid"; label: string; css: string }
+	| { kind: "none"; id: "none"; label: string; css: string };
 
 type PendingUpload = {
 	name: string;
@@ -53,7 +56,7 @@ const WALLPAPER_TILE = cn(
 	"group squircle relative flex aspect-[4/3] min-w-0 items-end overflow-hidden border border-neutral-900/10 bg-neutral-900/[0.04] shadow-none transition-[filter,box-shadow] duration-150 focus-visible:outline-none dark:border-white/10 dark:bg-white/[0.04]",
 	SETTINGS_RADIUS.surface,
 );
-const TILE_SELECTED = "ring-2 ring-inset ring-[var(--klice-accent)]";
+const TILE_SELECTED = "ring-2 ring-inset ring-[var(--ktab-accent)]";
 
 const SUPPORTED_IMAGE_TYPES: Record<string, readonly string[]> = {
 	"image/jpeg": ["jpg", "jpeg"],
@@ -310,7 +313,7 @@ function SolidWallpaperTile({
 					Solid colour
 				</span>
 				{selected && (
-					<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+					<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 						<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 					</span>
 				)}
@@ -368,7 +371,9 @@ function WallpaperTile({
 	const tileLabel =
 		item.kind === "gradient"
 			? `Use ${item.label} gradient`
-			: `Use ${item.label} wallpaper`;
+			: item.kind === "none"
+				? "Use no wallpaper"
+				: `Use ${item.label} wallpaper`;
 
 	return (
 		<div
@@ -412,7 +417,7 @@ function WallpaperTile({
 			</span>
 
 			{selected ? (
-				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 					<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 				</span>
 			) : null}
@@ -471,7 +476,7 @@ function PexelsSourceTile({
 				Pexels
 			</span>
 			{selected ? (
-				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 					<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 				</span>
 			) : null}
@@ -480,6 +485,7 @@ function PexelsSourceTile({
 }
 
 export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
+	const { resolvedDark } = useAppearance();
 	const bg = useSetupStore((state) => state.settings.background);
 	const updateBackground = useSetupStore((state) => state.updateBackground);
 	const commitCustomWallpaper = useSetupStore(
@@ -560,6 +566,12 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 
 	const libraryItems = useMemo<WallpaperLibraryItem[]>(
 		() => [
+			{
+				kind: "none",
+				id: "none",
+				label: "None",
+				css: cleanSurfaceCss(resolvedDark),
+			},
 			{ kind: "solid", id: "solid", label: "Solid colour", css: bg.color },
 			...WALLPAPERS.map((wallpaper) => ({
 				kind: "wallpaper" as const,
@@ -574,7 +586,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 				css: gradient.css,
 			})),
 		],
-		[bg.color],
+		[bg.color, resolvedDark],
 	);
 
 	function isSelected(item: WallpaperLibraryItem) {
@@ -583,6 +595,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 		if (item.kind === "gradient")
 			return bg.type === "gradient" && bg.gradientId === item.id;
 		if (item.kind === "solid") return bg.type === "solid";
+		if (item.kind === "none") return bg.type === "none";
 		return false;
 	}
 
@@ -600,6 +613,13 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 				type: "gradient",
 				gradientId: item.id,
 				wallpaperId: null,
+				imageId: null,
+			} as Partial<Settings["background"]>);
+		} else if (item.kind === "none") {
+			updateBackground({
+				type: "none",
+				wallpaperId: null,
+				gradientId: null,
 				imageId: null,
 			} as Partial<Settings["background"]>);
 		}
@@ -848,7 +868,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 						{customSelected ? (
 							<span
 								className={cn(
-									"pointer-events-none absolute top-2 z-20 flex items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm",
+									"pointer-events-none absolute top-2 z-20 flex items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm",
 									customTileHasPencil ? "right-9 size-5" : "right-2 size-5",
 								)}
 							>

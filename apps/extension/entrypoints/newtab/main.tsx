@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 
 import App from "./App.tsx";
 
-import "@klice-start/ui/globals.css";
+import "@ktab/ui/globals.css";
 import {
 	readFirstPaintSnapshot,
 } from "../../src/lib/first-paint-snapshot";
@@ -12,10 +12,13 @@ import {
 	clearPrehydrateWhenLive,
 } from "../../src/lib/wallpaper-snapshot";
 import { useSetupStore } from "../../src/stores/setup-store";
+import { installTabSwitcherReceiver } from "../../src/lib/tab-switcher";
+
+installTabSwitcherReceiver();
 
 // Development-only seed hook. The dynamic import inside the DEV branch is
 // dropped from production builds, so `src/dev/*` can never ship or run for
-// real users. In dev it exposes `window.__kliceSeed.seed()` / `.reset()`.
+// real users. In dev it exposes `window.__ktabSeed.seed()` / `.reset()`.
 if (import.meta.env.DEV) {
 	void import("../../src/dev/seed").then((m) => m.installDevSeed());
 }

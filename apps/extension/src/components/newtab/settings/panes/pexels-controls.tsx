@@ -1,5 +1,5 @@
-import { Input } from "@klice-start/ui/components/input";
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Input } from "@ktab/ui/components/input";
+import { Icon } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
@@ -42,7 +42,7 @@ const THEME_TILE = cn(
 	SETTINGS_RADIUS.surface,
 	SETTINGS_FOCUS_RING,
 );
-const TILE_SELECTED = "ring-2 ring-inset ring-[var(--klice-accent)]";
+const TILE_SELECTED = "ring-2 ring-inset ring-[var(--ktab-accent)]";
 
 function ThemeThumb({ src, alt }: { src: string; alt: string }): ReactNode {
 	const [failed, setFailed] = useState(false);
@@ -166,7 +166,7 @@ export function PexelsDetailView(): ReactNode {
 										{theme.label}
 									</span>
 									{selected ? (
-										<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+										<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 											<Icon
 												name="check"
 												size={12}

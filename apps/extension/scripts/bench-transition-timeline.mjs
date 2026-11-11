@@ -56,7 +56,7 @@ const SUFFIX = POSITIONAL[1] ? `-${POSITIONAL[1]}` : "";
 
 /** Pre-gesture snapshot: counters + dispatch time (page clock). */
 const SNAPSHOT = () => {
-	const r = window.__kliceTimeline;
+	const r = window.__ktabTimeline;
 	return {
 		commits: r.commitLog.length,
 		gaps: r.gaps.length,
@@ -72,7 +72,7 @@ async function waitQuiet(page, pre) {
 	return page
 		.waitForFunction(
 			(pre) => {
-				const r = window.__kliceTimeline;
+				const r = window.__ktabTimeline;
 				if (!r) return false;
 				const now = performance.now();
 				if (now < pre.dT + 120) return false;
@@ -100,7 +100,7 @@ async function waitQuiet(page, pre) {
 /** Slice [inputT, settle] out of the timeline record and derive the metrics. */
 async function extractWindow(page, pre) {
 	return page.evaluate((pre) => {
-		const r = window.__kliceTimeline;
+		const r = window.__ktabTimeline;
 		// Time-based lookup (NOT index-based): the inputMarks ring buffer shifts
 		// once past its cap, which would misalign pre-snapshot indexes. The
 		// gesture's first mark is the earliest mark at/after the snapshot time.

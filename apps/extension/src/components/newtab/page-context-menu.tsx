@@ -4,8 +4,8 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@klice-start/ui/components/motion/context-menu";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/motion/context-menu";
+import { Icon } from "@ktab/ui/icons/icon";
 import { type MouseEvent, type ReactNode, useCallback, useState } from "react";
 import { isInsideSettingsScope } from "../../lib/context-scope";
 import { glassDropdownItem, glassMenu } from "../../lib/glass";
@@ -66,7 +66,7 @@ export function PageContextMenu({
 		if (!dataUrl) return;
 		const a = document.createElement("a");
 		a.href = dataUrl;
-		a.download = `klice-start-wallpaper-${pexelsImageId}.jpg`;
+		a.download = `ktab-wallpaper-${pexelsImageId}.jpg`;
 		a.click();
 	}, [pexelsImageId, getBackgroundImage]);
 

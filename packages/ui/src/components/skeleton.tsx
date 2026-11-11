@@ -1,4 +1,4 @@
-import { cn } from "@klice-start/ui/lib/utils"
+import { cn } from "@ktab/ui/lib/utils"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (

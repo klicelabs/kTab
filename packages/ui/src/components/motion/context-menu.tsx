@@ -6,12 +6,12 @@ import {
 	EASE_OUT,
 	SPRING_LAYOUT,
 	SPRING_PANEL,
-} from "@klice-start/ui/lib/ease";
+} from "@ktab/ui/lib/ease";
 import {
 	holdSelection,
 	TOUCH_GESTURE_CONTENT_CLASS,
-} from "@klice-start/ui/lib/touch";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/touch";
+import { cn } from "@ktab/ui/lib/utils";
 import { Check } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -555,7 +555,7 @@ export function ContextMenuContent({
 					// The caller owns the surface material. App context menus pass the
 					// semantic dense Liquid Glass recipe; keeping a default card fill or
 					// border here would compete with that recipe and flatten the backdrop.
-					"min-w-56 overflow-hidden rounded-xl p-1.5 text-[var(--klice-glass-foreground-primary)] shadow-[0_18px_28px_rgba(0,0,0,0.2)] outline-none",
+					"min-w-56 overflow-hidden rounded-xl p-1.5 text-[var(--ktab-glass-foreground-primary)] shadow-[0_18px_28px_rgba(0,0,0,0.2)] outline-none",
 					className,
 				)}
 			>
@@ -630,13 +630,13 @@ function ContextMenuItemBase({
 			inset && "pl-8",
 			tone === "destructive"
 				? "text-destructive"
-				: "text-[var(--klice-glass-foreground-primary)]",
+				: "text-[var(--ktab-glass-foreground-primary)]",
 			className,
 			// Active (hover / keyboard) row: accent highlight, macOS-style.
 			// Placed after the caller's surface classes so the highlight wins.
 			active &&
 				tone !== "destructive" &&
-				"text-[var(--klice-accent-foreground)]",
+				"text-[var(--ktab-accent-foreground)]",
 		)}
 	>
 		{active ? (
@@ -646,7 +646,7 @@ function ContextMenuItemBase({
 					"absolute inset-0 -z-10 rounded-lg",
 					tone === "destructive"
 						? "bg-destructive/10"
-						: "bg-[var(--klice-accent)]",
+						: "bg-[var(--ktab-accent)]",
 				)}
 				transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
 			/>

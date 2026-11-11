@@ -1,4 +1,4 @@
-import type { IconName } from "@klice-start/ui/icons/icon";
+import type { IconName } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { cn } from "../../../../lib/utils";
 import { SettingRow } from "./setting-row";

@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { SidebarProvider } from "@klice-start/ui/components/sidebar";
+import { SidebarProvider } from "@ktab/ui/components/sidebar";
 import { parseHTML } from "linkedom";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -138,7 +138,7 @@ test("the solid tile swatch and selected state track the applied colour", async 
 	const swatch = tile.querySelector("span[aria-hidden]")?.getAttribute("style");
 	expect(swatch).toContain("#123456");
 	// Active tile carries the accent ring and the check badge.
-	expect(tile.className).toContain("ring-[var(--klice-accent)]");
+	expect(tile.className).toContain("ring-[var(--ktab-accent)]");
 	expect(tile.querySelector("svg")).not.toBeNull();
 	// The toggle reads as selected (clicking the trigger opens the picker).
 	expect(trigger.getAttribute("aria-pressed")).toBe("true");

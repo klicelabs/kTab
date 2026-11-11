@@ -1,11 +1,11 @@
 {
-  "extends": "@klice-start/config/tsconfig.base.json",
+  "extends": "@ktab/config/tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "types": [],
     "paths": {
-      "@klice-start/ui/*": ["./src/*"]
+      "@ktab/ui/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

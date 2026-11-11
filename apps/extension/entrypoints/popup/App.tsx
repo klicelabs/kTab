@@ -1,5 +1,8 @@
-import { Button } from "@klice-start/ui/components/button";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "@ktab/ui/icons/icon";
+import { KtabShape } from "@ktab/ui/lib/shapes";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { SETTINGS_FOCUS_RING } from "../../src/components/newtab/settings/shared/settings-tokens";
+import { ACCENT_COLORS } from "../../src/lib/accent";
 import { findBookmarkInFolder } from "../../src/lib/bookmark-match";
 import { ext } from "../../src/lib/extension-api";
 import { flattenForPicker } from "../../src/lib/folder-tree";
@@ -13,6 +16,7 @@ import {
 } from "../../src/lib/pending-save";
 import { flushPersist } from "../../src/lib/storage";
 import { faviconUrl } from "../../src/lib/url";
+import { cn } from "../../src/lib/utils";
 import { useImageStore } from "../../src/stores/image-store";
 import { useSetupStore } from "../../src/stores/setup-store";
 
@@ -31,6 +35,40 @@ const pendingSaveQuery =
 		? null
 		: new URLSearchParams(window.location.search).get(PENDING_SAVE_QUERY_PARAM);
 
+/**
+ * The popup is one grouped-list card, mirroring the Settings row rhythm:
+ * a single quiet surface holds the title and folder rows, separated by a
+ * hairline, and the primary action below carries ALL save feedback by
+ * morphing itself (spinner → check) instead of growing a status line.
+ */
+const GROUP_SURFACE = cn(
+	KtabShape.section,
+	"overflow-hidden bg-neutral-900/[0.04] ring-1 ring-black/[0.06] ring-inset dark:bg-white/[0.05] dark:ring-white/[0.08]",
+);
+const GROUP_ROW =
+	"flex h-11 items-center px-3.5 transition-colors duration-150 focus-within:bg-neutral-900/[0.04] dark:focus-within:bg-white/[0.05]";
+const GROUP_DIVIDER = "h-px shrink-0 bg-black/[0.06] dark:bg-white/[0.08]";
+const ROW_FIELD =
+	"w-full border-0 bg-transparent px-0 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500";
+const PRIMARY_BASE = cn(
+	KtabShape.control,
+	SETTINGS_FOCUS_RING,
+	"inline-flex h-10 w-full items-center justify-center gap-2 border-0 px-3 font-medium text-[13px] transition-[background-color,color,filter,transform] duration-300 ease-out active:scale-[0.98] motion-reduce:transition-colors",
+);
+const PRIMARY_TONE = cn(
+	"bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] accent-action-shadow hover:brightness-95",
+);
+const QUIET_ACTION =
+	"text-[12px] font-medium text-neutral-500 transition-colors duration-150 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100";
+
+function hostOf(url: string): string {
+	try {
+		return new URL(url).hostname.replace(/^www\./, "");
+	} catch {
+		return url;
+	}
+}
+
 async function clearPendingOperation(
 	expectedId: string,
 	deleteThumb: boolean,
@@ -45,6 +83,50 @@ async function clearPendingOperation(
 	if (thumbId) await deleteThumbnail(thumbId);
 }
 
+function PagePreview({
+	src,
+	favicon,
+	title,
+}: {
+	src: string | null;
+	favicon?: string;
+	title?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				KtabShape.surface,
+				"relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden bg-neutral-900/[0.05] ring-1 ring-black/[0.06] ring-inset dark:bg-white/[0.05] dark:ring-white/[0.08]",
+			)}
+		>
+			{src ? (
+				<img src={src} alt="" className="h-full w-full object-cover" />
+			) : favicon ? (
+				<img
+					src={favicon}
+					alt=""
+					className="size-8 rounded-[8px] object-contain opacity-80"
+				/>
+			) : (
+				<span className="font-semibold text-2xl text-neutral-400 dark:text-neutral-500">
+					{(title || "?").trim().charAt(0).toUpperCase() || "?"}
+				</span>
+			)}
+		</div>
+	);
+}
+
+function Chevron() {
+	return (
+		<Icon
+			name="chevron-down"
+			size={14}
+			aria-hidden="true"
+			className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-neutral-400 dark:text-neutral-500"
+		/>
+	);
+}
+
 export default function App() {
 	const isPendingFlow = pendingSaveQuery !== null;
 	const pendingId = pendingSaveQuery ?? "";
@@ -56,6 +138,7 @@ export default function App() {
 		url: string;
 		favicon: string;
 	} | null>(null);
+	const [titleValue, setTitleValue] = useState("");
 	const [pendingState, setPendingState] = useState<PendingState>(
 		isPendingFlow ? "loading" : "ready",
 	);
@@ -72,9 +155,37 @@ export default function App() {
 
 	const folders = useSetupStore((s) => s.folders);
 	const activeFolderId = useSetupStore((s) => s.activeFolderId);
+	const colorScheme = useSetupStore((s) => s.settings.colorScheme ?? "auto");
+	const accentColor = useSetupStore((s) => s.settings.accentColor ?? "blue");
+	const cornerScale = useSetupStore((s) => s.settings.cornerScale ?? "soft");
 	const saveThumbnail = useImageStore((s) => s.saveThumbnail);
 	const getThumbnail = useImageStore((s) => s.getThumbnail);
 	const deleteThumbnail = useImageStore((s) => s.deleteThumbnail);
+
+	// The popup is product chrome: it follows the app's theme, accent and
+	// corner scale instead of keeping its own hardcoded palette.
+	useEffect(() => {
+		const root = document.documentElement;
+		const media = window.matchMedia("(prefers-color-scheme: dark)");
+		const apply = () => {
+			const dark =
+				colorScheme === "dark" || (colorScheme === "auto" && media.matches);
+			root.classList.toggle("dark", dark);
+			root.classList.toggle("light", !dark);
+			root.style.colorScheme = dark ? "dark" : "light";
+			root.dataset.ktabCorner = cornerScale;
+			const accent = ACCENT_COLORS[accentColor] ?? ACCENT_COLORS.blue;
+			root.style.setProperty(
+				"--ktab-accent",
+				dark ? accent.dark : accent.light,
+			);
+			root.style.setProperty("--ktab-accent-foreground", accent.foreground);
+			root.style.setProperty("--ktab-accent-rgb", accent.rgb);
+		};
+		apply();
+		media.addEventListener("change", apply);
+		return () => media.removeEventListener("change", apply);
+	}, [accentColor, colorScheme, cornerScale]);
 
 	useEffect(() => {
 		if (useSetupStore.persist.hasHydrated()) {
@@ -174,10 +285,20 @@ export default function App() {
 			cancelled = true;
 		};
 	}, [deleteThumbnail, getThumbnail, isPendingFlow, pendingId]);
+
 	useEffect(() => {
 		if (!isPendingFlow || pendingState !== "ready") return;
 		requestAnimationFrame(() => pendingNameRef.current?.focus());
 	}, [isPendingFlow, pendingState]);
+
+	useEffect(() => {
+		if (isPendingFlow || !tabInfo) return;
+		setTitleValue(tabInfo.title);
+		const input = titleRef.current;
+		if (!input) return;
+		input.focus();
+		input.select();
+	}, [isPendingFlow, tabInfo]);
 
 	async function handlePendingCancel() {
 		if (!pendingId || pendingState === "saving") return;
@@ -188,7 +309,8 @@ export default function App() {
 		setTimeout(() => window.close(), 250);
 	}
 
-	async function handlePendingCreate() {
+	async function handlePendingCreate(event?: FormEvent) {
+		event?.preventDefault();
 		if (!hasHydrated || !pendingRecord || pendingState !== "ready") return;
 		const name = newFolderName.trim();
 		if (!name) {
@@ -245,7 +367,8 @@ export default function App() {
 		}
 	}
 
-	async function handleSave() {
+	async function handleSave(event?: FormEvent) {
+		event?.preventDefault();
 		if (!hasHydrated || !tabInfo || saveState === "saving") return;
 
 		setSaveState("saving");
@@ -260,7 +383,7 @@ export default function App() {
 			// second popup may have written the same URL while this popup was open.
 			const store = useSetupStore.getState();
 			const existing = findBookmarkInFolder(store.cards, folderId, tabInfo.url);
-			const title = titleRef.current?.value.trim() || tabInfo.title;
+			const title = titleValue.trim() || tabInfo.title;
 			if (existing) {
 				const previousThumbId = existing.thumbId;
 				const changes = {
@@ -301,273 +424,310 @@ export default function App() {
 		}
 	}
 
+	const shell =
+		"w-[320px] select-none bg-white font-sans text-[13px] text-neutral-900 antialiased dark:bg-[#1d1d1d] dark:text-neutral-100";
+
 	if (isPendingFlow) {
 		const pendingFormVisible =
 			pendingRecord && (pendingState === "ready" || pendingState === "saving");
 		return (
-			<div
-				className="w-[340px] select-none p-3 font-sans text-white text-xs"
-				style={{ background: "#1c1c1e" }}
-			>
-				<div className="mb-2.5 flex items-center justify-between gap-2">
-					<span className="font-semibold text-[13px] text-white/90">
-						New folder & save
-					</span>
-					<button
-						type="button"
-						onClick={handlePendingCancel}
-						className="text-white/45 hover:text-white/80"
-					>
-						Cancel
-					</button>
-				</div>
+			<div className={shell}>
+				<div className="flex flex-col gap-3 p-4">
+					<header className="flex items-center justify-between gap-2">
+						<h1 className="font-semibold text-[13px] tracking-[-0.01em]">
+							New folder &amp; save
+						</h1>
+						<button
+							type="button"
+							onClick={handlePendingCancel}
+							className={QUIET_ACTION}
+						>
+							Cancel
+						</button>
+					</header>
 
-				{pendingState === "loading" && (
-					<p className="py-8 text-center text-white/50">Loading page…</p>
-				)}
-				{(pendingState === "stale" || pendingState === "cancelled") && (
-					<p className="py-8 text-center text-white/50">
-						{pendingState === "cancelled"
-							? "Save cancelled."
-							: "This save request has expired."}
-					</p>
-				)}
-				{pendingState === "error" && (
-					<p className="py-8 text-center text-red-300">
-						Could not complete the save.
-					</p>
-				)}
-				{pendingState === "saved" && (
-					<p className="py-8 text-center text-emerald-300">
-						Folder created and page saved ✓
-					</p>
-				)}
-				{pendingFormVisible && pendingRecord && (
-					<div className="space-y-2.5">
-						{previewUrl && (
-							<div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
-								<img
-									src={previewUrl}
-									alt="Page preview"
-									className="h-full w-full object-cover"
-								/>
-							</div>
-						)}
-						<div className="flex items-center gap-2 rounded-md bg-white/5 px-2.5 py-2">
-							{pendingRecord.favicon && (
-								<img
-									src={pendingRecord.favicon}
-									alt=""
-									className="h-4 w-4 rounded-sm"
-								/>
-							)}
-							<div className="min-w-0">
-								<p className="truncate font-medium text-white/85">
-									{pendingRecord.title}
-								</p>
-								<p className="truncate text-[10px] text-white/40">
-									{pendingRecord.url}
-								</p>
-							</div>
+					{pendingState === "loading" && (
+						<div className="flex h-[188px] flex-col items-center justify-center gap-2 text-[12px] text-neutral-500 dark:text-neutral-400">
+							<Icon name="loader" size={14} className="animate-spin" />
+							Preparing save…
 						</div>
-						<div>
-							<label
-								htmlFor="new-folder-name"
-								className="mb-1 block font-medium text-[11px] text-white/50"
-							>
-								Folder name
-							</label>
-							<input
-								id="new-folder-name"
-								ref={pendingNameRef}
-								value={newFolderName}
-								onChange={(event) => {
-									setNewFolderName(event.target.value);
-									setPendingNameError(false);
-								}}
-								placeholder="Folder name"
-								className="w-full rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-medium text-white text-xs placeholder-white/30 outline-none focus:border-white/30"
+					)}
+					{(pendingState === "stale" || pendingState === "cancelled") && (
+						<div className="flex h-[188px] flex-col items-center justify-center gap-2 text-center text-[12px] text-neutral-500 dark:text-neutral-400">
+							<Icon name="alert" size={16} className="opacity-60" />
+							{pendingState === "cancelled"
+								? "Save cancelled."
+								: "This save request has expired."}
+						</div>
+					)}
+					{pendingState === "error" && (
+						<div
+							role="alert"
+							className="flex h-[188px] flex-col items-center justify-center gap-2 text-center text-[12px] text-red-600 dark:text-red-400"
+						>
+							<Icon name="alert" size={16} className="opacity-80" />
+							Could not complete the save.
+						</div>
+					)}
+					{pendingState === "saved" && (
+						<div className="flex h-[188px] flex-col items-center justify-center gap-2 text-center">
+							<span className="flex size-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+								<Icon name="check" size={16} />
+							</span>
+							<p className="font-medium text-[12px] text-neutral-700 dark:text-neutral-200">
+								Folder created and page saved
+							</p>
+						</div>
+					)}
+					{pendingFormVisible && pendingRecord && (
+						<>
+							<PagePreview
+								src={previewUrl}
+								favicon={pendingRecord.favicon}
+								title={pendingRecord.title}
 							/>
-							{pendingNameError && (
-								<p className="mt-1 text-[10px] text-red-300">
-									Folder name is required.
-								</p>
-							)}
-						</div>
-						<div>
-							<label
-								htmlFor="parent-folder-select"
-								className="mb-1 block font-medium text-[11px] text-white/50"
+							<div className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+								{pendingRecord.favicon && (
+									<img
+										src={pendingRecord.favicon}
+										alt=""
+										className="size-3.5 shrink-0 rounded-[3px] object-contain"
+									/>
+								)}
+								<span className="truncate">{pendingRecord.title}</span>
+							</div>
+
+							<form
+								className="flex flex-col gap-3"
+								onSubmit={handlePendingCreate}
 							>
-								Parent folder <span className="text-white/30">(optional)</span>
-							</label>
-							<select
-								id="parent-folder-select"
-								value={parentFolderId ?? ""}
-								onChange={(event) =>
-									setParentFolderId(event.target.value || null)
-								}
-								className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 font-medium text-white text-xs outline-none focus:border-white/30"
-							>
-								<option value="" className="bg-neutral-900 text-white">
-									Top level
-								</option>
-								{folderOptions.map((opt) => (
-									<option
-										key={opt.folder.id}
-										value={opt.folder.id}
-										className="bg-neutral-900 text-white"
-									>
-										{opt.depth > 0
-											? "· ".repeat(opt.depth) + opt.folder.name
-											: opt.folder.name}
-									</option>
-								))}
-							</select>
-						</div>
-						<div className="flex gap-2 pt-0.5">
-							<button
-								type="button"
-								onClick={handlePendingCancel}
-								className="h-8 flex-1 rounded-md border border-white/10 font-medium text-white/65 text-xs hover:bg-white/5"
-							>
-								Cancel
-							</button>
-							<Button
-								type="button"
-								onClick={handlePendingCreate}
-								disabled={!hasHydrated || pendingState === "saving"}
-								className="h-8 flex-[2] rounded-md font-medium text-xs shadow-xs"
-							>
-								{pendingState === "saving" ? "Saving…" : "Create folder & save"}
-							</Button>
-						</div>
-					</div>
-				)}
+								<div className={GROUP_SURFACE}>
+									<div className={GROUP_ROW}>
+										<input
+											id="new-folder-name"
+											ref={pendingNameRef}
+											value={newFolderName}
+											onChange={(event) => {
+												setNewFolderName(event.target.value);
+												setPendingNameError(false);
+											}}
+											placeholder="Folder name"
+											autoComplete="off"
+											spellCheck={false}
+											aria-label="Folder name"
+											aria-invalid={pendingNameError}
+											className={ROW_FIELD}
+										/>
+									</div>
+									<div className={GROUP_DIVIDER} />
+									<div className={cn(GROUP_ROW, "relative")}>
+										<select
+											id="parent-folder-select"
+											value={parentFolderId ?? ""}
+											onChange={(event) =>
+												setParentFolderId(event.target.value || null)
+											}
+											aria-label="Parent folder"
+											className={cn(ROW_FIELD, "appearance-none pr-8")}
+										>
+											<option
+												value=""
+												className="bg-white text-neutral-900 dark:bg-[#1d1d1d] dark:text-neutral-100"
+											>
+												Top level
+											</option>
+											{folderOptions.map((opt) => (
+												<option
+													key={opt.folder.id}
+													value={opt.folder.id}
+													className="bg-white text-neutral-900 dark:bg-[#1d1d1d] dark:text-neutral-100"
+												>
+													{opt.depth > 0
+														? "· ".repeat(opt.depth) + opt.folder.name
+														: opt.folder.name}
+												</option>
+											))}
+										</select>
+										<Chevron />
+									</div>
+								</div>
+								{pendingNameError && (
+									<p className="font-medium text-[11px] text-red-600 dark:text-red-400">
+										Folder name is required.
+									</p>
+								)}
+								<button
+									type="submit"
+									disabled={!hasHydrated || pendingState === "saving"}
+									className={cn(PRIMARY_BASE, PRIMARY_TONE)}
+								>
+									{pendingState === "saving" ? (
+										<>
+											<Icon
+												name="loader"
+												size={15}
+												aria-hidden="true"
+												className="animate-spin"
+											/>
+											Creating…
+										</>
+									) : (
+										"Create folder & save"
+									)}
+								</button>
+							</form>
+						</>
+					)}
+				</div>
 			</div>
 		);
 	}
 
-	const statusText =
-		saveState === "saving"
-			? "Saving…"
-			: saveState === "saved"
-				? "Added ✓"
-				: saveState === "updated"
-					? "Bookmark updated ✓"
-					: saveState === "error"
-						? "Error saving."
-						: "";
+	const success = saveState === "saved" || saveState === "updated";
 
 	return (
-		<div
-			className="w-[280px] select-none p-3 font-sans text-white text-xs"
-			style={{ background: "#1c1c1e" }}
-		>
-			<div className="mb-2.5 flex items-center gap-1.5">
-				<span className="font-semibold text-[13px] text-white/90">
-					Save to Klice Start
-				</span>
-			</div>
-
-			{blocked ? (
-				<p className="py-4 text-center text-white/50">
-					Cannot save this page. Open a regular web page to bookmark it.
-				</p>
-			) : (
-				<div className="space-y-2.5">
-					{previewUrl && (
-						<div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
-							<img
-								src={previewUrl}
-								alt="Page preview"
-								className="h-full w-full object-cover"
-							/>
-						</div>
-					)}
-
-					<div>
-						<label
-							htmlFor="tab-title-input"
-							className="mb-1 block font-medium text-[11px] text-white/50"
-						>
-							Title
-						</label>
-						<input
-							id="tab-title-input"
-							ref={titleRef}
-							type="text"
-							defaultValue={tabInfo?.title ?? ""}
-							placeholder="Page title"
-							className="w-full rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 font-medium text-white text-xs placeholder-white/30 outline-none focus:border-white/30"
+		<div className={shell}>
+			<div className="flex flex-col gap-3 p-4">
+				<header className="flex min-w-0 items-center gap-2">
+					{tabInfo?.favicon && (
+						<img
+							src={tabInfo.favicon}
+							alt=""
+							className="size-4 shrink-0 rounded-[5px] object-contain"
 						/>
-					</div>
-
-					<div>
-						<label
-							htmlFor="folder-select-input"
-							className="mb-1 block font-medium text-[11px] text-white/50"
-						>
-							Folder
-						</label>
-						<select
-							id="folder-select-input"
-							value={folderId}
-							onChange={(e) => {
-								folderTouchedRef.current = true;
-								setFolderId(e.target.value);
-								if (saveState !== "idle") setSaveState("idle");
-							}}
-							className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1.5 font-medium text-white text-xs outline-none focus:border-white/30"
-						>
-							{folderOptions.map((opt) => (
-								<option
-									key={opt.folder.id}
-									value={opt.folder.id}
-									className="bg-neutral-900 text-white"
-								>
-									{opt.depth > 0
-										? "· ".repeat(opt.depth) + opt.folder.name
-										: opt.folder.name}
-								</option>
-							))}
-						</select>
-					</div>
-
-					{statusText && (
-						<p
-							className={`text-center font-medium text-[11px] ${
-								saveState === "saved" || saveState === "updated"
-									? "text-emerald-400"
-									: saveState === "error"
-										? "text-red-400"
-										: "text-white/50"
-							}`}
-						>
-							{statusText}
-						</p>
 					)}
+					<span className="truncate font-medium text-[11px] text-neutral-500 dark:text-neutral-400">
+						{tabInfo ? hostOf(tabInfo.url) : ""}
+					</span>
+				</header>
 
-					<Button
-						type="button"
-						size="sm"
-						onClick={handleSave}
-						disabled={
-							!hasHydrated ||
-							saveState === "saving" ||
-							saveState === "saved" ||
-							saveState === "updated"
-						}
-						className="h-8 w-full rounded-md font-medium text-xs shadow-xs"
-					>
-						{saveState === "saved"
-							? "Saved ✓"
-							: saveState === "updated"
-								? "Updated ✓"
-								: "Save Page"}
-					</Button>
-				</div>
-			)}
+				{blocked ? (
+					<div className="flex h-[148px] flex-col items-center justify-center gap-2 text-center text-[12px] text-neutral-500 dark:text-neutral-400">
+						<Icon name="alert" size={16} className="opacity-60" />
+						Cannot save this page. Open a regular web page to bookmark it.
+					</div>
+				) : (
+					<>
+						<PagePreview
+							src={previewUrl}
+							favicon={tabInfo?.favicon}
+							title={tabInfo?.title}
+						/>
+						<form className="flex flex-col gap-3" onSubmit={handleSave}>
+							<div className={GROUP_SURFACE}>
+								<div className={GROUP_ROW}>
+									<input
+										id="tab-title-input"
+										ref={titleRef}
+										type="text"
+										value={titleValue}
+										onChange={(event) => {
+											setTitleValue(event.target.value);
+											if (saveState !== "idle") setSaveState("idle");
+										}}
+										placeholder="Page title"
+										autoComplete="off"
+										spellCheck={false}
+										aria-label="Page title"
+										className={ROW_FIELD}
+									/>
+								</div>
+								<div className={GROUP_DIVIDER} />
+								<div className={cn(GROUP_ROW, "relative")}>
+									<select
+										id="folder-select-input"
+										value={folderId}
+										onChange={(event) => {
+											folderTouchedRef.current = true;
+											setFolderId(event.target.value);
+											if (saveState !== "idle") setSaveState("idle");
+										}}
+										aria-label="Folder"
+										className={cn(ROW_FIELD, "appearance-none pr-8")}
+									>
+										{folderOptions.map((opt) => (
+											<option
+												key={opt.folder.id}
+												value={opt.folder.id}
+												className="bg-white text-neutral-900 dark:bg-[#1d1d1d] dark:text-neutral-100"
+											>
+												{opt.depth > 0
+													? "· ".repeat(opt.depth) + opt.folder.name
+													: opt.folder.name}
+											</option>
+										))}
+									</select>
+									<Chevron />
+								</div>
+							</div>
+
+							<button
+								type="submit"
+								disabled={
+									!hasHydrated ||
+									saveState === "saving" ||
+									saveState === "saved" ||
+									saveState === "updated"
+								}
+								className={cn(
+									PRIMARY_BASE,
+									success
+										? "bg-emerald-500 text-white dark:bg-emerald-600"
+										: saveState === "error"
+											? "bg-red-500 text-white dark:bg-red-600"
+											: PRIMARY_TONE,
+								)}
+							>
+								{saveState === "saving" ? (
+									<>
+										<Icon
+											name="loader"
+											size={15}
+											aria-hidden="true"
+											className="animate-spin"
+										/>
+										Saving…
+									</>
+								) : success ? (
+									<>
+										<span
+											className="ktab-icon-pop inline-flex"
+											aria-hidden="true"
+										>
+											<Icon name="check" size={15} strokeWidth={2.5} />
+										</span>
+										{saveState === "updated" ? "Updated" : "Saved"}
+									</>
+								) : saveState === "error" ? (
+									<>
+										<span
+											className="ktab-icon-pop inline-flex"
+											aria-hidden="true"
+										>
+											<Icon name="alert" size={15} />
+										</span>
+										Couldn’t save — try again
+									</>
+								) : (
+									"Save page"
+								)}
+							</button>
+
+							<p aria-live="polite" className="sr-only">
+								{saveState === "saving"
+									? "Saving…"
+									: saveState === "saved"
+										? "Saved to kTab"
+										: saveState === "updated"
+											? "Bookmark updated"
+											: saveState === "error"
+												? "Could not save this page."
+												: ""}
+							</p>
+						</form>
+					</>
+				)}
+			</div>
 		</div>
 	);
 }

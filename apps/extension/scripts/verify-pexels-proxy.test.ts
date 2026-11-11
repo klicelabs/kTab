@@ -44,7 +44,7 @@ const photo = {
 	},
 };
 async function fixture() {
-	const directory = await mkdtemp(join(tmpdir(), "klice-pexels-test-"));
+	const directory = await mkdtemp(join(tmpdir(), "ktab-pexels-test-"));
 	folders.push(directory);
 	let now = Date.now();
 	let count = 0;

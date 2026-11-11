@@ -8,7 +8,7 @@ import path from "node:path";
 import { buildSeed, launchExtension, openNewtab } from "./bench-lib.mjs";
 
 const { context, extensionId } = await launchExtension({ headless: process.env.HEADFUL !== "1" });
-const screenshots = fs.mkdtempSync(path.join(process.env.TEMP ?? "/tmp", "klice-wallpaper-color-"));
+const screenshots = fs.mkdtempSync(path.join(process.env.TEMP ?? "/tmp", "ktab-wallpaper-color-"));
 let checks = 0;
 const check = async (name, run) => { await run(); console.log(`PASS ${++checks}. ${name}`); };
 const errors = [];

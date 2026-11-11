@@ -13,7 +13,7 @@ import { cn } from "./utils";
  *
  * The edge is deliberately NOT a `border`: it is an inset ring inside the
  * shadow stack, so it hugs whatever radius the element already has — plain
- * `rounded-*` or Klice's `.squircle` — and reads as part of the material
+ * `rounded-*` or kTab's `.squircle` — and reads as part of the material
  * rather than a drawn rectangle. That is also why the recipes below almost
  * never contain a border utility.
  *

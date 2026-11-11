@@ -15,7 +15,7 @@ export default defineConfig({
 		},
 	},
 	manifest: {
-		name: "Klice Start",
+		name: "kTab",
 		// Firefox MV3 requires an explicit extension ID.
 		browser_specific_settings: {
 			gecko: {
@@ -25,7 +25,7 @@ export default defineConfig({
 		},
 		version: "1.3.5",
 		default_locale: "en",
-		description: "A personal browser dashboard for your new tab.",
+		description: "A minimal, high-performance new tab extension & speed dial.",
 		permissions: [
 			"storage",
 			"activeTab",
@@ -51,13 +51,13 @@ export default defineConfig({
 				// to fire both actions. Alt+Shift+D is unclaimed in Chromium
 				// and Firefox defaults.
 				suggested_key: { default: "Alt+Shift+D", mac: "Command+Shift+D" },
-				description: "Save current page to Klice Start",
+				description: "Save current page to kTab",
 			},
 		},
 	},
 	zip: {
 		// AMO sources zip must cover the whole workspace: bun.lock and the
-		// workspace packages (@klice-start/ui, @klice-start/env, @klice-start/config) live at the
+		// workspace packages (@ktab/ui, @ktab/env, @ktab/config) live at the
 		// repo root, not in apps/extension.
 		sourcesRoot: "../..",
 		excludeSources: [

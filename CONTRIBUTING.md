@@ -1,4 +1,4 @@
-# Contributing to Klice Start
+# Contributing to kTab
 
 The active product is the local-only browser extension in `apps/extension`.
 Shared UI code lives in `packages/ui`. The web and docs apps are separate workspaces.

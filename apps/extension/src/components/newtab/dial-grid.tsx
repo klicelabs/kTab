@@ -1,4 +1,4 @@
-import { REORDER_TWEEN } from "@klice-start/ui/lib/ease";
+import { REORDER_TWEEN } from "@ktab/ui/lib/ease";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -35,6 +35,7 @@ import { useSelectionStore } from "../../stores/selection-store";
 import { computeGridMaxWidth, useSetupStore } from "../../stores/setup-store";
 import type { Card, Folder } from "../../types";
 import { DialCard } from "./dial-card";
+import { DialHoverVeil } from "./dial-hover-veil";
 import {
 	FolderPreviewCard,
 	type FolderPreviewItem,
@@ -727,8 +728,8 @@ export function DialGrid({
 					marginInline: "auto",
 					...(dialLayout === "icon"
 						? {
-							["--icon-safe-padding" as string]: `${iconGrid.safePadding}px`,
-						}
+								["--icon-safe-padding" as string]: `${iconGrid.safePadding}px`,
+							}
 						: {}),
 				}}
 			>
@@ -776,6 +777,11 @@ export function DialGrid({
 							...cellAspectStyle,
 						}}
 					>
+						{/* One shared hover frame behind the items: it springs
+						    between them with the switcher motion instead of fading
+						    per cell. First child of the grid so the grid-owned icon
+						    vars resolve for its radii and cells paint above it. */}
+						<DialHoverVeil resetKey={folderId} />
 						{orderedRefs.length === 0
 							? emptyState
 							: orderedRefs.map((ref) => {

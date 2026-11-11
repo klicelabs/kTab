@@ -21,11 +21,11 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT } from "@klice-start/ui/lib/ease";
-import { useDismiss } from "@klice-start/ui/lib/hooks/use-dismiss";
-import { useHoverGesture } from "@klice-start/ui/lib/hooks/use-hover-gesture";
-import { useTapGesture } from "@klice-start/ui/lib/hooks/use-tap-gesture";
-import { cn } from "@klice-start/ui/lib/utils";
+import { EASE_OUT } from "@ktab/ui/lib/ease";
+import { useDismiss } from "@ktab/ui/lib/hooks/use-dismiss";
+import { useHoverGesture } from "@ktab/ui/lib/hooks/use-hover-gesture";
+import { useTapGesture } from "@ktab/ui/lib/hooks/use-tap-gesture";
+import { cn } from "@ktab/ui/lib/utils";
 
 type Side = "top" | "right" | "bottom" | "left";
 

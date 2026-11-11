@@ -2,8 +2,8 @@
 
 // beui.dev/components/blocks/file-upload
 
-import { EASE_OUT } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { EASE_OUT } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 import {
 	AlertCircle,
 	CheckCircle2,

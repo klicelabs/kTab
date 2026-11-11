@@ -1,7 +1,7 @@
 import { isAbsoluteHttpUrl } from "./url";
 
 /** Storage key used to hand a context-menu save operation to the popup. */
-export const PENDING_SAVE_KEY = "klice-pending-save";
+export const PENDING_SAVE_KEY = "ktab-pending-save";
 export const PENDING_SAVE_QUERY_PARAM = "pendingSaveId";
 
 /** Pending operations intentionally expire quickly if their popup is abandoned. */

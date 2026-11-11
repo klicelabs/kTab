@@ -1,5 +1,5 @@
-import type { IconName } from "@klice-start/ui/icons/icon";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
+import type { IconName } from "@ktab/ui/icons/icon";
+import { ktabShape } from "@ktab/ui/lib/shapes";
 
 /**
  * Shared toolbar design tokens. Every control in the toolbar must use these
@@ -60,9 +60,9 @@ export const TOOLBAR = {
 	 * matches controlHeight so inset controls stay circular, never oval. */
 	innerSize: "size-[28px]",
 	/** Shared pill geometry for a toolbar segment. Always full rounded. */
-	radius: kliceShape("toolbarControl"),
+	radius: ktabShape("toolbarControl"),
 	/** Shared pill geometry for a standalone 34px icon control. Always full rounded. */
-	standaloneShape: kliceShape("toolbarIcon"),
+	standaloneShape: ktabShape("toolbarIcon"),
 	/** Inner padding of the Tabbar shell — the only cluster that wraps its controls. */
 	groupPadding: "p-[3px]",
 	/** Material height of a toolbar group surface (Tabbar shell, history group). */
@@ -151,9 +151,9 @@ export function toolbarIconClass(name: IconName): string {
 
 export function toolbarControlLiquid(active: boolean): string {
 	if (active) {
-		return `${TOOLBAR.controlHeight} ${TOOLBAR.radius} ${TOOLBAR.transition} bg-foreground/10 text-[var(--klice-glass-foreground-primary)]`;
+		return `${TOOLBAR.controlHeight} ${TOOLBAR.radius} ${TOOLBAR.transition} bg-foreground/10 text-[var(--ktab-glass-foreground-primary)]`;
 	}
-	return `${TOOLBAR.controlHeight} ${TOOLBAR.radius} ${TOOLBAR.transition} text-[var(--klice-glass-foreground-secondary)] hover:text-[var(--klice-glass-foreground-primary)] hover:bg-foreground/[0.10] active:bg-foreground/15`;
+	return `${TOOLBAR.controlHeight} ${TOOLBAR.radius} ${TOOLBAR.transition} text-[var(--ktab-glass-foreground-secondary)] hover:text-[var(--ktab-glass-foreground-primary)] hover:bg-foreground/[0.10] active:bg-foreground/15`;
 }
 
 /**

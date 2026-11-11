@@ -7,7 +7,7 @@ import type { DragEvent } from "react";
  */
 export type DragKind = "card" | "folder";
 
-const KIND_PREFIX = "application/x-klice-start-";
+const KIND_PREFIX = "application/x-ktab-";
 
 export interface ActiveDrag {
 	kind: DragKind;

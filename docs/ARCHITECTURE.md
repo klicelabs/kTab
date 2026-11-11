@@ -4,7 +4,7 @@ Local-first MV3 extension. Dashboard data stays on-device, with no accounts, bil
 
 ## Stack
 
-- Runtime: React 19.2 + TypeScript 5.9, Zustand 5 (all state), motion 13 (animation), Base UI 1.6 + shadcn-style primitives (`@klice-start/ui`), Tailwind 4, sonner toasts, lucide icons.
+- Runtime: React 19.2 + TypeScript 5.9, Zustand 5 (all state), motion 13 (animation), Base UI 1.6 + shadcn-style primitives (`@ktab/ui`), Tailwind 4, sonner toasts, lucide icons.
 - Build: WXT 0.20 + Vite, `@wxt-dev/module-react`. Manifest V3, `manifest.version 1.3.0`.
 - Dev: `bun run dev` (WXT port 5555, strict). Typecheck: `bun run compile` (`tsc --noEmit`). Tests: `bun test scripts/` (bun:test, ~233). Lint/format: Biome via root `bun run check`.
 - Package manager: bun 1.3.13 (workspaces + catalog). Turbo orchestrates `apps/*`.
@@ -56,7 +56,7 @@ Popup or auto-capture → `background.ts` queue (URL-canonicalized, 1600 ms sett
 
 ## Icon resolution
 
-Launcher icons (Icon Mode tiles, Card Mode favicon fallbacks) resolve **once per domain** through a quality-first ladder in `src/lib/icon-resolver.ts`; the verdict is persisted as metadata-only in `chrome.storage.local` key `klice-icon-cache` (own adapter + 400 ms debounce — never the `perch-setup` envelope; ≤600 entries, positive TTL 14 d, negative 3 d). No image bytes are stored: assets ride the browser HTTP cache between sessions, and a stale entry cheaply re-probes after its TTL.
+Launcher icons (Icon Mode tiles, Card Mode favicon fallbacks) resolve **once per domain** through a quality-first ladder in `src/lib/icon-resolver.ts`; the verdict is persisted as metadata-only in `chrome.storage.local` key `ktab-icon-cache` (own adapter + 400 ms debounce — never the `perch-setup` envelope; ≤600 entries, positive TTL 14 d, negative 3 d). No image bytes are stored: assets ride the browser HTTP cache between sessions, and a stale entry cheaply re-probes after its TTL.
 
 Inline SVG artwork uses an explicit 100% viewport and instance-local resource IDs (`SvgIcon`). Gradients, clipping, filters, local references and embedded ID selectors stay with their own icon, so an invisible search launcher cannot hide the same brand in the overlay or Quick Links.
 
@@ -90,9 +90,9 @@ Refresh feedback uses a single neutral skeleton shimmer on the worker's active c
 
 ## Corner scale
 
-One preference drives three coordinate systems, so every radius in the product moves together. `tokens.css` declares the `--shape-*` variables (a Chromium radius plus its calibrated Gecko fallback for corner-shape: squircle), and `packages/ui` shape roles consume them: panel, section, surface, card, control, thumbnail and pill. It also remaps `--radius` per tier, which is the base of the Tailwind/shadcn `rounded-sm…4xl` ladder — dropdown menus, context menus, dialogs, inputs, selects and popovers in `packages/ui` therefore follow the preference without per-component overrides. Settings → Appearance writes `cornerScale` ("discreet"/"soft"/"rounded", default "soft" = shipped geometry) to storage; the appearance provider mirrors it as `[data-klice-corner]` on the document root for instant live preview. Bookmark and folder cards read `--shape-card`, subfolder preview mini-tiles read `--shape-thumb`, the workspace frame reads the panel token, and the `select`/`input` squircle pairings derive their Gecko fallback from `--radius` so both engines stay proportional at every tier.
+One preference drives three coordinate systems, so every radius in the product moves together. `tokens.css` declares the `--shape-*` variables (a Chromium radius plus its calibrated Gecko fallback for corner-shape: squircle), and `packages/ui` shape roles consume them: panel, section, surface, card, control, thumbnail and pill. It also remaps `--radius` per tier, which is the base of the Tailwind/shadcn `rounded-sm…4xl` ladder — dropdown menus, context menus, dialogs, inputs, selects and popovers in `packages/ui` therefore follow the preference without per-component overrides. Settings → Appearance writes `cornerScale` ("discreet"/"soft"/"rounded", default "soft" = shipped geometry) to storage; the appearance provider mirrors it as `[data-ktab-corner]` on the document root for instant live preview. Bookmark and folder cards read `--shape-card`, subfolder preview mini-tiles read `--shape-thumb`, the workspace frame reads the panel token, and the `select`/`input` squircle pairings derive their Gecko fallback from `--radius` so both engines stay proportional at every tier.
 
-Deliberately outside the scale (intentional geometry): toolbar surfaces and controls are always true capsules (`--klice-toolbar-radius`), icon-mode tiles keep the Home-Screen squircle (`--icon-radius`), and micro details inside thumbnails (favicons) plus circles stay fixed.
+Deliberately outside the scale (intentional geometry): toolbar surfaces and controls are always true capsules (`--ktab-toolbar-radius`), icon-mode tiles keep the Home-Screen squircle (`--icon-radius`), and micro details inside thumbnails (favicons) plus circles stay fixed.
 
 The search field reads `--shape-search-collapsed` (12/22/28px). Discreet and Soft use the section role's calibrated squircle fallback; their detached list aliases the same field radius and fallback, so both surfaces share identical corners. Rounded is a true 28px field capsule in both engines and keeps a separate 46px squircle list (28px calibrated Gecko fallback). Rows use the control role. The list opens and closes with a reversible 160ms opacity/transform transition, without animating layout or changing the input's shape; reduced motion closes immediately.
 

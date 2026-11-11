@@ -1,6 +1,6 @@
-import { Input } from "@klice-start/ui/components/input";
-import { Switch } from "@klice-start/ui/components/switch";
-import type { IconName } from "@klice-start/ui/icons/icon";
+import { Input } from "@ktab/ui/components/input";
+import { Switch } from "@ktab/ui/components/switch";
+import type { IconName } from "@ktab/ui/icons/icon";
 import { cn } from "../../../../lib/utils";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { CardAspect, TitleSource } from "../../../../types";
@@ -18,6 +18,7 @@ import {
 	SETTINGS_SWITCH,
 } from "../shared/settings-tokens";
 import { SliderRow } from "../shared/slider-row";
+import { TabSwitcherShortcut } from "../tab-switcher-shortcut";
 
 const TILE_SIZE_OPTIONS = [
 	{ value: "small", label: "Small" },
@@ -370,6 +371,10 @@ export function GeneralPane() {
 					/>
 				</SettingsExpandable>
 			</SectionCard>
+
+			{/* The one keyboard behavior the extension owns: the tab switcher
+			    hotkey, remappable here instead of chrome://extensions/shortcuts. */}
+			<TabSwitcherShortcut />
 		</div>
 	);
 }

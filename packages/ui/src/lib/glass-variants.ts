@@ -66,15 +66,15 @@ const liquidGlassDensityStyles: Record<LiquidGlassDensity, string> = {
 	regular: [
 		// Clear surfaces preserve backdrop detail. The provider supplies the
 		// theme-aware optical values; this path stays live for plain divs too.
-		"backdrop-blur-[var(--klice-glass-blur-clear)] backdrop-saturate-[var(--klice-glass-saturation-clear)] backdrop-brightness-[var(--klice-glass-brightness-clear)]",
-		"bg-[color-mix(in_srgb,white_calc(22%+var(--klice-glass-intensity)*10%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(10%+var(--klice-glass-intensity)*8%),transparent)]",
+		"backdrop-blur-[var(--ktab-glass-blur-clear)] backdrop-saturate-[var(--ktab-glass-saturation-clear)] backdrop-brightness-[var(--ktab-glass-brightness-clear)]",
+		"bg-[color-mix(in_srgb,white_calc(22%+var(--ktab-glass-intensity)*10%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(10%+var(--ktab-glass-intensity)*8%),transparent)]",
 	].join(" "),
 	dense: [
 		// Dense is reserved for menus, search results and other text-heavy
 		// surfaces. It is visibly stronger than clear, but still lets the
 		// wallpaper read through instead of becoming opaque chrome.
-		"backdrop-blur-[var(--klice-glass-blur-dense)] backdrop-saturate-[var(--klice-glass-saturation-dense)] backdrop-brightness-[var(--klice-glass-brightness-dense)]",
-		"bg-[color-mix(in_srgb,white_calc(54%+var(--klice-glass-intensity)*8%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(38%+var(--klice-glass-intensity)*8%),transparent)]",
+		"backdrop-blur-[var(--ktab-glass-blur-dense)] backdrop-saturate-[var(--ktab-glass-saturation-dense)] backdrop-brightness-[var(--ktab-glass-brightness-dense)]",
+		"bg-[color-mix(in_srgb,white_calc(54%+var(--ktab-glass-intensity)*8%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(38%+var(--ktab-glass-intensity)*8%),transparent)]",
 	].join(" "),
 };
 
@@ -106,12 +106,12 @@ export const liquidGlassCardStyles = [
  * as a heavy white square at that size. This recipe keeps the house optics
  * (blur/saturation/brightness from the global intensity) and trims the fill
  * to a discreet veil with a hairline edge — never a chunky glassmorphism
- * block. Still parametric in `--klice-glass-intensity`, so the Appearance
+ * block. Still parametric in `--ktab-glass-intensity`, so the Appearance
  * slider moves it with everything else.
  */
 export const liquidTileStyles = [
-	"backdrop-blur-[var(--klice-glass-blur-clear)] backdrop-saturate-[var(--klice-glass-saturation-clear)] backdrop-brightness-[var(--klice-glass-brightness-clear)]",
-	"bg-[color-mix(in_srgb,white_calc(10%+var(--klice-glass-intensity)*8%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(12%+var(--klice-glass-intensity)*8%),transparent)]",
+	"backdrop-blur-[var(--ktab-glass-blur-clear)] backdrop-saturate-[var(--ktab-glass-saturation-clear)] backdrop-brightness-[var(--ktab-glass-brightness-clear)]",
+	"bg-[color-mix(in_srgb,white_calc(10%+var(--ktab-glass-intensity)*8%),transparent)] dark:bg-[color-mix(in_srgb,black_calc(12%+var(--ktab-glass-intensity)*8%),transparent)]",
 	"border-[0.5px] border-black/[0.08] dark:border-white/[0.10]",
 	"shadow-[inset_0_1px_0_0_rgba(255,255,255,0.20),0_6px_16px_-12px_rgba(0,0,0,0.45)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_8px_20px_-14px_rgba(0,0,0,0.7)]",
 ].join(" ");

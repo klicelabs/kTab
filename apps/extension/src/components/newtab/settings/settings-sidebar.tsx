@@ -1,11 +1,11 @@
-import { LiquidGlass } from "@klice-start/ui/components/liquid-glass";
+import { LiquidGlass } from "@ktab/ui/components/liquid-glass";
 import {
 	Sidebar,
 	SidebarContent,
 	SidebarHeader,
-} from "@klice-start/ui/components/sidebar";
-import type { IconName } from "@klice-start/ui/icons/icon";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/sidebar";
+import type { IconName } from "@ktab/ui/icons/icon";
+import { Icon } from "@ktab/ui/icons/icon";
 import { AnimatePresence, motion } from "motion/react";
 import {
 	startTransition,
@@ -126,9 +126,9 @@ function SettingsChromeButton({
 					data-settings-ui="true"
 					className={cn(
 						"flex size-full items-center justify-center bg-transparent transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.96]",
-						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--klice-accent)]",
+						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ktab-accent)]",
 						glassForeground(),
-						"hover:bg-foreground/[0.10] hover:text-[var(--klice-glass-foreground-primary)] active:bg-foreground/15",
+						"hover:bg-foreground/[0.10] hover:text-[var(--ktab-glass-foreground-primary)] active:bg-foreground/15",
 					)}
 				>
 					{glyph}
@@ -400,7 +400,7 @@ export function SettingsSidebar({
 							>
 								{showRoot ? "Preferences" : activePaneLabel}
 							</h2>
-							<p className="sr-only">Klice Start preferences</p>
+							<p className="sr-only">kTab preferences</p>
 						</div>
 						<SettingsChromeButton
 							icon="x"

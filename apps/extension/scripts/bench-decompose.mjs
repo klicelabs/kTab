@@ -1,5 +1,5 @@
 /**
- * Startup long task decomposition benchmark for the Klice Start newtab.
+ * Startup long task decomposition benchmark for the kTab newtab.
  *
  * The cold-load bench found 1 long task of ~214-233ms on every cold start
  * (5/5 runs). Before choosing between code-splitting (P1) and post-paint
@@ -59,7 +59,7 @@ const DECOMPOSE_SCRIPT = `
     longTasks: [],
     _rafScheduled: false,
   };
-  window.__kliceDecompose = a;
+  window.__ktabDecompose = a;
   const now = () => performance.now();
   try { a.stage = "dcl-listener"; } catch (e) {}
 
@@ -70,7 +70,7 @@ const DECOMPOSE_SCRIPT = `
   const armGet = () => {
     try {
       const c = window.chrome;
-      if (!c || !c.storage || !c.storage.local || c.storage.local.__kliceGetWrapped) return;
+      if (!c || !c.storage || !c.storage.local || c.storage.local.__ktabGetWrapped) return;
       const orig = c.storage.local.get.bind(c.storage.local);
       // chrome.storage.local.get supports BOTH callback and promise forms;
       // the product uses the promise form, so the wrapper must keep it.
@@ -92,7 +92,7 @@ const DECOMPOSE_SCRIPT = `
         return p;
       };
       try { Object.defineProperty(c.storage.local, "get", { value: wrapped, writable: true, configurable: true }); } catch {}
-      c.storage.local.__kliceGetWrapped = true;
+      c.storage.local.__ktabGetWrapped = true;
     } catch (e) {}
   };
   armGet();
@@ -178,14 +178,14 @@ async function measureOneLoad(context, extensionId) {
 	// Wait until the first painted frame after the first commit exists
 	// (T3 anchor), with a hard cap so empty-state runs still complete.
 	await page
-		.waitForFunction(() => window.__kliceDecompose?.raf2At !== null, null, {
+		.waitForFunction(() => window.__ktabDecompose?.raf2At !== null, null, {
 			timeout: 20000,
 		})
 		.catch(() => {});
 	await page.waitForTimeout(400);
 
 	const anchors = await page.evaluate(() => {
-		const a = window.__kliceDecompose;
+		const a = window.__ktabDecompose;
 		const r = (v) => (v === null ? null : Math.round(v * 10) / 10);
 		const h = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
 		return {

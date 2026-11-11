@@ -1,9 +1,9 @@
-import { Button } from "@klice-start/ui/components/button";
-import { ButtonGroup } from "@klice-start/ui/components/button-group";
-import { GlassButtonGroup } from "@klice-start/ui/components/glass-button-group";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
-import { flatSeparator, flatSurface } from "@klice-start/ui/lib/surface";
+import { Button } from "@ktab/ui/components/button";
+import { ButtonGroup } from "@ktab/ui/components/button-group";
+import { GlassButtonGroup } from "@ktab/ui/components/glass-button-group";
+import { Icon } from "@ktab/ui/icons/icon";
+import { ktabShape } from "@ktab/ui/lib/shapes";
+import { flatSeparator, flatSurface } from "@ktab/ui/lib/surface";
 import {
 	glassForeground,
 	glassLensVeil,
@@ -66,7 +66,7 @@ export function ToolbarActions({
 					data-compact-search-control="true"
 					aria-label="Search"
 					aria-haspopup="listbox"
-					aria-controls="klice-search-results"
+					aria-controls="ktab-search-results"
 					onClick={onSearch}
 					className={segment}
 				>
@@ -127,7 +127,7 @@ export function ToolbarActions({
 			{...groupProps}
 			className={cn(
 				groupProps.className,
-				kliceShape("toolbarGroup"),
+				ktabShape("toolbarGroup"),
 				flatSurface("floating"),
 				"shadow-none",
 			)}

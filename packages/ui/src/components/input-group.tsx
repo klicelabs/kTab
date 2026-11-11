@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@klice-start/ui/components/button";
-import { Input } from "@klice-start/ui/components/input";
-import { Textarea } from "@klice-start/ui/components/textarea";
-import { cn } from "@klice-start/ui/lib/utils";
+import { Button } from "@ktab/ui/components/button";
+import { Input } from "@ktab/ui/components/input";
+import { Textarea } from "@ktab/ui/components/textarea";
+import { cn } from "@ktab/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 

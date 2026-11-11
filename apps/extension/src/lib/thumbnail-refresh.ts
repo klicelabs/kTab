@@ -34,7 +34,7 @@ export const REFRESH_NAVIGATION_TIMEOUT_MS = 12_000;
 export const REFRESH_BATCH_STALE_MS = 10 * 60 * 1000;
 
 /** chrome.storage.session key for the crash-resumable batch state. */
-export const REFRESH_SESSION_KEY = "klice-refresh-batch";
+export const REFRESH_SESSION_KEY = "ktab-refresh-batch";
 
 /**
  * Geometry for the reused capture window. Chrome rejects windows that are

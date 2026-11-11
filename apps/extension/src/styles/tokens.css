@@ -8,16 +8,22 @@ html.dark body {
 	color: #f2f2f2;
 }
 
+/* João's standing rule: the default arrow cursor everywhere — never pointer,
+   on any element, interactive or not (see agents.md, "UI rules"). */
+* {
+	cursor: default;
+}
+
 /* Semantic interaction accent. The provider swaps the selected light/dark
    value at runtime; the legacy alias remains for older semantic surfaces. */
 :root {
-	--klice-accent: #007aff;
-	--klice-accent-foreground: #ffffff;
-	--klice-accent-rgb: 0 122 255;
+	--ktab-accent: #007aff;
+	--ktab-accent-foreground: #ffffff;
+	--ktab-accent-rgb: 0 122 255;
 	/* Liquid Glass intensity 0 (Ultra Clear) … 1 (Fully Tinted). The provider
 	   overwrites this at runtime; the default matches the calibrated middle
 	   (60) so first paint already uses the intended density. */
-	--klice-glass-intensity: 0.6;
+	--ktab-glass-intensity: 0.6;
 	/* Ambient copy sits directly on user artwork, so it never follows the
 	   Light/Dark surface palette. */
 	--foreground-on-wallpaper: #ffffff;
@@ -28,19 +34,19 @@ html.dark body {
 	   same ladder to white primary ink below. The selectors at the bottom keep older
 	   utility-shaped consumers on this single theme-aware source. */
 	--liquid-glass-toolbar-foreground-active: var(
-		--klice-glass-foreground-primary
+		--ktab-glass-foreground-primary
 	);
 	--liquid-glass-toolbar-foreground-normal: var(
-		--klice-glass-foreground-primary
+		--ktab-glass-foreground-primary
 	);
 	--liquid-glass-toolbar-foreground-secondary: var(
-		--klice-glass-foreground-secondary
+		--ktab-glass-foreground-secondary
 	);
-	--liquid-glass-toolbar-foreground-muted: var(--klice-glass-foreground-muted);
+	--liquid-glass-toolbar-foreground-muted: var(--ktab-glass-foreground-muted);
 	--liquid-glass-toolbar-foreground-disabled: var(
-		--klice-glass-foreground-disabled
+		--ktab-glass-foreground-disabled
 	);
-	--apple-blue: var(--klice-accent);
+	--apple-blue: var(--ktab-accent);
 	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 	--ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 	--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -54,7 +60,7 @@ html.dark body {
    product moves together and no component picks a value by feel:
 
    1. Shape roles (--shape-*): panels, sections, surfaces, cards, controls,
-      pills, thumbnails. KliceShape roles read them; Chromium renders
+      pills, thumbnails. KtabShape roles read them; Chromium renders
       corner-shape: squircle from the radius and Gecko (no corner-shape)
       falls back to the paired --shape-*-fallback (≈60% of the Chromium
       radius, the calibrated circular match for the squircle).
@@ -69,15 +75,15 @@ html.dark body {
       softer squircle panel for the results.
 
    Deliberately OUTSIDE the scale (intentional geometry):
-   - toolbar surfaces and controls: always true capsules (--klice-toolbar-
-     radius / KliceShape.toolbar*), the pill-shaped exception;
+   - toolbar surfaces and controls: always true capsules (--ktab-toolbar-
+     radius / KtabShape.toolbar*), the pill-shaped exception;
    - icon-mode tiles: Home-Screen squircle geometry (--icon-radius-ratio);
    - micro details inside thumbnails (favicons);
    - circles (rounded-full badges/icon buttons) and proportional marks.
 
-   Newtab/Settings set [data-klice-corner] on <html> from Settings →
+   Newtab/Settings set [data-ktab-corner] on <html> from Settings →
    Appearance; changing it repaints instantly (live preview). Selectors are
-   `:root[data-klice-corner]` so the --radius override outranks globals.css'
+   `:root[data-ktab-corner]` so the --radius override outranks globals.css'
    `:root` block regardless of stylesheet order. */
 :root {
 	--shape-panel: 28px;
@@ -113,7 +119,7 @@ html.dark body {
 }
 
 /* Discreet: furniture sits low; panels barely round off. */
-:root[data-klice-corner="discreet"] {
+:root[data-ktab-corner="discreet"] {
 	/* 0.625rem (10px) → 0.375rem: scales the whole rounded-sm…4xl ladder. */
 	--radius: 0.375rem;
 	--shape-panel: 14px;
@@ -139,7 +145,7 @@ html.dark body {
 }
 
 /* Rounded: the expressive end of the scale. */
-:root[data-klice-corner="rounded"] {
+:root[data-ktab-corner="rounded"] {
 	/* 0.625rem (10px) → 0.9375rem: scales the whole rounded-sm…4xl ladder. */
 	--radius: 0.9375rem;
 	--shape-panel: 36px;
@@ -169,7 +175,7 @@ html.dark body {
 
 /* Rounded search is a true capsule in both engines; the other tiers retain
    their calibrated squircle. Results remain an independent, softer panel. */
-:root[data-klice-corner="rounded"] .klice-search-field {
+:root[data-ktab-corner="rounded"] .ktab-search-field {
 	border-radius: 28px;
 	corner-shape: round;
 	--squircle-r: 28px;
@@ -195,19 +201,19 @@ html.dark body {
 	color: var(--foreground-on-wallpaper-subtle);
 }
 .dark {
-	--apple-blue: var(--klice-accent);
+	--apple-blue: var(--ktab-accent);
 	--liquid-glass-toolbar-foreground-active: var(
-		--klice-glass-foreground-primary
+		--ktab-glass-foreground-primary
 	);
 	--liquid-glass-toolbar-foreground-normal: var(
-		--klice-glass-foreground-primary
+		--ktab-glass-foreground-primary
 	);
 	--liquid-glass-toolbar-foreground-secondary: var(
-		--klice-glass-foreground-secondary
+		--ktab-glass-foreground-secondary
 	);
-	--liquid-glass-toolbar-foreground-muted: var(--klice-glass-foreground-muted);
+	--liquid-glass-toolbar-foreground-muted: var(--ktab-glass-foreground-muted);
 	--liquid-glass-toolbar-foreground-disabled: var(
-		--klice-glass-foreground-disabled
+		--ktab-glass-foreground-disabled
 	);
 }
 
@@ -222,8 +228,8 @@ body,
 
 /* Switch — system blue when active, white thumb always */
 html [data-slot="switch"][data-checked] {
-	background-color: var(--klice-accent);
-	border-color: var(--klice-accent);
+	background-color: var(--ktab-accent);
+	border-color: var(--ktab-accent);
 }
 html [data-slot="switch"] [data-slot="switch-thumb"] {
 	background-color: #ffffff;
@@ -302,7 +308,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	   label is the flex item that gets squeezed out of existence. */
 	--icon-glass-pad: 12px;
 	--icon-glass-gap: 6px;
-	--icon-hover-scale: 1.04;
 	--icon-press-scale: 0.96;
 	grid-auto-rows: var(--icon-cell-h);
 }
@@ -312,14 +317,12 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 .dial-grid[data-layout="icon"][data-tile="small"] {
 	--icon-glass-pad: 10px;
 	--icon-glass-gap: 5px;
-	--icon-hover-scale: 1.03;
 	--icon-press-scale: 0.965;
 }
 
 .dial-grid[data-layout="icon"][data-tile="large"] {
 	--icon-glass-pad: 14px;
 	--icon-glass-gap: 6px;
-	--icon-hover-scale: 1.045;
 	--icon-press-scale: 0.955;
 }
 
@@ -338,14 +341,14 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 }
 
 .dial-grid-wrap[data-layout="icon"][data-drag-active="true"] {
-	background: rgb(var(--klice-accent-rgb) / 0.035);
+	background: rgb(var(--ktab-accent-rgb) / 0.035);
 }
 
 /* Same broad drop-surface acknowledgement as icon mode: one token, one
    feedback language in both layouts. */
 .dial-grid-wrap[data-layout="card"][data-drag-active="true"] {
 	border-radius: 28px;
-	background: rgb(var(--klice-accent-rgb) / 0.035);
+	background: rgb(var(--ktab-accent-rgb) / 0.035);
 }
 
 /* Keep transform, shadow, outline and insertion feedback inside a measured
@@ -416,7 +419,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	white-space: normal;
 }
 
-:root.light[data-klice-material="flat"] .icon-glass-tile .icon-label {
+:root.light[data-ktab-material="flat"] .icon-glass-tile .icon-label {
 	color: #000;
 	-webkit-text-fill-color: #000;
 	-webkit-text-stroke: 0;
@@ -535,7 +538,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	color: rgb(255 255 255 / 0.62);
 }
 
-@keyframes klice-icon-swap {
+@keyframes ktab-icon-swap {
 	from {
 		opacity: 0;
 		transform: scale(0.96);
@@ -547,7 +550,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 }
 
 .icon-swap-in {
-	animation: klice-icon-swap 240ms var(--ease-out) both;
+	animation: ktab-icon-swap 240ms var(--ease-out) both;
 }
 
 /* ── Opt-in glass tile (Icon Mode only, disabled by default) ────────────────
@@ -611,25 +614,8 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-overflow: ellipsis;
 }
 
-/* Hover is pointer-only: the whole icon rises as one compact object. */
-@media (hover: hover) and (pointer: fine) {
-	/* With a glass pane, lift the pane and keep its icon face still inside it. */
-	.dial-grid[data-layout="icon"]:has(.icon-glass-tile) .dial-icon-item:not(
-			[data-dragging="true"]
-		):hover
-		.icon-app-tile,
-	.icon-mode-surface:has(.icon-glass-tile):not([data-dragging="true"]):hover
-		.icon-app-tile {
-		transform: none;
-	}
-
-	.dial-grid[data-layout="icon"]
-		.dial-icon-item:not([data-dragging="true"]):hover
-		.icon-glass-tile,
-	.icon-mode-surface:not([data-dragging="true"]):hover .icon-glass-tile {
-		transform: translateY(-3px) scale(var(--icon-hover-scale));
-	}
-}
+/* Hover feedback for these panes comes from the grid's shared
+   .dial-hover-veil, which wraps the whole pane — see the Home hover section. */
 
 /* Pressure: the surface class no longer hardcodes active:scale-[0.97] —
    the press scale follows the tile tier. */
@@ -641,7 +627,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 .dial-grid[data-layout="icon"] .dial-icon-item[data-selected="true"]
 	.icon-glass-tile,
 .icon-mode-surface[data-selected="true"] .icon-glass-tile {
-	outline: 1px solid rgb(var(--klice-accent-rgb) / 0.65);
+	outline: 1px solid rgb(var(--ktab-accent-rgb) / 0.65);
 	outline-offset: 3px;
 }
 
@@ -675,12 +661,9 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	}
 }
 
-/* Reduced motion keeps the hover and press states in place without travel. */
+/* Reduced motion keeps the press state in place without travel; hover is
+   opacity-only (the pane overlay and cell container) and needs no reset. */
 @media (prefers-reduced-motion: reduce) {
-	.dial-grid[data-layout="icon"] .dial-icon-item:hover .icon-app-tile,
-	.icon-mode-surface:hover .icon-app-tile,
-	.dial-grid[data-layout="icon"] .dial-icon-item:hover .icon-glass-tile,
-	.icon-mode-surface:hover .icon-glass-tile,
 	.icon-mode-surface:active {
 		transform: none;
 	}
@@ -802,13 +785,13 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	border-radius: var(--icon-mini-radius);
 }
 
+/* No zoom on preview links either — brightness is the whole hover. */
 .icon-folder-preview-link:hover .icon-app-tile {
-	filter: brightness(1.04) saturate(1.06);
-	transform: scale(1.04);
+	filter: brightness(1.08) saturate(1.06);
 }
 
 .icon-folder-preview-link:focus-visible {
-	outline: 2px solid var(--klice-accent);
+	outline: 2px solid var(--ktab-accent);
 	outline-offset: 2px;
 }
 
@@ -829,8 +812,8 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	height: 2px;
 	z-index: 20;
 	border-radius: 999px;
-	background: var(--klice-accent);
-	box-shadow: 0 0 0 2px rgb(var(--klice-accent-rgb) / 0.14);
+	background: var(--ktab-accent);
+	box-shadow: 0 0 0 2px rgb(var(--ktab-accent-rgb) / 0.14);
 	content: "";
 	pointer-events: none;
 }
@@ -907,16 +890,16 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 .dial-grid[data-layout="icon"]
 	.dial-icon-folder-cell[data-selected="true"]
 	.icon-folder-tile {
-	outline: 1px solid rgb(var(--klice-accent-rgb) / 0.65);
+	outline: 1px solid rgb(var(--ktab-accent-rgb) / 0.65);
 	outline-offset: 3px;
 }
 
 .icon-app-tile-drop-active,
 .icon-folder-tile-drop-active {
-	outline: 2px solid var(--klice-accent);
+	outline: 2px solid var(--ktab-accent);
 	outline-offset: 4px;
 	box-shadow:
-		0 0 0 7px rgb(var(--klice-accent-rgb) / 0.15),
+		0 0 0 7px rgb(var(--ktab-accent-rgb) / 0.15),
 		0 14px 28px -17px rgb(0 0 0 / 0.7);
 }
 
@@ -929,30 +912,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	transform: scale(0.97);
 }
 
-@media (hover: hover) and (pointer: fine) {
-	.dial-grid[data-layout="icon"]
-		.dial-icon-item:not([data-dragging="true"]):hover
-		.icon-app-tile,
-	.icon-mode-surface:not([data-dragging="true"]):hover .icon-app-tile {
-		transform: translateY(-3px) scale(var(--icon-hover-scale));
-		box-shadow:
-			0 18px 32px -18px rgb(4 8 18 / 0.7),
-			0 4px 10px -5px rgb(4 8 18 / 0.4);
-	}
-
-	.dial-grid[data-layout="icon"]
-		.dial-icon-folder-cell:not([data-dragging="true"]):hover
-		.icon-folder-tile {
-		box-shadow:
-			0 20px 36px -20px rgb(4 8 18 / 0.72),
-			0 4px 10px -5px rgb(4 8 18 / 0.38);
-	}
-}
-
 .dark .icon-app-tile-drop-active,
 .dark .icon-folder-tile-drop-active {
 	box-shadow:
-		0 0 0 7px rgb(var(--klice-accent-rgb) / 0.2),
+		0 0 0 7px rgb(var(--ktab-accent-rgb) / 0.2),
 		0 16px 30px -17px rgb(0 0 0 / 0.9);
 }
 
@@ -969,7 +932,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	height: 3px;
 	z-index: 20;
 	border-radius: 999px;
-	background: var(--klice-accent);
+	background: var(--ktab-accent);
 	content: "";
 	pointer-events: none;
 }
@@ -1068,13 +1031,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	padding-right: 32px;
 }
 
-/* The image zoom is clipped by its own squircle, including Gecko's calibrated
-   radius. Hover stays pointer-only so touch cannot leave a stuck hover state. */
-.dial-card .thumb-media {
-	transition: transform 220ms var(--ease-out);
-}
-
-/* Give the zooming image its own top-corner clip. The outer card still clips
+/* Give the image its own top-corner clip. The outer card still clips
    the whole card; this inner clip prevents Gecko's transformed image layer
    from painting through the card's squircle edge. */
 .dial-grid[data-layout="card"] .dial-card .thumb {
@@ -1085,25 +1042,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	.dial-grid[data-layout="card"] .dial-card .thumb {
 		border-radius: var(--shape-card-fallback, 10px)
 			var(--shape-card-fallback, 10px) 0 0;
-	}
-}
-
-@media (hover: hover) and (pointer: fine) {
-	.dial-grid[data-layout="card"] .dial-card:not([data-dragging="true"]):hover {
-		transform: translateY(-3px);
-		box-shadow:
-			0 20px 38px -22px rgb(4 8 18 / 0.68),
-			0 5px 12px -7px rgb(4 8 18 / 0.38);
-	}
-	.dial-grid[data-layout="card"]
-		.dial-card:not([data-dragging="true"]):hover:active {
-		transform: scale(0.97);
-	}
-
-	.dial-grid[data-layout="card"]
-		.dial-card:not([data-dragging="true"]):hover
-		.thumb-media {
-		transform: scale(1.045);
 	}
 }
 
@@ -1134,10 +1072,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	transform: translateX(-100%);
 }
 .thumbnail-refresh-mask[data-active="true"] .thumbnail-refresh-light {
-	animation: klice-thumbnail-shimmer var(--motion-thumbnail-cycle) linear
+	animation: ktab-thumbnail-shimmer var(--motion-thumbnail-cycle) linear
 		infinite;
 }
-@keyframes klice-thumbnail-shimmer {
+@keyframes ktab-thumbnail-shimmer {
 	to {
 		transform: translateX(100%);
 	}
@@ -1187,12 +1125,12 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	inset: -8px;
 	content: "";
 }
-/* Checked selection follows the Klice accent so the control reads as one
+/* Checked selection follows the kTab accent so the control reads as one
    with the card's selected contour; unchecked keeps beUI's default face. */
 .dial-card .selection-checkbox [data-state="checked"] {
-	border-color: var(--klice-accent);
-	background: var(--klice-accent);
-	color: var(--klice-accent-foreground);
+	border-color: var(--ktab-accent);
+	background: var(--ktab-accent);
+	color: var(--ktab-accent-foreground);
 }
 /* Visible while selected, while selection mode is active, or when keyboard
    focus is visible. Pointer focus from opening a bookmark does not reveal it. */
@@ -1203,7 +1141,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	pointer-events: auto;
 }
 .dial-card:has(a:focus-visible) {
-	outline: 2px solid var(--klice-accent);
+	outline: 2px solid var(--ktab-accent);
 	outline-offset: 3px;
 }
 @media (hover: none) {
@@ -1218,8 +1156,8 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	position: absolute;
 	inset: 0;
 	z-index: 20;
-	border: 1px solid rgb(var(--klice-accent-rgb) / 0.65);
-	background: rgb(var(--klice-accent-rgb) / 0.07);
+	border: 1px solid rgb(var(--ktab-accent-rgb) / 0.65);
+	background: rgb(var(--ktab-accent-rgb) / 0.07);
 	border-radius: inherit;
 	corner-shape: inherit;
 	content: "";
@@ -1261,7 +1199,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 
 /* One wake language for the first new-tab paint and Rest Mode exit. The
    wallpaper is already present; content resolves in a short, readable order. */
-@keyframes kliceWakeClock {
+@keyframes ktabWakeClock {
 	from {
 		opacity: 0;
 		transform: translateY(8px) scale(0.985);
@@ -1272,7 +1210,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	}
 }
 
-@keyframes kliceWakeContent {
+@keyframes ktabWakeContent {
 	from {
 		opacity: 0;
 		transform: translateY(10px);
@@ -1283,16 +1221,16 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	}
 }
 
-.klice-wake .clock-widget {
-	animation: kliceWakeClock 360ms var(--ease-out) both;
+.ktab-wake .clock-widget {
+	animation: ktabWakeClock 360ms var(--ease-out) both;
 }
 
-.klice-wake .speed-dial-search-anchor {
-	animation: kliceWakeContent 360ms 70ms var(--ease-out) both;
+.ktab-wake .speed-dial-search-anchor {
+	animation: ktabWakeContent 360ms 70ms var(--ease-out) both;
 }
 
-.klice-wake .dial-grid-wrap {
-	animation: kliceWakeContent 420ms 130ms var(--ease-out) both;
+.ktab-wake .dial-grid-wrap {
+	animation: ktabWakeContent 420ms 130ms var(--ease-out) both;
 }
 
 .rest-mode-hidden {
@@ -1302,7 +1240,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 }
 
 .rest-mode {
-	animation: kliceWakeClock 420ms var(--ease-out) both;
+	animation: ktabWakeClock 420ms var(--ease-out) both;
 }
 
 .rest-mode-cta {
@@ -1345,6 +1283,134 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		calc(var(--tile-w) * var(--card-height-ratio, 1.12));
 }
 
+/* ── Home hover: one shared container, switcher glide, zero zoom ───────
+   João's rule: no zoom or lift on Home items. Instead of a per-cell veil,
+   the grid owns ONE frame (DialHoverVeil, its first child) that springs
+   between items with the tab switcher's SPRING_LAYOUT — the same glide its
+   selection container uses. It wraps the card (Card layout), the whole
+   glass pane exactly edge-to-edge (Icon layout + Icon surfaces), or the
+   bare tile square (flat Icon layout, label left outside the glass).
+
+   The frame wears the app material for the active theme: milky light glass
+   in Light, a GRAY smoked glass in Dark (white-ink mix, not black — João
+   found the black recipe too heavy for this one component), both driven by
+   --ktab-glass-intensity. Being inside .dial-grid is what lets its radii
+   resolve the grid-owned icon vars. Cells paint above it by DOM order, and
+   it paints inside the padded grid so the 8px outset never clips. Hover is
+   pointer-only; keyboard focus reuses it. */
+.dial-grid-stage {
+	position: relative;
+}
+
+.dial-grid-stage > .dial-grid {
+	position: relative;
+	z-index: 1;
+}
+
+.dial-hover-veil {
+	--veil-radius: calc(var(--shape-card, 18px) + 8px);
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 0;
+	z-index: 0;
+	pointer-events: none;
+	opacity: 0;
+	border: 0.5px solid rgb(255 255 255 / 0.14);
+	border-radius: var(--veil-radius);
+	corner-shape: squircle;
+	background: rgb(
+		255 255 255 /
+		calc(0.1 + var(--ktab-glass-intensity, 0.6) * 0.08)
+	);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.16),
+		inset 0 -10px 22px -12px rgb(0 0 0 / 0.28);
+	backdrop-filter: blur(calc(2px + var(--ktab-glass-intensity, 0.6) * 4px))
+		saturate(1.06);
+	-webkit-backdrop-filter: blur(
+			calc(2px + var(--ktab-glass-intensity, 0.6) * 4px)
+		)
+		saturate(1.06);
+	transition: opacity 180ms var(--ease-out);
+	will-change: transform;
+}
+
+.dial-hover-veil[data-veil="pane"] {
+	/* Edge-to-edge: same radius as the pane itself, no outset padding. */
+	--veil-radius: calc(
+		var(--icon-size) *
+		var(--icon-radius-ratio) +
+		var(--icon-glass-pad)
+	);
+}
+
+.dial-hover-veil[data-veil="icon"] {
+	--veil-radius: calc(var(--icon-size) * var(--icon-radius-ratio) + 8px);
+}
+
+/* Light theme keeps the switcher's milky material; the app's dark theme
+   swaps in the smoked toolbar veil instead of that always-light panel. */
+:root.light .dial-hover-veil {
+	border-color: rgb(0 0 0 / 0.1);
+	background: rgb(
+		255 255 255 /
+		calc(0.34 + var(--ktab-glass-intensity, 0.6) * 0.1)
+	);
+	box-shadow:
+		inset 0 1px 0 rgb(0 0 0 / 0.08),
+		inset 0 -10px 22px -10px rgb(60 90 140 / 0.08);
+}
+
+.dial-hover-veil.on {
+	opacity: 1;
+}
+
+:root[data-ktab-material="flat"] .dial-hover-veil {
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+@supports not (corner-shape: squircle) {
+	.dial-hover-veil {
+		border-radius: calc(var(--shape-card-fallback, 10px) + 8px);
+	}
+	.dial-hover-veil[data-veil="pane"] {
+		border-radius: calc(
+			var(--icon-size) *
+			var(--icon-radius-fallback-ratio) +
+			var(--icon-glass-pad)
+		);
+	}
+	.dial-hover-veil[data-veil="icon"] {
+		border-radius: calc(
+			var(--icon-size) *
+			var(--icon-radius-fallback-ratio) +
+			8px
+		);
+	}
+}
+
+@media (prefers-reduced-transparency: reduce) {
+	.dial-hover-veil {
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		background: rgb(96 102 112 / 0.96);
+		border-color: transparent;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.14),
+			0 6px 14px rgb(0 0 0 / 0.25);
+	}
+	:root.light .dial-hover-veil {
+		background: rgb(242 242 242 / 0.98);
+		border-color: transparent;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.3),
+			0 4px 10px rgb(0 0 0 / 0.1);
+	}
+}
+
 /* Empty landing — unified stack entrance */
 @keyframes emptyLandingIn {
 	from {
@@ -1368,18 +1434,15 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 	}
-	.klice-wake .clock-widget,
-	.klice-wake .speed-dial-search-anchor,
-	.klice-wake .dial-grid-wrap,
+	.ktab-wake .clock-widget,
+	.ktab-wake .speed-dial-search-anchor,
+	.ktab-wake .dial-grid-wrap,
 	.rest-mode {
 		animation: none;
 	}
 	.dial-card,
 	.dial-card:active,
 	.dial-grid-stage > * {
-		transform: none !important;
-	}
-	.dial-card .thumb-media {
 		transform: none !important;
 	}
 }
@@ -1753,10 +1816,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 
 /* Search has two independent material surfaces. The input responds at once;
    only the list settles in. Exit retains content and can reverse in place. */
-.klice-search-anchor {
+.ktab-search-anchor {
 	height: 56px;
 }
-.klice-search-overlay {
+.ktab-search-overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -1766,13 +1829,13 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	gap: 10px;
 	text-align: left;
 }
-.klice-search-field {
+.ktab-search-field {
 	width: 100%;
 	height: 56px;
 	overflow: hidden;
 }
-.klice-search-launcher,
-.klice-search-input-row {
+.ktab-search-launcher,
+.ktab-search-input-row {
 	display: flex;
 	width: 100%;
 	height: 56px;
@@ -1781,15 +1844,15 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	padding-inline: 20px 14px;
 	font-size: 16px;
 }
-.klice-search-launcher {
+.ktab-search-launcher {
 	cursor: text;
 	outline: none;
 }
-.klice-search-launcher:focus-visible {
-	box-shadow: inset 0 0 0 2px var(--klice-accent);
+.ktab-search-launcher:focus-visible {
+	box-shadow: inset 0 0 0 2px var(--ktab-accent);
 	border-radius: inherit;
 }
-.klice-search-input-row input {
+.ktab-search-input-row input {
 	width: 100%;
 	min-width: 0;
 	flex: 1;
@@ -1797,20 +1860,20 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	background: transparent;
 	color: inherit;
 	outline: none;
-	caret-color: var(--klice-accent);
+	caret-color: var(--ktab-accent);
 }
-.klice-search-input-row input::placeholder {
+.ktab-search-input-row input::placeholder {
 	color: currentColor;
 	opacity: 0.65;
 }
-.klice-search-overlay kbd,
-.klice-search-launcher kbd {
+.ktab-search-overlay kbd,
+.ktab-search-launcher kbd {
 	font: inherit;
 	font-size: 11px;
 	white-space: nowrap;
 	opacity: 0.65;
 }
-.klice-search-dismiss {
+.ktab-search-dismiss {
 	display: flex;
 	min-width: 30px;
 	height: 30px;
@@ -1819,10 +1882,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	justify-content: center;
 	border-radius: 50%;
 }
-.klice-search-dismiss:hover {
+.ktab-search-dismiss:hover {
 	background: color-mix(in srgb, currentColor 9%, transparent);
 }
-.klice-search-results-panel {
+.ktab-search-results-panel {
 	display: flex;
 	width: 100%;
 	max-height: var(--search-results-height, 432px);
@@ -1838,42 +1901,42 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		transform var(--search-motion-duration) var(--ease-out);
 }
 @starting-style {
-	.klice-search-results-panel {
+	.ktab-search-results-panel {
 		opacity: 0;
 		transform: translate3d(0, -5px, 0) scale(0.985);
 	}
 }
-.klice-search-overlay[data-search-state="closing"] {
+.ktab-search-overlay[data-search-state="closing"] {
 	pointer-events: none;
 }
-.klice-search-overlay[data-search-state="closing"] .klice-search-results-panel {
+.ktab-search-overlay[data-search-state="closing"] .ktab-search-results-panel {
 	opacity: 0;
 	transform: translate3d(0, -5px, 0) scale(0.985);
 }
-.klice-search-overlay[data-search-floating="true"] .klice-search-field {
+.ktab-search-overlay[data-search-floating="true"] .ktab-search-field {
 	transition: opacity var(--search-motion-duration) var(--ease-out);
 }
-.klice-search-overlay[data-search-state="closing"][data-search-floating="true"]
-	.klice-search-field {
+.ktab-search-overlay[data-search-state="closing"][data-search-floating="true"]
+	.ktab-search-field {
 	opacity: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-	.klice-search-results-panel,
-	.klice-search-overlay[data-search-floating="true"] .klice-search-field {
+	.ktab-search-results-panel,
+	.ktab-search-overlay[data-search-floating="true"] .ktab-search-field {
 		transition: none;
 	}
-	.klice-search-results-panel {
+	.ktab-search-results-panel {
 		transform: none;
 	}
 }
-.klice-search-scopes {
+.ktab-search-scopes {
 	display: flex;
 	flex-shrink: 0;
 	gap: 3px;
 	overflow-x: auto;
 	padding: 10px 14px 7px;
 }
-.klice-search-scope {
+.ktab-search-scope {
 	min-height: 27px;
 	padding: 4px 10px;
 	font-size: 12px;
@@ -1881,17 +1944,17 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	opacity: 0.7;
 }
 /* Match the search field's capsule geometry in Rounded, including Gecko. */
-:root[data-klice-corner="rounded"] .klice-search-scope {
+:root[data-ktab-corner="rounded"] .ktab-search-scope {
 	border-radius: 9999px;
 	corner-shape: round;
 	--squircle-r: 9999px;
 }
-.klice-search-scope[aria-pressed="true"] {
+.ktab-search-scope[aria-pressed="true"] {
 	background: color-mix(in srgb, currentColor 12%, transparent);
 	font-weight: 500;
 	opacity: 1;
 }
-.klice-search-results-list {
+.ktab-search-results-list {
 	min-height: 0;
 	overflow: auto;
 	overscroll-behavior: contain;
@@ -1899,10 +1962,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	scrollbar-width: thin;
 	scrollbar-color: color-mix(in srgb, currentColor 20%, transparent) transparent;
 }
-.klice-search-result-group + .klice-search-result-group {
+.ktab-search-result-group + .ktab-search-result-group {
 	margin-top: 4px;
 }
-.klice-search-option {
+.ktab-search-option {
 	position: relative;
 	display: flex;
 	width: 100%;
@@ -1913,10 +1976,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-align: left;
 	outline: none;
 }
-.klice-search-option[aria-selected="true"] {
+.ktab-search-option[aria-selected="true"] {
 	background: color-mix(in srgb, currentColor 11%, transparent);
 }
-.klice-search-result-icon {
+.ktab-search-result-icon {
 	position: relative;
 	display: flex;
 	width: 28px;
@@ -1927,17 +1990,17 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	color: inherit;
 	opacity: 0.7;
 }
-.klice-search-app-icon {
+.ktab-search-app-icon {
 	--icon-size: 28px;
 	width: 28px;
 	height: 28px;
 	background: #fff;
 	box-shadow: 0 1px 2px rgb(4 8 18 / 0.12);
 }
-.klice-search-app-icon .icon-fallback-letter {
+.ktab-search-app-icon .icon-fallback-letter {
 	color: rgb(0 0 0 / 0.55);
 }
-.klice-search-result-copy {
+.ktab-search-result-copy {
 	display: flex;
 	min-width: 0;
 	flex: 1;
@@ -1945,7 +2008,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	align-items: baseline;
 	gap: 7px;
 }
-.klice-search-result-copy > span {
+.ktab-search-result-copy > span {
 	overflow: hidden;
 	font-size: 14px;
 	font-weight: 500;
@@ -1954,7 +2017,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.klice-search-result-copy small {
+.ktab-search-result-copy small {
 	overflow: hidden;
 	min-width: 0;
 	flex: 1;
@@ -1963,18 +2026,18 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	white-space: nowrap;
 	opacity: 0.6;
 }
-.klice-search-result-copy small::before {
+.ktab-search-result-copy small::before {
 	content: "—";
 	margin-inline-end: 7px;
 }
-.klice-search-row-action {
+.ktab-search-row-action {
 	flex-shrink: 0;
 	opacity: 0;
 }
-.klice-search-option[aria-selected="true"] .klice-search-row-action {
+.ktab-search-option[aria-selected="true"] .ktab-search-row-action {
 	opacity: 0.6;
 }
-.klice-search-footer {
+.ktab-search-footer {
 	display: flex;
 	min-height: 35px;
 	flex-shrink: 0;
@@ -1984,10 +2047,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	padding: 6px 20px 10px;
 	font-size: 10px;
 }
-.klice-search-footer > span {
+.ktab-search-footer > span {
 	opacity: 0.6;
 }
-.klice-search-go {
+.ktab-search-go {
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -1997,10 +2060,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	font-size: 11px;
 	white-space: nowrap;
 }
-.klice-search-go:disabled {
+.ktab-search-go:disabled {
 	opacity: 0.35;
 }
-.klice-search-empty {
+.ktab-search-empty {
 	display: flex;
 	min-height: 170px;
 	flex-direction: column;
@@ -2010,16 +2073,16 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	padding: 24px;
 	text-align: center;
 }
-.klice-search-empty p {
+.ktab-search-empty p {
 	font-size: 14px;
 	font-weight: 500;
 }
-.klice-search-empty > span {
+.ktab-search-empty > span {
 	max-width: 32ch;
 	font-size: 12px;
 	opacity: 0.7;
 }
-.klice-search-empty button {
+.ktab-search-empty button {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -2028,26 +2091,26 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-decoration: underline;
 	text-underline-offset: 3px;
 }
-.klice-search-overlay button:focus-visible {
-	outline: 2px solid var(--klice-accent);
+.ktab-search-overlay button:focus-visible {
+	outline: 2px solid var(--ktab-accent);
 	outline-offset: -2px;
 }
-.klice-search-overlay:is(
+.ktab-search-overlay:is(
 		[data-search-layout="compact"],
 		[data-search-layout="minimal"]
 	)
-	.klice-search-footer,
-.klice-search-overlay[data-search-layout="minimal"] .klice-search-scopes {
+	.ktab-search-footer,
+.ktab-search-overlay[data-search-layout="minimal"] .ktab-search-scopes {
 	display: none;
 }
 @media (max-width: 480px) {
-	.klice-search-launcher,
-	.klice-search-input-row {
+	.ktab-search-launcher,
+	.ktab-search-input-row {
 		gap: 10px;
 		padding-inline: 16px 10px;
 		font-size: 15px;
 	}
-	.klice-search-option {
+	.ktab-search-option {
 		gap: 10px;
 		padding-inline: 8px;
 	}
@@ -2093,7 +2156,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 .quick-link-reorder-vertical[data-quick-link-drop]::after {
 	position: absolute;
 	border-radius: 2px;
-	background: var(--klice-accent);
+	background: var(--ktab-accent);
 	content: "";
 	pointer-events: none;
 }
@@ -2131,7 +2194,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 
 /* Accent-derived elevation for semantic primary actions. */
 .accent-action-shadow {
-	box-shadow: 0 6px 14px rgb(var(--klice-accent-rgb) / 0.24);
+	box-shadow: 0 6px 14px rgb(var(--ktab-accent-rgb) / 0.24);
 }
 
 /* =========================================================
@@ -2182,7 +2245,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	width: 2px;
 	z-index: 20;
 	border-radius: 999px;
-	background: var(--klice-accent);
+	background: var(--ktab-accent);
 	content: "";
 	pointer-events: none;
 }
@@ -2222,9 +2285,9 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	margin: 0;
 	padding: 0;
 	pointer-events: none;
-	border: 1px solid var(--klice-accent);
+	border: 1px solid var(--ktab-accent);
 	border-radius: 10px;
-	background: rgb(var(--klice-accent-rgb) / 0.12);
+	background: rgb(var(--ktab-accent-rgb) / 0.12);
 }
 
 /* Insertion rails fade in on zone change (opacity-only, interruptible) so

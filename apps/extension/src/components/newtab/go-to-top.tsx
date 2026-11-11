@@ -1,4 +1,4 @@
-import { EASE_OUT } from "@klice-start/ui/lib/ease";
+import { EASE_OUT } from "@ktab/ui/lib/ease";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
 	type RefObject,

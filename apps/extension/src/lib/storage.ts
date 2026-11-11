@@ -490,7 +490,8 @@ function normalizeBackground(
 		rawType === "gradient" ||
 		rawType === "image" ||
 		rawType === "pexels" ||
-		rawType === "wallpaper"
+		rawType === "wallpaper" ||
+		rawType === "none"
 			? rawType
 			: null;
 	const migratedUnsplash = rawType === "unsplash";
@@ -676,7 +677,7 @@ export function normalizeState(
 // --- Coalesced persist ---
 
 // Persistent keys from the Perch era — kept verbatim so existing installs
-// keep their data after the rename to Klice Start.
+// keep their data after the rename to kTab.
 export const RESET_GENERATION_KEY = "perch-reset-generation";
 export const PERSIST_GENERATION_KEY = "__perchResetGeneration";
 
@@ -751,14 +752,14 @@ const _persistenceErrorListeners = new Set<PersistenceErrorListener>();
  * particular UI. The app uses this for one restrained temporary toast.
  */
 function reportPersistenceError(error: unknown): void {
-	console.warn("[klice-start] persistence failed", error);
+	console.warn("[ktab] persistence failed", error);
 	setPersistHealth("failed");
 	for (const listener of _persistenceErrorListeners) {
 		try {
 			listener(error);
 		} catch (listenerError) {
 			console.error(
-				"[klice-start] persistence error listener failed",
+				"[ktab] persistence error listener failed",
 				listenerError,
 			);
 		}
@@ -794,7 +795,7 @@ function setPersistHealth(health: PersistHealth): void {
 			listener(health);
 		} catch (listenerError) {
 			console.error(
-				"[klice-start] persist health listener failed",
+				"[ktab] persist health listener failed",
 				listenerError,
 			);
 		}

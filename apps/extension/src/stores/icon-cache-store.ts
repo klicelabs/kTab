@@ -13,14 +13,14 @@ import { extApi } from "../lib/extension-api";
  * apple-touch icon, rel-icon, SVGL brand art) or a negative result so a
  * dead-end site is never re-probed on every dashboard open.
  *
- * Storage: chrome.storage.local under `klice-icon-cache` (small JSON
+ * Storage: chrome.storage.local under `ktab-icon-cache` (small JSON
  * envelope, entries capped). The 10 MiB account envelope is shared, so the
  * cache stores METADATA only (asset URLs, treatment class) — never image
  * bytes. Bytes ride the browser HTTP cache between sessions; a cold entry
  * costs one throttled fetch.
  */
 
-export const ICON_CACHE_STORAGE_KEY = "klice-icon-cache";
+export const ICON_CACHE_STORAGE_KEY = "ktab-icon-cache";
 
 /** Positive results live two weeks; stale entries re-probe lazily. */
 export const ICON_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;

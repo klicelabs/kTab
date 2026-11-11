@@ -4,7 +4,7 @@ Audit/research date: 2026-11-07. The dashboard owns the wallpaper experience; Pe
 
 ## Current production deployment (2026-11-10)
 
-Production now uses `apps/pexels-worker/`: Cloudflare Worker `klice-start-pexels` with D1 database `klice-start-pexels-cache`. The deployed endpoint is `https://klice-start-pexels.joaoliveiraam.workers.dev/api/pexels`. D1 stores the metadata cache, provider cooldown, and shared quota reservations. The Worker has a 120 requests/minute per-IP rate limit, a 150 upstream calls/hour ceiling, an 18,000 calls/31-day ceiling, and a 20 custom cache misses/hour ceiling. Cached results last 24 hours and may be served stale for up to seven days. `PEXELS_API_KEY` is a Cloudflare Worker secret.
+Production now uses `apps/pexels-worker/`: Cloudflare Worker `ktab-pexels` with D1 database `ktab-pexels-cache`. The deployed endpoint is `https://ktab-pexels.joaoliveiraam.workers.dev/api/pexels`. D1 stores the metadata cache, provider cooldown, and shared quota reservations. The Worker has a 120 requests/minute per-IP rate limit, a 150 upstream calls/hour ceiling, an 18,000 calls/31-day ceiling, and a 20 custom cache misses/hour ceiling. Cached results last 24 hours and may be served stale for up to seven days. `PEXELS_API_KEY` is a Cloudflare Worker secret.
 
 The extension sends only the search query and page to this public endpoint; it stores user settings and photos locally and fetches image bytes directly from Pexels. The endpoint has no caller authentication, so its limits bound resource use but do not prove a request came from the extension. A live smoke request returned HTTP 200 with 79 photos on 2026-11-10. Chrome and Firefox both use ordinary HTTPS `fetch`; production build configuration is covered below.
 
@@ -24,7 +24,7 @@ Pexels recommends [normalizing searches, requesting batches and caching for 24 h
 
 The [wallpaper-use guidance](https://help.pexels.com/hc/en-us/articles/4405588861721-Can-I-use-the-API-as-a-wallpaper-app) allows backgrounds within a product that primarily serves another purpose. Standalone wallpaper/gallery services replicating Pexels are prohibited. Automatically displayed images need attribution in the display, not only in search settings. [General API terms](https://help.pexels.com/hc/en-us/articles/900005880463-What-are-the-Terms-and-Conditions) also prohibit standalone redistribution, unaltered resale and bulk dataset collection. This feature does not provide a stock-photo download gallery. Search terms containing brands, such as Spider-Man, do not grant rights or guarantee corresponding results.
 
-[Bonjourr's background UX](https://bonjourr.fr/fr/docs/customisation/backgrounds/) demonstrates uncomplicated source/search selection, manual next, frequencies, framing and fades. Its [settings reference](https://bonjourr.fr/docs/reference/settings-reference/) keeps brightness and frequency separate. Its [open-source server architecture](https://github.com/victrme/bonjourr-apis/blob/main/docs/SERVICES.md) separates provider conversion from backgrounds and uses shared persistent collections. We adopt those separation/cache principles; curated Daylight collections and additional providers are outside this feature. Klice preserves the user's search during Daylight rather than choosing a different collection.
+[Bonjourr's background UX](https://bonjourr.fr/fr/docs/customisation/backgrounds/) demonstrates uncomplicated source/search selection, manual next, frequencies, framing and fades. Its [settings reference](https://bonjourr.fr/docs/reference/settings-reference/) keeps brightness and frequency separate. Its [open-source server architecture](https://github.com/victrme/bonjourr-apis/blob/main/docs/SERVICES.md) separates provider conversion from backgrounds and uses shared persistent collections. We adopt those separation/cache principles; curated Daylight collections and additional providers are outside this feature. kTab preserves the user's search during Daylight rather than choosing a different collection.
 
 ## Legacy Next.js proxy contract and safeguards (audit baseline)
 
@@ -48,7 +48,7 @@ Server (`apps/web/.env.local` for local Next development; host environment for p
 ```dotenv
 PEXELS_API_KEY=
 # Production: absolute path to a private, persistent volume on one host.
-PEXELS_CACHE_DIR=/var/lib/klice/pexels
+PEXELS_CACHE_DIR=/var/lib/ktab/pexels
 # Optional, only if a trusted reverse proxy overwrites/removes this header.
 PEXELS_TRUSTED_CLIENT_HEADER=
 ```

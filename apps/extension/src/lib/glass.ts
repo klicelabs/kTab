@@ -1,13 +1,13 @@
 import {
 	glassVariantStyles,
 	type LiquidGlassDensity,
-} from "@klice-start/ui/lib/glass-variants";
-import type { FlatElevation } from "@klice-start/ui/lib/surface";
-import { flatSunken, flatSurface } from "@klice-start/ui/lib/surface";
-import { kliceShape, type KliceShapeName } from "@klice-start/ui/lib/shapes";
+} from "@ktab/ui/lib/glass-variants";
+import type { FlatElevation } from "@ktab/ui/lib/surface";
+import { flatSunken, flatSurface } from "@ktab/ui/lib/surface";
+import { ktabShape, type KtabShapeName } from "@ktab/ui/lib/shapes";
 import { cn } from "./utils";
 
-export type GlassShape = KliceShapeName;
+export type GlassShape = KtabShapeName;
 
 /**
  * Semantic Glass roles. Components request PURPOSE, never a raw glasscn
@@ -70,7 +70,7 @@ export function glassTierVariant(tier: GlassTier) {
  * is near-clear glass, so every refractive product surface MUST include
  * this veil or it renders theme-blind.
  *
- * Veil density is PARAMETRIC in the global `--klice-glass-intensity` var
+ * Veil density is PARAMETRIC in the global `--ktab-glass-intensity` var
  * (0 Clear … 1 Tinted, set live by AppearanceProvider): the slider visibly
  * moves every veil with zero re-renders, while each role keeps its own
  * floor/span so the density hierarchy never collapses. Floors carry theme
@@ -85,12 +85,12 @@ export function glassLensVeil(
 ): string {
 	if (tier === "toolbar") {
 		return resolvedDark
-			? "bg-[color-mix(in_srgb,black_calc(8%+var(--klice-glass-intensity)*8%),transparent)] border-[0.5px] border-white/[0.10]"
-			: "bg-[color-mix(in_srgb,white_calc(34%+var(--klice-glass-intensity)*10%),transparent)] border-[0.5px] border-black/[0.10]";
+			? "bg-[color-mix(in_srgb,black_calc(8%+var(--ktab-glass-intensity)*8%),transparent)] border-[0.5px] border-white/[0.10]"
+			: "bg-[color-mix(in_srgb,white_calc(34%+var(--ktab-glass-intensity)*10%),transparent)] border-[0.5px] border-black/[0.10]";
 	}
 	return resolvedDark
-		? "bg-[color-mix(in_srgb,black_calc(6%+var(--klice-glass-intensity)*8%),transparent)] border-[0.5px] border-white/[0.10]"
-		: "bg-[color-mix(in_srgb,white_calc(24%+var(--klice-glass-intensity)*8%),transparent)] border-[0.5px] border-black/[0.08]";
+		? "bg-[color-mix(in_srgb,black_calc(6%+var(--ktab-glass-intensity)*8%),transparent)] border-[0.5px] border-white/[0.10]"
+		: "bg-[color-mix(in_srgb,white_calc(24%+var(--ktab-glass-intensity)*8%),transparent)] border-[0.5px] border-black/[0.08]";
 }
 
 /**
@@ -203,21 +203,21 @@ export function glassCssVariables(
 	params: GlassIntensityParams,
 ): Record<`--${string}`, string> {
 	return {
-		"--klice-glass-blur-clear": `${params.blurHero}px`,
-		"--klice-glass-blur-dense": `${params.blurSurface}px`,
-		"--klice-glass-saturation-clear": String(params.saturationClear),
-		"--klice-glass-saturation-dense": String(params.saturationDense),
-		"--klice-glass-brightness-clear": String(params.brightnessHero),
-		"--klice-glass-brightness-dense": String(params.brightnessSurface),
+		"--ktab-glass-blur-clear": `${params.blurHero}px`,
+		"--ktab-glass-blur-dense": `${params.blurSurface}px`,
+		"--ktab-glass-saturation-clear": String(params.saturationClear),
+		"--ktab-glass-saturation-dense": String(params.saturationDense),
+		"--ktab-glass-brightness-clear": String(params.brightnessHero),
+		"--ktab-glass-brightness-dense": String(params.brightnessSurface),
 	};
 }
 
 /**
- * Shared Klice geometry. Pills keep native full rounding; every other shape
+ * Shared kTab geometry. Pills keep native full rounding; every other shape
  * uses the incumbent squircle utility and its paired Firefox fallback token.
  */
 export function glassShape(shape: GlassShape): string {
-	return cn(kliceShape(shape));
+	return cn(ktabShape(shape));
 }
 
 /**
@@ -251,10 +251,10 @@ export type GlassForegroundVariant =
 	| "disabled";
 
 const GLASS_FOREGROUND_CLASSES: Record<GlassForegroundVariant, string> = {
-	primary: "text-[var(--klice-glass-foreground-primary)]",
-	secondary: "text-[var(--klice-glass-foreground-secondary)]",
-	muted: "text-[var(--klice-glass-foreground-muted)]",
-	disabled: "text-[var(--klice-glass-foreground-disabled)]",
+	primary: "text-[var(--ktab-glass-foreground-primary)]",
+	secondary: "text-[var(--ktab-glass-foreground-secondary)]",
+	muted: "text-[var(--ktab-glass-foreground-muted)]",
+	disabled: "text-[var(--ktab-glass-foreground-disabled)]",
 };
 
 /**
@@ -306,7 +306,7 @@ export function glassDropdown(isLiquid: boolean, resolvedDark = true): string {
  * ownership stay untouched — only the competing background paint goes.
  * shadcn/Base UI menus (no pill) keep the default native paints.
  *
- * No cursor override: Klice Start uses the platform arrow cursor for normal
+ * No cursor override: kTab uses the platform arrow cursor for normal
  * clickable UI (menu rows included), matching native desktop menus.
  */
 export function glassDropdownItem(
@@ -323,10 +323,10 @@ export function glassDropdownItem(
 			? opts?.pillOwned
 				? ""
 				: "hover:bg-flat-sunken-raised"
-			: "hover:bg-foreground/[0.08] hover:text-[var(--klice-glass-foreground-primary)]";
+			: "hover:bg-foreground/[0.08] hover:text-[var(--ktab-glass-foreground-primary)]";
 	const focusPaint = opts?.pillOwned
 		? ""
-		: "focus:bg-[var(--klice-accent)] focus:text-[var(--klice-accent-foreground)]";
+		: "focus:bg-[var(--ktab-accent)] focus:text-[var(--ktab-accent-foreground)]";
 	if (isLiquid) {
 		return `${shape} ${glassForeground()} ${hoverPaint} ${focusPaint}`;
 	}
@@ -345,9 +345,9 @@ export function glassDropdownItemPill(
 	const shape =
 		"rounded-full px-3 py-2 text-[13px] font-normal transition-colors duration-100 motion-reduce:transition-none disabled:pointer-events-none disabled:opacity-40";
 	if (isLiquid) {
-		return `${shape} ${glassForeground()} hover:bg-foreground/[0.08] hover:text-[var(--klice-glass-foreground-primary)] focus:bg-[var(--klice-accent)] focus:text-[var(--klice-accent-foreground)]`;
+		return `${shape} ${glassForeground()} hover:bg-foreground/[0.08] hover:text-[var(--ktab-glass-foreground-primary)] focus:bg-[var(--ktab-accent)] focus:text-[var(--ktab-accent-foreground)]`;
 	}
-	return `${shape} text-flat-ink hover:bg-flat-sunken-raised focus:bg-[var(--klice-accent)] focus:text-[var(--klice-accent-foreground)]`;
+	return `${shape} text-flat-ink hover:bg-flat-sunken-raised focus:bg-[var(--ktab-accent)] focus:text-[var(--ktab-accent-foreground)]`;
 }
 
 /**
@@ -382,10 +382,10 @@ export function glassField(isLiquid: boolean): string {
 	if (isLiquid) {
 		return cn(
 			glassShape("control"),
-			"border border-black/[0.14] bg-transparent text-[var(--klice-glass-foreground-primary)] outline-none transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none placeholder:text-[var(--klice-glass-foreground-secondary)] dark:border-white/[0.16]",
-			"focus:border-[var(--klice-accent)] focus:ring-1 focus:ring-[var(--klice-accent)]/30",
-			"focus-within:border-[var(--klice-accent)] focus-within:ring-1 focus-within:ring-[var(--klice-accent)]/30",
-			"has-[[data-slot=input-group-control]:focus-visible]:border-[var(--klice-accent)] has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-[var(--klice-accent)]/30",
+			"border border-black/[0.14] bg-transparent text-[var(--ktab-glass-foreground-primary)] outline-none transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none placeholder:text-[var(--ktab-glass-foreground-secondary)] dark:border-white/[0.16]",
+			"focus:border-[var(--ktab-accent)] focus:ring-1 focus:ring-[var(--ktab-accent)]/30",
+			"focus-within:border-[var(--ktab-accent)] focus-within:ring-1 focus-within:ring-[var(--ktab-accent)]/30",
+			"has-[[data-slot=input-group-control]:focus-visible]:border-[var(--ktab-accent)] has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-[var(--ktab-accent)]/30",
 		);
 	}
 	return cn(
@@ -404,10 +404,10 @@ export function glassField(isLiquid: boolean): string {
 export function glassFieldPill(isLiquid: boolean): string {
 	if (isLiquid) {
 		return cn(
-			"rounded-full border border-black/[0.14] bg-transparent text-[var(--klice-glass-foreground-primary)] outline-none transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none placeholder:text-[var(--klice-glass-foreground-secondary)] dark:border-white/[0.16]",
-			"focus:border-[var(--klice-accent)] focus:ring-1 focus:ring-[var(--klice-accent)]/30",
-			"focus-within:border-[var(--klice-accent)] focus-within:ring-1 focus-within:ring-[var(--klice-accent)]/30",
-			"has-[[data-slot=input-group-control]:focus-visible]:border-[var(--klice-accent)] has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-[var(--klice-accent)]/30",
+			"rounded-full border border-black/[0.14] bg-transparent text-[var(--ktab-glass-foreground-primary)] outline-none transition-[border-color,box-shadow] duration-150 motion-reduce:transition-none placeholder:text-[var(--ktab-glass-foreground-secondary)] dark:border-white/[0.16]",
+			"focus:border-[var(--ktab-accent)] focus:ring-1 focus:ring-[var(--ktab-accent)]/30",
+			"focus-within:border-[var(--ktab-accent)] focus-within:ring-1 focus-within:ring-[var(--ktab-accent)]/30",
+			"has-[[data-slot=input-group-control]:focus-visible]:border-[var(--ktab-accent)] has-[[data-slot=input-group-control]:focus-visible]:ring-1 has-[[data-slot=input-group-control]:focus-visible]:ring-[var(--ktab-accent)]/30",
 		);
 	}
 	return cn(
@@ -446,7 +446,7 @@ export function glassFocusRing(isLiquid: boolean): string {
 	return cn(
 		"focus-visible:outline-none focus-visible:ring-2",
 		isLiquid
-			? "focus-visible:ring-[var(--klice-accent)]/80"
+			? "focus-visible:ring-[var(--ktab-accent)]/80"
 			: "focus-visible:ring-ring",
 	);
 }
@@ -457,7 +457,7 @@ export function glassFocusRing(isLiquid: boolean): string {
  */
 export function glassDropRing(isLiquid: boolean): string {
 	return isLiquid
-		? "ring-2 ring-[var(--klice-accent)]/80"
+		? "ring-2 ring-[var(--ktab-accent)]/80"
 		: "ring-2 ring-ring/80";
 }
 

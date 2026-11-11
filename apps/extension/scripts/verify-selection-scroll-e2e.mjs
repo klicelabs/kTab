@@ -227,7 +227,7 @@ try {
 		el.scrollTop = 0;
 	});
 	const screenshotDir = fs.mkdtempSync(
-		path.join(process.env.TEMP ?? "/tmp", "klice-selection-polish-"),
+		path.join(process.env.TEMP ?? "/tmp", "ktab-selection-polish-"),
 	);
 	await page.screenshot({
 		path: path.join(screenshotDir, "desktop-selected.png"),

@@ -1,7 +1,7 @@
 import { extApi } from "./extension-api";
 
-export const WALLPAPER_STATE_KEY = "klice-pexels-v1";
-export const WALLPAPER_LOCK_NAME = "klice-pexels-refresh";
+export const WALLPAPER_STATE_KEY = "ktab-pexels-v1";
+export const WALLPAPER_LOCK_NAME = "ktab-pexels-refresh";
 
 /** Reset shares the refresh lock, so a prior download cannot repopulate a completed wipe. */
 export async function resetWallpaperCache(

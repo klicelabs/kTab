@@ -1,8 +1,8 @@
 "use client";
 
-import { type KliceShapeName, kliceShape } from "@klice-start/ui/lib/shapes";
+import { type KtabShapeName, ktabShape } from "@ktab/ui/lib/shapes";
 
-import { cn } from "@klice-start/ui/lib/utils";
+import { cn } from "@ktab/ui/lib/utils";
 import {
 	type CSSProperties,
 	forwardRef,
@@ -161,7 +161,7 @@ export type LiquidGlassProps = HTMLAttributes<HTMLDivElement> & {
 	 * order would decide which one rendered. Passing the role in keeps exactly
 	 * one shape on the surface. Use `"none"` for a caller that supplies its own.
 	 */
-	shape?: KliceShapeName | "none";
+	shape?: KtabShapeName | "none";
 	/**
 	 * Opaque value that changes whenever the surface's corner geometry can
 	 * change without a resize (e.g. the corner-scale token). The lens map is
@@ -311,8 +311,8 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(
 				<div
 					ref={setRefs}
 					className={cn(
-						"relative overflow-hidden bg-white/[0.04] text-[var(--klice-glass-foreground-primary)] dark:bg-black/[0.06]",
-						shape !== "none" && kliceShape(shape),
+						"relative overflow-hidden bg-white/[0.04] text-[var(--ktab-glass-foreground-primary)] dark:bg-black/[0.06]",
+						shape !== "none" && ktabShape(shape),
 						className,
 					)}
 					style={
@@ -328,12 +328,12 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(
 					{children}
 					<span
 						aria-hidden
-						// `rounded-[inherit]` copies the radius, and `klice-corner-inherit`
+						// `rounded-[inherit]` copies the radius, and `ktab-corner-inherit`
 						// copies `corner-shape` (which is NOT an inherited property).
 						// Without the second one the hairline rim traces a circular arc while
 						// the surface itself is a squircle, and the control appears to have
 						// two different outlines.
-						className="klice-corner-inherit pointer-events-none absolute inset-0 rounded-[inherit]"
+						className="ktab-corner-inherit pointer-events-none absolute inset-0 rounded-[inherit]"
 						style={{
 							// Rim thickness, overridable per-consumer via --liquid-glass-rim-width.
 							padding: "var(--liquid-glass-rim-width, 0.5px)",

@@ -1,7 +1,7 @@
 "use client";
 
-import { SPRING_LAYOUT } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { SPRING_LAYOUT } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 import {
 	AnimatePresence,
 	type HTMLMotionProps,

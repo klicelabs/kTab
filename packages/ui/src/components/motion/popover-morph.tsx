@@ -2,9 +2,9 @@
 
 // beui.dev/components/motion/popover
 
-import { usePopoverPortalPosition } from "@klice-start/ui/components/motion/popover-position";
-import { EASE_OUT, SPRING_PANEL } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { usePopoverPortalPosition } from "@ktab/ui/components/motion/popover-position";
+import { EASE_OUT, SPRING_PANEL } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
 	cloneElement,

@@ -4,13 +4,13 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@klice-start/ui/components/motion/context-menu";
+} from "@ktab/ui/components/motion/context-menu";
 import {
 	Tabs,
 	TabsList,
 	TabsTrigger,
-} from "@klice-start/ui/components/motion/tabs";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/motion/tabs";
+import { Icon } from "@ktab/ui/icons/icon";
 import { type DragEvent, useEffect, useRef, useState } from "react";
 import { useSpringLoad } from "../../../hooks/use-spring-load";
 import {
@@ -129,8 +129,8 @@ function cloneItemOrder(order: ItemOrder | undefined): ItemOrder {
 /** D4/NPD-4: arm the same-document gesture marker so grid drop sites accept
  *  a payload that started on the tab bar (see use-grid-dnd). */
 function armGestureEpoch() {
-	const scope = globalThis as { __kliceDndGestureEpoch?: number };
-	scope.__kliceDndGestureEpoch = (scope.__kliceDndGestureEpoch ?? 0) + 1;
+	const scope = globalThis as { __ktabDndGestureEpoch?: number };
+	scope.__ktabDndGestureEpoch = (scope.__ktabDndGestureEpoch ?? 0) + 1;
 }
 
 /**
@@ -410,7 +410,7 @@ export function FolderTabs({
 						"flex shrink-0 items-center justify-center rounded-full transition-colors duration-150",
 						glassFocusRing(isLiquid),
 						isLiquid
-							? `${glassForeground()} hover:bg-foreground/[0.10] hover:text-[var(--klice-glass-foreground-primary)] active:bg-foreground/15`
+							? `${glassForeground()} hover:bg-foreground/[0.10] hover:text-[var(--ktab-glass-foreground-primary)] active:bg-foreground/15`
 							: "text-flat-ink hover:bg-flat-sunken-raised active:bg-flat-sunken",
 					)}
 				>
@@ -570,7 +570,7 @@ function FolderTab({
 				? cn(
 						"font-normal",
 						glassForeground("secondary"),
-						"hover:bg-foreground/[0.10] hover:text-[var(--klice-glass-foreground-primary)] active:bg-foreground/15",
+						"hover:bg-foreground/[0.10] hover:text-[var(--ktab-glass-foreground-primary)] active:bg-foreground/15",
 					)
 				: "font-normal text-flat-ink hover:bg-flat-sunken-raised active:bg-flat-sunken",
 		isSelected &&

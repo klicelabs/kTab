@@ -1,4 +1,4 @@
-# Klice Start Pexels Worker
+# kTab Pexels Worker
 
 This Worker replaces the file-backed Next.js proxy for production. It keeps
 search results, provider quota state, and shared request budgets in D1. The

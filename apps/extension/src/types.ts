@@ -44,7 +44,7 @@ export interface CustomWallpaper {
 }
 
 export interface BackgroundSettings {
-	type: "solid" | "gradient" | "image" | "pexels" | "wallpaper";
+	type: "solid" | "gradient" | "image" | "pexels" | "wallpaper" | "none";
 	color: string;
 	gradientId: string | null;
 	imageId: string | null;

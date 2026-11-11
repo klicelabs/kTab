@@ -1,6 +1,6 @@
 # Agent Rules
 
-Klice Start is a local-only MV3 browser dashboard (newtab replacement). React + TypeScript + WXT, Zustand, Tailwind. Pre-launch; targets Chrome Web Store + Firefox AMO. Read current versions from the package manifests and `wxt.config.ts`.
+kTab is a local-only MV3 browser dashboard (newtab replacement). React + TypeScript + WXT, Zustand, Tailwind. Pre-launch; targets Chrome Web Store + Firefox AMO. Read current versions from the package manifests and `wxt.config.ts`.
 
 ## Stack
 
@@ -14,7 +14,7 @@ Run in `apps/extension/`:
 - `bun run build` — Chrome production build to `.output/chrome-mv3`. Before performance measurements, preserve existing release archives, then use `bunx wxt clean` and rebuild.
 - `bun run compile` — `tsc --noEmit`. Must pass before commit.
 - `bun test scripts/` — product tests (`bun:test`). Must pass before commit.
-- `bun run zip` — Chrome store artifact. `bun run zip:firefox` for AMO; it creates both `klice-start-<version>-firefox.zip` and `klice-start-<version>-sources.zip` under `.output`. Submit both files to Firefox AMO.
+- `bun run zip` — Chrome store artifact. `bun run zip:firefox` for AMO; it creates both `ktab-<version>-firefox.zip` and `ktab-<version>-sources.zip` under `.output`. Submit both files to Firefox AMO.
 
 Run at root: `bun run check` (read-only Biome); `bun run check:write` applies formatting/fixes intentionally. Existing lint debt is not a passing check: report it and keep cleanup scoped. There is no `bun run check` or `bun run test` inside `apps/extension`.
 
@@ -41,6 +41,10 @@ Reference, not required reading. Consult on demand.
 | Stack, data model, storage, MV3 specifics | `docs/ARCHITECTURE.md` |
 | Open decisions (backend, AI, billing, budget, i18n) | `docs/DECISIONS.md` |
 | Performance history and constraints | `docs/perf/diagnosis.md` |
+
+## UI rules
+
+- Always the default arrow cursor, on everything — never `cursor: pointer` (buttons, links, tiles, menu rows and text fields included). This is João's standing rule; `tokens.css` enforces it globally.
 
 ## Workflow
 
@@ -70,7 +74,7 @@ For an authorized release:
 
 - Never run `git repack`, `gc`, or `prune`. If `CODEBUDDY_SAFE_DELETE_ENABLED=1`, deletions route to Recycle Bin and can empty `.git/objects`.
 - Builds must run outside any sandbox; the extension loads from `.output/`.
-- Origin is `Klice-Start`, not the old fork. No force-push.
+- Origin is `klicelabs/ktab`, not the old fork. No force-push.
 
 ## Benchmark scripts
 
