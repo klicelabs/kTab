@@ -1,5 +1,5 @@
-import { Icon } from "@klice-start/ui/icons/icon";
-import { KliceShape } from "@klice-start/ui/lib/shapes";
+import { Icon } from "@ktab/ui/icons/icon";
+import { KtabShape } from "@ktab/ui/lib/shapes";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { SETTINGS_FOCUS_RING } from "../../src/components/newtab/settings/shared/settings-tokens";
 import { ACCENT_COLORS } from "../../src/lib/accent";
@@ -42,7 +42,7 @@ const pendingSaveQuery =
  * morphing itself (spinner → check) instead of growing a status line.
  */
 const GROUP_SURFACE = cn(
-	KliceShape.section,
+	KtabShape.section,
 	"overflow-hidden bg-neutral-900/[0.04] ring-1 ring-black/[0.06] ring-inset dark:bg-white/[0.05] dark:ring-white/[0.08]",
 );
 const GROUP_ROW =
@@ -51,12 +51,12 @@ const GROUP_DIVIDER = "h-px shrink-0 bg-black/[0.06] dark:bg-white/[0.08]";
 const ROW_FIELD =
 	"w-full border-0 bg-transparent px-0 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500";
 const PRIMARY_BASE = cn(
-	KliceShape.control,
+	KtabShape.control,
 	SETTINGS_FOCUS_RING,
 	"inline-flex h-10 w-full items-center justify-center gap-2 border-0 px-3 font-medium text-[13px] transition-[background-color,color,filter,transform] duration-300 ease-out active:scale-[0.98] motion-reduce:transition-colors",
 );
 const PRIMARY_TONE = cn(
-	"bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] accent-action-shadow hover:brightness-95",
+	"bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] accent-action-shadow hover:brightness-95",
 );
 const QUIET_ACTION =
 	"text-[12px] font-medium text-neutral-500 transition-colors duration-150 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100";
@@ -95,7 +95,7 @@ function PagePreview({
 	return (
 		<div
 			className={cn(
-				KliceShape.surface,
+				KtabShape.surface,
 				"relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden bg-neutral-900/[0.05] ring-1 ring-black/[0.06] ring-inset dark:bg-white/[0.05] dark:ring-white/[0.08]",
 			)}
 		>
@@ -173,14 +173,14 @@ export default function App() {
 			root.classList.toggle("dark", dark);
 			root.classList.toggle("light", !dark);
 			root.style.colorScheme = dark ? "dark" : "light";
-			root.dataset.kliceCorner = cornerScale;
+			root.dataset.ktabCorner = cornerScale;
 			const accent = ACCENT_COLORS[accentColor] ?? ACCENT_COLORS.blue;
 			root.style.setProperty(
-				"--klice-accent",
+				"--ktab-accent",
 				dark ? accent.dark : accent.light,
 			);
-			root.style.setProperty("--klice-accent-foreground", accent.foreground);
-			root.style.setProperty("--klice-accent-rgb", accent.rgb);
+			root.style.setProperty("--ktab-accent-foreground", accent.foreground);
+			root.style.setProperty("--ktab-accent-rgb", accent.rgb);
 		};
 		apply();
 		media.addEventListener("change", apply);
@@ -691,7 +691,7 @@ export default function App() {
 								) : success ? (
 									<>
 										<span
-											className="klice-icon-pop inline-flex"
+											className="ktab-icon-pop inline-flex"
 											aria-hidden="true"
 										>
 											<Icon name="check" size={15} strokeWidth={2.5} />
@@ -701,7 +701,7 @@ export default function App() {
 								) : saveState === "error" ? (
 									<>
 										<span
-											className="klice-icon-pop inline-flex"
+											className="ktab-icon-pop inline-flex"
 											aria-hidden="true"
 										>
 											<Icon name="alert" size={15} />
@@ -717,7 +717,7 @@ export default function App() {
 								{saveState === "saving"
 									? "Saving…"
 									: saveState === "saved"
-										? "Saved to Klice Start"
+										? "Saved to kTab"
 										: saveState === "updated"
 											? "Bookmark updated"
 											: saveState === "error"

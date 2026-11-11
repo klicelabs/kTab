@@ -1,4 +1,4 @@
-import { Icon } from "@klice-start/ui/icons/icon";
+import { Icon } from "@ktab/ui/icons/icon";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ACCENT_OPTIONS } from "../../../../lib/accent";
@@ -225,7 +225,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 												SETTINGS_RADIUS.surface,
 												mode.shell,
 												selected &&
-													"ring-2 ring-[var(--klice-accent)] ring-offset-2 ring-offset-white dark:ring-offset-[#252525]",
+													"ring-2 ring-[var(--ktab-accent)] ring-offset-2 ring-offset-white dark:ring-offset-[#252525]",
 											)}
 										>
 											{mode.value === "auto" ? (
@@ -286,7 +286,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 											}
 											className={cn(
 												SETTINGS_RADIUS.pill,
-												"bg-[var(--klice-accent)] px-2.5 py-1 font-medium text-[11px] text-[var(--klice-accent-foreground)] leading-none",
+												"bg-[var(--ktab-accent)] px-2.5 py-1 font-medium text-[11px] text-[var(--ktab-accent-foreground)] leading-none",
 											)}
 										>
 											{mode.label}
@@ -323,7 +323,7 @@ export function AppearancePane({ onOpenWallpaper }: AppearancePaneProps) {
 										"size-6 rounded-full p-0.5 transition-[box-shadow,transform] duration-150 hover:scale-105 active:scale-95 motion-reduce:transition-none",
 										SETTINGS_FOCUS_RING,
 										selected &&
-											"ring-2 ring-[var(--klice-accent)] ring-offset-1 ring-offset-white dark:ring-offset-[#252525]",
+											"ring-2 ring-[var(--ktab-accent)] ring-offset-1 ring-offset-white dark:ring-offset-[#252525]",
 									)}
 								>
 									<span

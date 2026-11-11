@@ -1,6 +1,6 @@
 "use client";
 
-import { Toaster } from "@klice-start/ui/components/sonner";
+import { Toaster } from "@ktab/ui/components/sonner";
 
 import { ThemeProvider } from "./theme-provider";
 

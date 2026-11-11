@@ -5,8 +5,8 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@klice-start/ui/components/dialog";
-import { Icon, type IconName } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/dialog";
+import { Icon, type IconName } from "@ktab/ui/icons/icon";
 import { useState } from "react";
 import { toast } from "sonner";
 import { SETTINGS_SCOPE_CLASS } from "../../../../lib/context-scope";

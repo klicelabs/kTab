@@ -118,9 +118,9 @@ export function AppearanceProvider({
 		if (typeof document === "undefined") return;
 		const root = document.documentElement;
 		const value = resolvedDark ? accent.dark : accent.light;
-		root.style.setProperty("--klice-accent", value);
-		root.style.setProperty("--klice-accent-foreground", accent.foreground);
-		root.style.setProperty("--klice-accent-rgb", accent.rgb);
+		root.style.setProperty("--ktab-accent", value);
+		root.style.setProperty("--ktab-accent-foreground", accent.foreground);
+		root.style.setProperty("--ktab-accent-rgb", accent.rgb);
 		// Text selection follows the accent so highlighted query text, menu
 		// typeahead and field selections read as one system.
 		root.style.setProperty("--selection", value);
@@ -136,19 +136,19 @@ export function AppearanceProvider({
 		// Top-level material contract: Flat mode must contain zero Glass and
 		// Glass mode no forgotten Flat chrome. Styles that need the mode
 		// (e.g. the toolbar disabled-ink gate) read this attribute.
-		root.dataset.kliceMaterial = material;
+		root.dataset.ktabMaterial = material;
 		// High-contrast users get dense veils + strong ink (GlassSurface
 		// upgrades `surface` to the dense `menu` tier; helpers already pick
 		// the strong-ink branch off resolvedDark). Never a separate theme.
-		root.dataset.kliceContrast = prefersContrastMore ? "more" : "less";
+		root.dataset.ktabContrast = prefersContrastMore ? "more" : "less";
 		// The corner scale drives tokens.css' --shape-* variables, so every
 		// semantic shape role re-renders instantly (live settings preview).
-		root.dataset.kliceCorner = cornerScale;
+		root.dataset.ktabCorner = cornerScale;
 		// Continuous intensity and optical values keep CSS-driven surfaces and
 		// inline SVG lens nodes on one recipe. This is the only runtime writer
 		// for Glass material variables.
 		root.style.setProperty(
-			"--klice-glass-intensity",
+			"--ktab-glass-intensity",
 			String(glassIntensity / 100),
 		);
 		for (const [name, value] of Object.entries(

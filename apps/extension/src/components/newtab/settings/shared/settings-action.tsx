@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@klice-start/ui/icons/icon";
+import { Icon, type IconName } from "@ktab/ui/icons/icon";
 import type { ComponentProps } from "react";
 import { glassShape } from "../../../../lib/glass";
 import { cn } from "../../../../lib/utils";

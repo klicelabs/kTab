@@ -4,10 +4,10 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@klice-start/ui/components/motion/context-menu";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { EASE_OUT } from "@klice-start/ui/lib/ease";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
+} from "@ktab/ui/components/motion/context-menu";
+import { Icon } from "@ktab/ui/icons/icon";
+import { EASE_OUT } from "@ktab/ui/lib/ease";
+import { ktabShape } from "@ktab/ui/lib/shapes";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import {
@@ -169,7 +169,7 @@ export function FolderPreviewCard({
 					// Card mode shares the semantic card silhouette with
 					// bookmark cards; icon mode keeps the Home-Screen tile.
 					"dial-card group/folder relative isolate flex h-full w-full select-none flex-col transition-[transform,box-shadow,opacity] duration-150 [-webkit-user-drag:element]",
-					dialLayout === "card" && kliceShape("card"),
+					dialLayout === "card" && ktabShape("card"),
 					dialLayout === "card" && "overflow-hidden",
 					// Sizing/span live on the grid-item wrapper (DialGrid); the
 					// inner card only fills it. Keeping the span class here would
@@ -269,7 +269,7 @@ export function FolderPreviewCard({
 												<div
 													key={`empty-${String(i)}`}
 													className={cn(
-														kliceShape("thumbnail"),
+														ktabShape("thumbnail"),
 														isLiquid ? "bg-white/[0.05]" : "bg-muted",
 													)}
 												/>
@@ -343,7 +343,7 @@ export function FolderPreviewCard({
 									title={`Open ${name}`}
 									onClick={() => onOpen(id)}
 									className={cn(
-										"absolute right-1 bottom-[3px] z-30 inline-flex size-6 items-center justify-center rounded-full transition-[background-color,color] duration-150 hover:bg-black/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--klice-accent)]",
+										"absolute right-1 bottom-[3px] z-30 inline-flex size-6 items-center justify-center rounded-full transition-[background-color,color] duration-150 hover:bg-black/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ktab-accent)]",
 										isLiquid ? glassForeground() : "text-flat-ink",
 										"dark:hover:bg-white/15",
 									)}
@@ -738,7 +738,7 @@ function FolderMiniTile({ card }: { card: FolderPreviewItem }) {
 		<div
 			className={cn(
 				"relative flex size-full items-center justify-center overflow-hidden",
-				kliceShape("thumbnail"),
+				ktabShape("thumbnail"),
 			)}
 			style={{ background: fallback }}
 		>

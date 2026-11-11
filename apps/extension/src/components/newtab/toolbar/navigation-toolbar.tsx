@@ -1,9 +1,9 @@
-import { Button } from "@klice-start/ui/components/button";
-import { ButtonGroup } from "@klice-start/ui/components/button-group";
-import { GlassButtonGroup } from "@klice-start/ui/components/glass-button-group";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
-import { flatSeparator, flatSurface } from "@klice-start/ui/lib/surface";
+import { Button } from "@ktab/ui/components/button";
+import { ButtonGroup } from "@ktab/ui/components/button-group";
+import { GlassButtonGroup } from "@ktab/ui/components/glass-button-group";
+import { Icon } from "@ktab/ui/icons/icon";
+import { ktabShape } from "@ktab/ui/lib/shapes";
+import { flatSeparator, flatSurface } from "@ktab/ui/lib/surface";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSpringLoad } from "../../../hooks/use-spring-load";
 import { getActiveDrag } from "../../../lib/dnd";
@@ -313,7 +313,7 @@ function HistoryControls({
 	// inset block with a square cut in the middle. The segments are h-full and
 	// follow the group's surface height directly.
 	//
-	// Klice customizes only what it is allowed to: the group height, segment
+	// kTab customizes only what it is allowed to: the group height, segment
 	// width, the glyph token, the liquid wash tint, and the group's corner
 	// role. Segment geometry, the seam and disabled state stay owned by the
 	// group implementation.
@@ -383,7 +383,7 @@ function HistoryControls({
 			aria-label="Navigation history"
 			aria-orientation="horizontal"
 			className={cn(
-				kliceShape("toolbarGroup"),
+				ktabShape("toolbarGroup"),
 				flatSurface("floating"),
 				// Toolbar controls carry no elevation: face wash only, so the
 				// group never reads as floating above the wallpaper.
@@ -553,7 +553,7 @@ function HistoryButton({
 				// washed the thin glyph out on light faces). 25% reads
 				// clearly inactive without disappearing.
 				isLiquid
-					? `${glassForeground()} hover:text-[var(--klice-glass-foreground-primary)]`
+					? `${glassForeground()} hover:text-[var(--ktab-glass-foreground-primary)]`
 					: "text-flat-ink disabled:opacity-25",
 				// Active DnD dwell: the button's own hover wash so the target
 				// reads "listening — hold here to navigate". Restrained by

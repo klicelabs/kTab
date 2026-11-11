@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { KliceShape } from "@klice-start/ui/lib/shapes";
+import { KtabShape } from "@ktab/ui/lib/shapes";
 
 const tokens = readFileSync(
 	new URL("../src/styles/tokens.css", import.meta.url),
@@ -19,9 +19,9 @@ const ROLE_TOKENS = {
 } as const;
 
 function tierBlock(name: "discreet" | "rounded"): string {
-	const start = tokens.indexOf(`:root[data-klice-corner="${name}"]`);
+	const start = tokens.indexOf(`:root[data-ktab-corner="${name}"]`);
 	expect(start).toBeGreaterThan(-1);
-	const next = tokens.indexOf(":root[data-klice-corner=", start + 1);
+	const next = tokens.indexOf(":root[data-ktab-corner=", start + 1);
 	return tokens.slice(start, next === -1 ? undefined : next);
 }
 
@@ -34,9 +34,9 @@ function softBlock(): string {
 
 test("every shape role reads a semantic --shape-* token", () => {
 	for (const [role, token] of Object.entries(ROLE_TOKENS)) {
-		expect(KliceShape[role as keyof typeof ROLE_TOKENS]).toContain(token);
-		expect(KliceShape[role as keyof typeof ROLE_TOKENS]).toContain(
-			"klice-squircle",
+		expect(KtabShape[role as keyof typeof ROLE_TOKENS]).toContain(token);
+		expect(KtabShape[role as keyof typeof ROLE_TOKENS]).toContain(
+			"ktab-squircle",
 		);
 	}
 	// The tier table must define a Chromium radius AND a calibrated Gecko
@@ -62,8 +62,8 @@ test("toolbar surfaces stay capsules regardless of the corner tier", () => {
 		"toolbarIcon",
 		"toolbarGroup",
 	] as const) {
-		expect(KliceShape[role]).toContain("rounded-full");
-		expect(KliceShape[role]).not.toContain("--shape-");
+		expect(KtabShape[role]).toContain("rounded-full");
+		expect(KtabShape[role]).not.toContain("--shape-");
 	}
 });
 
@@ -74,19 +74,19 @@ test("search surfaces keep tier geometry and calibrated squircle corners", () =>
 		"searchResults",
 		"panel",
 	] as const) {
-		expect(KliceShape[role]).toContain("klice-squircle");
-		expect(KliceShape[role]).not.toContain("rounded-full");
+		expect(KtabShape[role]).toContain("ktab-squircle");
+		expect(KtabShape[role]).not.toContain("rounded-full");
 	}
-	expect(KliceShape.searchCollapsed).toContain("--shape-search-collapsed");
-	expect(KliceShape.searchCollapsed).toContain("--shape-section-fallback");
-	expect(KliceShape.panel).toContain("--shape-panel-fallback");
-	expect(KliceShape.searchResults).toContain("--shape-search-results-fallback");
+	expect(KtabShape.searchCollapsed).toContain("--shape-search-collapsed");
+	expect(KtabShape.searchCollapsed).toContain("--shape-section-fallback");
+	expect(KtabShape.panel).toContain("--shape-panel-fallback");
+	expect(KtabShape.searchResults).toContain("--shape-search-results-fallback");
 	const roundedField = tokens.match(
-		/:root\[data-klice-corner="rounded"\] \.klice-search-field\s*\{([^}]+)\}/,
+		/:root\[data-ktab-corner="rounded"\] \.ktab-search-field\s*\{([^}]+)\}/,
 	)?.[1];
 	expect(roundedField).toContain("corner-shape: round;");
 	expect(roundedField).toContain("border-radius: 28px;");
-	expect(KliceShape.searchExpanded.startsWith(KliceShape.surface)).toBe(true);
+	expect(KtabShape.searchExpanded.startsWith(KtabShape.surface)).toBe(true);
 	expect(tokens).not.toContain("--shape-search-expanded");
 
 	const px = (block: string, token: string) =>
@@ -107,7 +107,7 @@ test("subfolder preview tiles consume the thumbnail role", () => {
 	// The 2×2 mini-tile grid (and its empty slots) must follow the corner
 	// scale like every other thumbnail, not pin a 7px literal.
 	expect(source).not.toContain("rounded-[7px]");
-	expect(source.match(/kliceShape\("thumbnail"\)/g)?.length).toBe(2);
+	expect(source.match(/ktabShape\("thumbnail"\)/g)?.length).toBe(2);
 });
 
 test("the preference drives the shadcn scale only in non-default tiers", () => {

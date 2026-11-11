@@ -45,8 +45,8 @@ import type { Folder, Setup } from "../src/types";
 // installs keep their data and context-menu registration after the rename.
 const STORAGE_KEY = "perch-setup";
 const MENU_ID = "add-to-perch";
-const NEW_FOLDER_SEPARATOR_ID = "klice-new-folder-separator";
-const NEW_FOLDER_MENU_ID = "klice-new-folder";
+const NEW_FOLDER_SEPARATOR_ID = "ktab-new-folder-separator";
+const NEW_FOLDER_MENU_ID = "ktab-new-folder";
 
 /**
  * Read and normalize the persisted setup, or null when nothing is stored.
@@ -67,9 +67,9 @@ function writeSetup(setup: Setup): Promise<void> {
 	return writeSetupEnvelope(STORAGE_KEY, setup);
 }
 
-// Context menu: "Save page to Klice Start" is a parent item with one entry
-// per Klice Start folder (nested folders become nested submenus).
-const FOLDER_MENU_PREFIX = "klice-folder:";
+// Context menu: "Save page to kTab" is a parent item with one entry
+// per kTab folder (nested folders become nested submenus).
+const FOLDER_MENU_PREFIX = "ktab-folder:";
 const MAX_MENU_TITLE_LENGTH = 60;
 
 /** Menu id for a folder item; stable across restarts and updates. */
@@ -142,7 +142,7 @@ async function rebuildMenus(): Promise<void> {
 	// every folder leaf handles its own click.
 	safeCreateMenuItem({
 		id: MENU_ID,
-		title: "Save page to Klice Start",
+		title: "Save page to kTab",
 		contexts: ["page"],
 	});
 

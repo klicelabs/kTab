@@ -2,21 +2,21 @@
 
 import { type VariantProps, cva } from "class-variance-authority";
 
-import { type FrostGlassVariantProp, glassVariantStyles } from "@klice-start/ui/lib/glass-variants";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
-import { cn } from "@klice-start/ui/lib/utils";
+import { type FrostGlassVariantProp, glassVariantStyles } from "@ktab/ui/lib/glass-variants";
+import { ktabShape } from "@ktab/ui/lib/shapes";
+import { cn } from "@ktab/ui/lib/utils";
 
 import { LiquidGlass, type LiquidGlassProps } from "./liquid-glass";
 
 /**
- * No cursor override: Klice Start uses the platform arrow cursor for normal
+ * No cursor override: kTab uses the platform arrow cursor for normal
  * clickable UI. This renders a `<button>`, which the UA stylesheet already
  * gives an arrow, so nothing needs to be forced here.
  */
 const glassIconVariants = cva(
   cn(
-    "inline-flex shrink-0 items-center justify-center text-[var(--klice-glass-foreground-primary)] select-none outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-    kliceShape("toolbarIcon"),
+    "inline-flex shrink-0 items-center justify-center text-[var(--ktab-glass-foreground-primary)] select-none outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+    ktabShape("toolbarIcon"),
   ),
   {
     variants: {

@@ -5,8 +5,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@klice-start/ui/components/select";
-import type { IconName } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/select";
+import type { IconName } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { SETTINGS_SCOPE_CLASS } from "../../../../lib/context-scope";
 import { glassShape } from "../../../../lib/glass";

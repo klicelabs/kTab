@@ -284,8 +284,8 @@ async function readCards(observer) {
 async function readRefreshSession(observer) {
 	return observer.evaluate(() =>
 		chrome.storage.session
-			.get("klice-refresh-batch")
-			.then((d) => d["klice-refresh-batch"] ?? null),
+			.get("ktab-refresh-batch")
+			.then((d) => d["ktab-refresh-batch"] ?? null),
 	);
 }
 
@@ -406,7 +406,7 @@ const swErrors = [];
 const artifactDir = process.env.BB_THREAD_STORAGE
 	? path.join(process.env.BB_THREAD_STORAGE, "chrome-refresh")
 	: fs.mkdtempSync(
-			path.join(process.env.TEMP ?? "/tmp", "klice-refresh-polish-"),
+			path.join(process.env.TEMP ?? "/tmp", "ktab-refresh-polish-"),
 		);
 fs.mkdirSync(artifactDir, { recursive: true });
 console.log(
@@ -1576,7 +1576,7 @@ try {
 						radius: surface
 							? getComputedStyle(surface).borderTopLeftRadius
 							: "",
-						attr: document.documentElement.dataset.kliceCorner ?? "",
+						attr: document.documentElement.dataset.ktabCorner ?? "",
 					};
 				});
 				if (measured.radius === measured.varValue) break;
@@ -1632,7 +1632,7 @@ try {
 			const card = document.querySelector("[data-marquee-id] .dial-card");
 			const root = getComputedStyle(document.documentElement);
 			return {
-				attr: document.documentElement.dataset.kliceCorner ?? "",
+				attr: document.documentElement.dataset.ktabCorner ?? "",
 				varValue: root.getPropertyValue("--shape-surface").trim(),
 				collapsedVar: root.getPropertyValue("--shape-search-collapsed").trim(),
 				collapsedRadius: surface
@@ -1658,7 +1658,7 @@ try {
 			const card = document.querySelector("[data-marquee-id] .dial-card");
 			const root = getComputedStyle(document.documentElement);
 			return {
-				attr: document.documentElement.dataset.kliceCorner ?? "",
+				attr: document.documentElement.dataset.ktabCorner ?? "",
 				varValue: root.getPropertyValue("--shape-surface").trim(),
 				collapsedVar: root.getPropertyValue("--shape-search-collapsed").trim(),
 				collapsedRadius: surface

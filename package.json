@@ -1,5 +1,5 @@
 {
-	"name": "klice-start",
+	"name": "ktab",
 	"private": true,
 	"workspaces": {
 		"packages": [
@@ -27,10 +27,10 @@
 		"build": "turbo run build",
 		"check-types": "turbo run check-types",
 		"dev:web": "turbo run dev -F web",
-		"db:push": "turbo run db:push -F @klice-start/db",
-		"db:studio": "turbo run db:studio -F @klice-start/db",
-		"db:generate": "turbo run db:generate -F @klice-start/db",
-		"db:migrate": "turbo run db:migrate -F @klice-start/db",
+		"db:push": "turbo run db:push -F @ktab/db",
+		"db:studio": "turbo run db:studio -F @ktab/db",
+		"db:generate": "turbo run db:generate -F @ktab/db",
+		"db:migrate": "turbo run db:migrate -F @ktab/db",
 		"deploy:setup": "vercel link",
 		"dev:vercel": "vercel dev -L",
 		"env:preview": "tsx scripts/sync-vercel-env.ts preview",
@@ -42,13 +42,13 @@
 		"check:write": "biome check --write ."
 	},
 	"dependencies": {
-		"@klice-start/env": "workspace:*",
+		"@ktab/env": "workspace:*",
 		"dotenv": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.2",
-		"@klice-start/config": "workspace:*",
+		"@ktab/config": "workspace:*",
 		"@types/node": "^22.13.14",
 		"playwright": "^1.63.0",
 		"tsx": "^4.22.5",

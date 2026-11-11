@@ -1,5 +1,5 @@
-import { Icon, type IconName } from "@klice-start/ui/icons/icon";
-import { SPRING_SEGMENT } from "@klice-start/ui/lib/ease";
+import { Icon, type IconName } from "@ktab/ui/icons/icon";
+import { SPRING_SEGMENT } from "@ktab/ui/lib/ease";
 import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
 import { cn } from "../../../../lib/utils";

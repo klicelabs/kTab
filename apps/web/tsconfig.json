@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@klice-start/ui/*": ["../../packages/ui/src/*"]
+      "@ktab/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [

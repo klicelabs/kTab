@@ -1,6 +1,6 @@
-import { Input } from "@klice-start/ui/components/input";
-import { Switch } from "@klice-start/ui/components/switch";
-import type { IconName } from "@klice-start/ui/icons/icon";
+import { Input } from "@ktab/ui/components/input";
+import { Switch } from "@ktab/ui/components/switch";
+import type { IconName } from "@ktab/ui/icons/icon";
 import { cn } from "../../../../lib/utils";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { CardAspect, TitleSource } from "../../../../types";

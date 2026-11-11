@@ -1,5 +1,8 @@
 export const PEXELS_DEFAULT_QUERY = "cinematic nature landscape 4k";
 export const PEXELS_MAX_QUERY_LENGTH = 80;
+// Production still points at the Worker deployed under its original name; the
+// local config in apps/pexels-worker is already `ktab-pexels`, so this URL only
+// changes once that Worker is redeployed under the new name.
 export const PEXELS_PROXY_BASE =
 	import.meta.env.VITE_PEXELS_PROXY_URL ||
 	(import.meta.env.DEV

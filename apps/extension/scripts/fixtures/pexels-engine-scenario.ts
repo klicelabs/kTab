@@ -217,7 +217,7 @@ assert.equal(
 );
 assert.equal(second.useWallpaperStatus.getState().status, "idle");
 quotaQueries.delete("japan");
-(stored["klice-pexels-v1"] as { retryAt: number }).retryAt = 0;
+(stored["ktab-pexels-v1"] as { retryAt: number }).retryAt = 0;
 Object.assign(
 	settings.background,
 	structuredClone(secondTab.settings.background),
@@ -241,7 +241,7 @@ await second.refreshWallpaper(true);
 assert.equal(requests, afterQuota);
 assert.equal(images.size, 1);
 const clearBackoff = () => {
-	(stored["klice-pexels-v1"] as { retryAt: number }).retryAt = 0;
+	(stored["ktab-pexels-v1"] as { retryAt: number }).retryAt = 0;
 };
 clearBackoff();
 firstTab.settings.background.pexelsQuery = "transport";
@@ -267,7 +267,7 @@ assert.equal(
 firstTab.settings.background.pexelsQuery = "cinematic nature landscape";
 await engine.refreshWallpaper(true);
 const natureQueue = (
-	stored["klice-pexels-v1"] as {
+	stored["ktab-pexels-v1"] as {
 		queues: { query: string; fetchedAt: number }[];
 	}
 ).queues.find((queue) => queue.query === "cinematic nature landscape");
@@ -290,7 +290,7 @@ assert.equal(
 );
 failProxy = false;
 const updatedNature = (
-	stored["klice-pexels-v1"] as {
+	stored["ktab-pexels-v1"] as {
 		queues: { query: string; fetchedAt: number }[];
 	}
 ).queues.find((queue) => queue.query === "cinematic nature landscape");
@@ -347,7 +347,7 @@ assert.equal(firstTab.settings.background.pexelsImageId, beforePreparation);
 assert.equal(requests, apiBeforePreparation);
 const downloadsAfterPreparation = downloads;
 const preparedId = (
-	stored["klice-pexels-v1"] as { prepared: { imageId: string } }
+	stored["ktab-pexels-v1"] as { prepared: { imageId: string } }
 ).prepared.imageId;
 await engine.refreshWallpaper();
 assert.equal(firstTab.settings.background.pexelsImageId, preparedId);

@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@klice-start/ui/lib/utils";
+import { cn } from "@ktab/ui/lib/utils";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import * as React from "react";
 

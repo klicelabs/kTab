@@ -1,7 +1,7 @@
 "use client";
 
-import { Icon } from "@klice-start/ui/icons/icon";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
+import { Icon } from "@ktab/ui/icons/icon";
+import { ktabShape } from "@ktab/ui/lib/shapes";
 import {
 	type CSSProperties,
 	forwardRef,
@@ -478,7 +478,7 @@ export const UnifiedSearch = forwardRef<
 			hidden={!search.enabled}
 			data-unified-search
 			data-search-open={open ? "true" : "false"}
-			className="klice-search-anchor"
+			className="ktab-search-anchor"
 			style={
 				{
 					"--speed-dial-search-width": `${search.width}px`,
@@ -489,7 +489,7 @@ export const UnifiedSearch = forwardRef<
 			<GlassSurface
 				variant="hero"
 				shape="searchCollapsed"
-				className={cn("klice-search-field", present && "invisible")}
+				className={cn("ktab-search-field", present && "invisible")}
 			>
 				<button
 					ref={launcherRef}
@@ -498,7 +498,7 @@ export const UnifiedSearch = forwardRef<
 					aria-label="Search saved pages or the web"
 					aria-haspopup="listbox"
 					aria-expanded={open}
-					className={cn("klice-search-launcher", ink)}
+					className={cn("ktab-search-launcher", ink)}
 				>
 					{icon}
 					<span className="min-w-0 flex-1 truncate text-left opacity-65">
@@ -512,7 +512,7 @@ export const UnifiedSearch = forwardRef<
 					<search
 						ref={overlayRef}
 						aria-label="Search"
-						className={cn("klice-search-overlay", ink)}
+						className={cn("ktab-search-overlay", ink)}
 						data-search-overlay
 						data-search-state={phase}
 						style={
@@ -546,10 +546,10 @@ export const UnifiedSearch = forwardRef<
 						<GlassSurface
 							variant="hero"
 							shape="searchCollapsed"
-							className="klice-search-field"
+							className="ktab-search-field"
 						>
 							<form
-								className="klice-search-input-row"
+								className="ktab-search-input-row"
 								onSubmit={(event) => {
 									event.preventDefault();
 									if (activeItem) selectItem(activeItem);
@@ -570,15 +570,15 @@ export const UnifiedSearch = forwardRef<
 									placeholder={placeholder}
 									aria-label="Search saved pages or the web"
 									aria-expanded={open}
-									aria-controls="klice-search-results"
+									aria-controls="ktab-search-results"
 									aria-activedescendant={
 										activeItem
-											? `klice-search-option-${activeIndex}`
+											? `ktab-search-option-${activeIndex}`
 											: undefined
 									}
 									aria-autocomplete="list"
 									aria-describedby={
-										!items.length ? "klice-search-empty-help" : undefined
+										!items.length ? "ktab-search-empty-help" : undefined
 									}
 									autoComplete="off"
 									autoCapitalize="off"
@@ -588,7 +588,7 @@ export const UnifiedSearch = forwardRef<
 									<button
 										type="button"
 										aria-label="Clear search"
-										className="klice-search-dismiss"
+										className="ktab-search-dismiss"
 										onClick={() => {
 											setQuery("");
 											setActiveId(null);
@@ -601,7 +601,7 @@ export const UnifiedSearch = forwardRef<
 									<button
 										type="button"
 										aria-label="Close search"
-										className="klice-search-dismiss"
+										className="ktab-search-dismiss"
 										onClick={() => close(true)}
 									>
 										<kbd>Esc</kbd>
@@ -612,15 +612,15 @@ export const UnifiedSearch = forwardRef<
 						<GlassSurface
 							variant="search"
 							shape="searchResults"
-							className="klice-search-results-panel"
+							className="ktab-search-results-panel"
 						>
-							<fieldset className="klice-search-scopes" aria-label="Search in">
+							<fieldset className="ktab-search-scopes" aria-label="Search in">
 								{SCOPES.map((filter) => (
 									<button
 										type="button"
 										key={filter.id}
 										aria-pressed={scope === filter.id}
-										className={cn("klice-search-scope", kliceShape("pill"))}
+										className={cn("ktab-search-scope", ktabShape("pill"))}
 										onClick={() => {
 											setScope(filter.id);
 											setActiveId(null);
@@ -631,9 +631,9 @@ export const UnifiedSearch = forwardRef<
 									</button>
 								))}
 							</fieldset>
-							<div ref={listRef} className="klice-search-results-list">
+							<div ref={listRef} className="ktab-search-results-list">
 								<div
-									id="klice-search-results"
+									id="ktab-search-results"
 									role="listbox"
 									aria-label="Search results"
 								>
@@ -643,7 +643,7 @@ export const UnifiedSearch = forwardRef<
 											key={group.id}
 											role="group"
 											aria-label={group.label}
-											className="klice-search-result-group"
+											className="ktab-search-result-group"
 										>
 											{group.items.map((item) => {
 												const index = rowIndex++;
@@ -656,11 +656,11 @@ export const UnifiedSearch = forwardRef<
 														role="option"
 														aria-selected={selected}
 														tabIndex={-1}
-														id={`klice-search-option-${index}`}
+														id={`ktab-search-option-${index}`}
 														data-search-index={index}
 														className={cn(
-															"klice-search-option",
-															kliceShape("control"),
+															"ktab-search-option",
+															ktabShape("control"),
 														)}
 														onMouseEnter={() => setActiveId(item.id)}
 														onPointerDown={(event) => {
@@ -674,7 +674,7 @@ export const UnifiedSearch = forwardRef<
 															favicon={content.favicon}
 															icon={content.icon}
 														/>
-														<span className="klice-search-result-copy">
+														<span className="ktab-search-result-copy">
 															<span>{content.title}</span>
 															<small>{content.detail}</small>
 														</span>
@@ -686,7 +686,7 @@ export const UnifiedSearch = forwardRef<
 															}
 															size={15}
 															aria-hidden="true"
-															className="klice-search-row-action"
+															className="ktab-search-row-action"
 														/>
 													</button>
 												);
@@ -695,7 +695,7 @@ export const UnifiedSearch = forwardRef<
 									))}
 								</div>
 								{!items.length && (
-									<div className="klice-search-empty">
+									<div className="ktab-search-empty">
 										<Icon name="search" size={22} aria-hidden="true" />
 										<p role="status">
 											{query.trim()
@@ -704,7 +704,7 @@ export const UnifiedSearch = forwardRef<
 													? `Search with ${engine.label}`
 													: "Your library starts here"}
 										</p>
-										<span id="klice-search-empty-help">
+										<span id="ktab-search-empty-help">
 											{query.trim()
 												? "Try a shorter name, a website, or search the web."
 												: scope === "web"
@@ -727,7 +727,7 @@ export const UnifiedSearch = forwardRef<
 									</div>
 								)}
 							</div>
-							<div className="klice-search-footer">
+							<div className="ktab-search-footer">
 								<span role="status" aria-live="polite">
 									{query.trim()
 										? `${items.length} ${items.length === 1 ? "result" : "results"}`
@@ -735,7 +735,7 @@ export const UnifiedSearch = forwardRef<
 								</span>
 								<button
 									type="button"
-									className="klice-search-go"
+									className="ktab-search-go"
 									disabled={!activeItem}
 									onClick={() => {
 										if (activeItem) selectItem(activeItem);

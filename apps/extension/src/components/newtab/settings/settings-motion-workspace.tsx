@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@klice-start/ui/components/sidebar";
+import { SidebarProvider } from "@ktab/ui/components/sidebar";
 import {
 	type ComponentProps,
 	type CSSProperties,

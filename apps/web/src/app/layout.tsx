@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Klice Start",
-  description: "Klice Start",
+  title: "kTab",
+  description: "kTab",
 };
 
 export default function RootLayout({

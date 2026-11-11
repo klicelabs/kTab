@@ -1,4 +1,4 @@
-import { RangeSlider } from "@klice-start/ui/components/motion/range-slider";
+import { RangeSlider } from "@ktab/ui/components/motion/range-slider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { glassShape } from "../../../../lib/glass";
 import { flushPersist } from "../../../../lib/storage";
@@ -18,7 +18,7 @@ interface SettingsRangeSliderProps {
 
 /**
  * The one continuous-control primitive in Settings. The beUI RangeSlider
- * owns pointer and keyboard semantics; this wrapper owns the compact Klice
+ * owns pointer and keyboard semantics; this wrapper owns the compact kTab
  * readout and coalesces the final persistence flush for live settings.
  */
 export function SettingsRangeSlider({

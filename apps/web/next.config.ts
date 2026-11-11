@@ -1,4 +1,4 @@
-import "@klice-start/env/web";
+import "@ktab/env/web";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

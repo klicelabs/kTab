@@ -1,13 +1,13 @@
 {
-	"name": "@klice-start/pexels-worker",
+	"name": "@ktab/pexels-worker",
 	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy",
-		"db:create": "wrangler d1 create klice-start-pexels-cache",
-		"db:migrate:local": "wrangler d1 migrations apply klice-start-pexels-cache --local",
-		"db:migrate:remote": "wrangler d1 migrations apply klice-start-pexels-cache --remote",
+		"db:create": "wrangler d1 create ktab-pexels-cache",
+		"db:migrate:local": "wrangler d1 migrations apply ktab-pexels-cache --local",
+		"db:migrate:remote": "wrangler d1 migrations apply ktab-pexels-cache --remote",
 		"typecheck": "tsc --noEmit",
 		"test": "bun test"
 	},

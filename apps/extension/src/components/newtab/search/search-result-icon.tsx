@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@klice-start/ui/icons/icon";
+import { Icon, type IconName } from "@ktab/ui/icons/icon";
 import { faviconUrl } from "../../../lib/url";
 import { IconAppTile } from "../icon-app-tile";
 
@@ -16,10 +16,10 @@ export function SearchResultIcon({
 		<IconAppTile
 			url={url}
 			favicon={favicon || faviconUrl(url)}
-			className="klice-search-app-icon"
+			className="ktab-search-app-icon"
 		/>
 	) : (
-		<span className="klice-search-result-icon">
+		<span className="ktab-search-result-icon">
 			<Icon name={icon} size={18} aria-hidden="true" />
 		</span>
 	);

@@ -8,12 +8,12 @@ import {
 	ColorPickerPreset,
 	ColorPickerPresets,
 	ColorPickerTrigger,
-} from "@klice-start/ui/components/motion/color-picker";
+} from "@ktab/ui/components/motion/color-picker";
 import {
 	FileUpload,
 	type FileUploadItem,
-} from "@klice-start/ui/components/motion/file-upload";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/motion/file-upload";
+import { Icon } from "@ktab/ui/icons/icon";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -56,7 +56,7 @@ const WALLPAPER_TILE = cn(
 	"group squircle relative flex aspect-[4/3] min-w-0 items-end overflow-hidden border border-neutral-900/10 bg-neutral-900/[0.04] shadow-none transition-[filter,box-shadow] duration-150 focus-visible:outline-none dark:border-white/10 dark:bg-white/[0.04]",
 	SETTINGS_RADIUS.surface,
 );
-const TILE_SELECTED = "ring-2 ring-inset ring-[var(--klice-accent)]";
+const TILE_SELECTED = "ring-2 ring-inset ring-[var(--ktab-accent)]";
 
 const SUPPORTED_IMAGE_TYPES: Record<string, readonly string[]> = {
 	"image/jpeg": ["jpg", "jpeg"],
@@ -313,7 +313,7 @@ function SolidWallpaperTile({
 					Solid colour
 				</span>
 				{selected && (
-					<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+					<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 						<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 					</span>
 				)}
@@ -417,7 +417,7 @@ function WallpaperTile({
 			</span>
 
 			{selected ? (
-				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 					<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 				</span>
 			) : null}
@@ -476,7 +476,7 @@ function PexelsSourceTile({
 				Pexels
 			</span>
 			{selected ? (
-				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm">
+				<span className="pointer-events-none absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm">
 					<Icon name="check" size={12} strokeWidth={3} aria-hidden="true" />
 				</span>
 			) : null}
@@ -868,7 +868,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 						{customSelected ? (
 							<span
 								className={cn(
-									"pointer-events-none absolute top-2 z-20 flex items-center justify-center rounded-full bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] shadow-sm",
+									"pointer-events-none absolute top-2 z-20 flex items-center justify-center rounded-full bg-[var(--ktab-accent)] text-[var(--ktab-accent-foreground)] shadow-sm",
 									customTileHasPencil ? "right-9 size-5" : "right-2 size-5",
 								)}
 							>

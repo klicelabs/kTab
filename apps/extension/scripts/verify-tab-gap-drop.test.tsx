@@ -29,7 +29,7 @@ declare global {
 	// Mirrors the declaration in hooks/use-grid-dnd.ts (same shape, so the two
 	// merge rather than conflict).
 	// eslint-disable-next-line no-var
-	var __kliceDndGestureEpoch: number | undefined;
+	var __ktabDndGestureEpoch: number | undefined;
 }
 
 // ---- Pure geometry -------------------------------------------------------
@@ -232,7 +232,7 @@ let root: Root | null = null;
 afterEach(() => {
 	act(() => root?.unmount());
 	root = null;
-	globalThis.__kliceDndGestureEpoch = 0;
+	globalThis.__ktabDndGestureEpoch = 0;
 	clearActiveDrag();
 	document.body.innerHTML = "<div id=app></div>";
 });
@@ -307,12 +307,12 @@ function lane() {
 
 test("a tab dragstart arms the same-document gesture, so the grid accepts the drop", async () => {
 	await mountBar();
-	expect(globalThis.__kliceDndGestureEpoch ?? 0).toBe(0);
+	expect(globalThis.__ktabDndGestureEpoch ?? 0).toBe(0);
 	const transfer = new TestDataTransfer();
 	await act(async () => {
 		dispatchDrag(tab("a"), "dragstart", 50, transfer);
 	});
-	expect(globalThis.__kliceDndGestureEpoch ?? 0).toBeGreaterThan(0);
+	expect(globalThis.__ktabDndGestureEpoch ?? 0).toBeGreaterThan(0);
 	// The payload the grid resolves on drop.
 	expect(transfer.getData("text/plain")).toBe("a");
 });
@@ -554,7 +554,7 @@ test("a folder dragged out of the tab bar is accepted by the grid", async () => 
 		dispatchDrag(tab("a"), "dragstart", 50, transfer);
 	});
 	// The bar armed the gesture, so the grid sees a same-document payload.
-	expect(globalThis.__kliceDndGestureEpoch ?? 0).toBeGreaterThan(0);
+	expect(globalThis.__ktabDndGestureEpoch ?? 0).toBeGreaterThan(0);
 	await act(async () => {
 		dispatchDrag(grid(), "drop", 50, transfer);
 	});
@@ -569,7 +569,7 @@ test("the grid still refuses a tab payload with no same-document gesture", async
 		dispatchDrag(tab("a"), "dragstart", 50, transfer);
 	});
 	// A foreign window's payload arrives with no epoch of its own.
-	globalThis.__kliceDndGestureEpoch = 0;
+	globalThis.__ktabDndGestureEpoch = 0;
 	await act(async () => {
 		dispatchDrag(grid(), "drop", 50, transfer);
 	});

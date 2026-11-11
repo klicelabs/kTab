@@ -1,4 +1,4 @@
-import { SPRING_LAYOUT } from "@klice-start/ui/lib/ease";
+import { SPRING_LAYOUT } from "@ktab/ui/lib/ease";
 import { animate } from "motion";
 import type { AccentColor } from "../types";
 import { ext } from "./extension-api";
@@ -193,7 +193,7 @@ const DEFAULT_APPEARANCE: SwitcherAppearance = {
  * container (`.highlight`) that glides between frames like a segmented
  * control, driven by motion's vanilla `animate` with SPRING_LAYOUT.
  *
- * Every shape is a squircle, calibrated like `KliceShape`: the larger radius
+ * Every shape is a squircle, calibrated like `KtabShape`: the larger radius
  * renders in engines with `corner-shape`, and the `@supports` fallback swaps
  * in the paired Gecko radius.
  */
@@ -270,7 +270,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	return `
 :host{all:initial;color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
-.klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px;overflow:hidden}
+.ktab-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px;overflow:hidden}
 .stage{position:relative;display:flex;width:100%;max-width:min(1200px,100%);max-height:100%}
 .band{position:absolute;inset:-300px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:${bandMask};mask-image:${bandMask}}
 .grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.28) transparent}
@@ -297,7 +297,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card:focus-visible{outline:none}
 @supports not (corner-shape:squircle){.frame{border-radius:15px}.preview{border-radius:11px}.close{border-radius:8px}.highlight{border-radius:15px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-150px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:21px}.preview{border-radius:15px}.highlight{border-radius:21px}.caption{padding:4px 6px 0}}
+@media(max-width:640px){.ktab-switcher{padding:5vh 14px}.band{inset:-150px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:21px}.preview{border-radius:15px}.highlight{border-radius:21px}.caption{padding:4px 6px 0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
@@ -329,7 +329,7 @@ export function mountTabSwitcher(
 	onClose: (tabId: number, windowId: number) => void = () => {},
 	activateOnMount = false,
 ): () => void {
-	document.getElementById("klice-tab-switcher")?.remove();
+	document.getElementById("ktab-tab-switcher")?.remove();
 	const appearance = payload.appearance ?? DEFAULT_APPEARANCE;
 	const titleSource = payload.titleSource ?? DEFAULT_TAB_SWITCHER_TITLE_SOURCE;
 	const combo: ShortcutCombo =
@@ -337,13 +337,13 @@ export function mountTabSwitcher(
 		(parseShortcut(DEFAULT_TAB_SWITCHER_SHORTCUT) as ShortcutCombo);
 
 	const host = document.createElement("div");
-	host.id = "klice-tab-switcher";
+	host.id = "ktab-tab-switcher";
 	const shadow = host.attachShadow({ mode: "closed" });
 	const style = document.createElement("style");
 	style.textContent = buildStyles(appearance);
 
 	const scrim = document.createElement("div");
-	scrim.className = "klice-switcher";
+	scrim.className = "ktab-switcher";
 	scrim.setAttribute("role", "presentation");
 	const stage = document.createElement("div");
 	stage.className = "stage";

@@ -5,19 +5,19 @@ import {
 	PopoverPortal,
 	PopoverPositioner,
 	PopoverTrigger,
-} from "@klice-start/ui/components/popover";
+} from "@ktab/ui/components/popover";
 import {
 	SPRING_GLIDE,
 	SPRING_LAYOUT,
 	SPRING_PRESS,
-} from "@klice-start/ui/lib/ease";
-import { DURATION, EASE, EASE_CSS } from "@klice-start/ui/lib/motion";
+} from "@ktab/ui/lib/ease";
+import { DURATION, EASE, EASE_CSS } from "@ktab/ui/lib/motion";
 import {
 	capturePointer,
 	releasePointer,
 	TOUCH_GESTURE_CLASS,
-} from "@klice-start/ui/lib/touch";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/touch";
+import { cn } from "@ktab/ui/lib/utils";
 // Core controls adapted from the official beui.dev Motion Color Picker registry.
 import {
 	AnimatePresence,

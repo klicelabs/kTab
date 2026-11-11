@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@klice-start/ui/components",
-    "utils": "@klice-start/ui/lib/utils",
-    "hooks": "@klice-start/ui/hooks",
-    "lib": "@klice-start/ui/lib",
-    "ui": "@klice-start/ui/components"
+    "components": "@ktab/ui/components",
+    "utils": "@ktab/ui/lib/utils",
+    "hooks": "@ktab/ui/hooks",
+    "lib": "@ktab/ui/lib",
+    "ui": "@ktab/ui/components"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

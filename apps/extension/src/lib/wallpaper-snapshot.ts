@@ -120,7 +120,7 @@ export function snapshotToCss(snap: WallpaperSnapshot): string | null {
 }
 
 /** Id of the throwaway <style> that carries frame 1 over React's inline default. */
-export const WALLPAPER_PREHYDRATE_STYLE_ID = "klice-wallpaper-prehydrate";
+export const WALLPAPER_PREHYDRATE_STYLE_ID = "ktab-wallpaper-prehydrate";
 
 /**
  * Paint frame 1 before React mounts. `#bg-layer` does not exist yet, and

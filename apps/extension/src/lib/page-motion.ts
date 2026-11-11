@@ -1,4 +1,4 @@
-import { EASE_OUT } from "@klice-start/ui/lib/ease";
+import { EASE_OUT } from "@ktab/ui/lib/ease";
 import type { TargetAndTransition, Variants } from "motion/react";
 
 export type PageDirection = "forward" | "back";

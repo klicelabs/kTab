@@ -82,7 +82,7 @@ export function BackgroundLayer({
 	const creditLinkClassName = cn(
 		"transition-colors focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2",
 		isLiquid
-			? "hover:text-[var(--klice-glass-foreground-primary)]"
+			? "hover:text-[var(--ktab-glass-foreground-primary)]"
 			: "hover:text-foreground",
 	);
 	const previewBackgroundImage = useImageStore((s) => s.previewBackgroundImage);

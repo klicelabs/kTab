@@ -110,10 +110,10 @@ export function preflightBackup(fileText: string): BackupPreflight {
 	try {
 		parsed = JSON.parse(fileText);
 	} catch {
-		throw new Error("That file is not a valid Klice backup.");
+		throw new Error("That file is not a valid kTab backup.");
 	}
 	if (!isRecord(parsed)) {
-		throw new Error("That file is not a valid Klice backup.");
+		throw new Error("That file is not a valid kTab backup.");
 	}
 	const setup = validateSetupShape(parsed);
 	const invalidFolders = countInvalidFolders(setup.folders as unknown[]);

@@ -1,6 +1,6 @@
-import { Icon } from "@klice-start/ui/icons/icon";
-import { SPRING_PRESS } from "@klice-start/ui/lib/ease";
-import { DURATION, EASE } from "@klice-start/ui/lib/motion";
+import { Icon } from "@ktab/ui/icons/icon";
+import { SPRING_PRESS } from "@ktab/ui/lib/ease";
+import { DURATION, EASE } from "@ktab/ui/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ import { useRefreshStore } from "../../stores/refresh-store";
 import { useAppearance } from "./appearance-provider";
 
 /** Single persistent toast id — one refresh toast at a time, by construction. */
-const REFRESH_TOAST_ID = "klice-refresh-progress";
+const REFRESH_TOAST_ID = "ktab-refresh-progress";
 const SUMMARY_DURATION_MS = 4000;
 const RING_RADIUS = 18;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -255,7 +255,7 @@ function ProgressRing({ fraction }: { fraction: number }) {
 					strokeLinecap="round"
 					strokeDasharray={RING_CIRCUMFERENCE}
 					strokeDashoffset={RING_CIRCUMFERENCE * (1 - fraction)}
-					className="stroke-[var(--klice-accent)] transition-[stroke-dashoffset] duration-300 motion-reduce:transition-none"
+					className="stroke-[var(--ktab-accent)] transition-[stroke-dashoffset] duration-300 motion-reduce:transition-none"
 				/>
 			</svg>
 		</div>

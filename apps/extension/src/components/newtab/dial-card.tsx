@@ -4,10 +4,10 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@klice-start/ui/components/motion/context-menu";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { DURATION, EASE } from "@klice-start/ui/lib/motion";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
+} from "@ktab/ui/components/motion/context-menu";
+import { Icon } from "@ktab/ui/icons/icon";
+import { DURATION, EASE } from "@ktab/ui/lib/motion";
+import { ktabShape } from "@ktab/ui/lib/shapes";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useResolvedIcon } from "../../hooks/use-resolved-icon";
@@ -203,12 +203,12 @@ export function DialCard({
 					// itself never transforms on hover.
 					// `cursor-default` is explicit because the card renders as an
 					// <a href>, which the UA stylesheet would otherwise give a
-					// hand cursor — Klice Start uses the platform arrow.
+					// hand cursor — kTab uses the platform arrow.
 					// The silhouette is the semantic card role (--shape-card), so
 					// bookmark cards, folder cards and the drag image share one
 					// corner scale instead of three literals.
 					"dial-card group relative isolate flex h-full w-full cursor-default select-none flex-col overflow-hidden p-0 transition-[transform,box-shadow,opacity] duration-200 [-webkit-user-drag:element]",
-					dialLayout === "card" && kliceShape("card"),
+					dialLayout === "card" && ktabShape("card"),
 					dialLayout === "card" && "active:scale-[0.97]",
 					dialLayout === "icon" && ICON_MODE_SURFACE_CLASS,
 					// Screenshot/gradient content is already the bookmark body surface.

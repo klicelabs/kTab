@@ -210,7 +210,7 @@ export function TabSwitcherShortcut() {
 						SETTINGS_TRIGGER,
 						SETTINGS_FOCUS_RING,
 						recording &&
-							"text-[var(--klice-accent)] ring-2 ring-[var(--klice-accent)]",
+							"text-[var(--ktab-accent)] ring-2 ring-[var(--ktab-accent)]",
 					)}
 				>
 					{recording ? (

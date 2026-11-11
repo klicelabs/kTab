@@ -1,6 +1,6 @@
 import type { DragEvent } from "react";
 
-const GHOST_ATTR = "data-klice-drag-ghost";
+const GHOST_ATTR = "data-ktab-drag-ghost";
 
 /** Remove leaked ghost nodes (a cancelled gesture can skip dragend). */
 export function sweepDragGhosts(): void {

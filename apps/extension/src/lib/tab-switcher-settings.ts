@@ -11,7 +11,7 @@ import { deriveIconLabel } from "./url";
 /** What the switcher captions show — mirrors the bookmark cards' setting. */
 export type SwitcherTitleSource = "title" | "site";
 
-export const TAB_SWITCHER_TITLE_SOURCE_KEY = "klice-tab-switcher-title-source";
+export const TAB_SWITCHER_TITLE_SOURCE_KEY = "ktab-tab-switcher-title-source";
 export const DEFAULT_TAB_SWITCHER_TITLE_SOURCE: SwitcherTitleSource = "title";
 
 export function normalizeTabSwitcherTitleSource(
@@ -46,7 +46,7 @@ export async function writeTabSwitcherTitleSource(
  */
 export type SwitcherFirstPress = "stay" | "next";
 
-export const TAB_SWITCHER_FIRST_PRESS_KEY = "klice-tab-switcher-first-press";
+export const TAB_SWITCHER_FIRST_PRESS_KEY = "ktab-tab-switcher-first-press";
 export const DEFAULT_TAB_SWITCHER_FIRST_PRESS: SwitcherFirstPress = "stay";
 
 export function normalizeTabSwitcherFirstPress(

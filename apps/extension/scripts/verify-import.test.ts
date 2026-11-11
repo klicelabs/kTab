@@ -200,8 +200,8 @@ test("preflights valid and invalid backups", () => {
 	expect(preflightBackup(backupDoc())).toEqual({ folders: 1, cards: 0 });
 	expect(() => preflightBackup("")).toThrow("That file is empty.");
 	expect(() => preflightBackup("   ")).toThrow("That file is empty.");
-	expect(() => preflightBackup("{nope")).toThrow("not a valid Klice backup");
-	expect(() => preflightBackup("[1,2]")).toThrow("not a valid Klice backup");
+	expect(() => preflightBackup("{nope")).toThrow("not a valid kTab backup");
+	expect(() => preflightBackup("[1,2]")).toThrow("not a valid kTab backup");
 	expect(() => preflightBackup(backupDoc({ folders: "x" }))).toThrow(
 		"folders and cards arrays",
 	);

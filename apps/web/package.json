@@ -12,8 +12,8 @@
     "@ai-sdk/google": "^4.0.7",
     "@ai-sdk/react": "^4.0.14",
     "@base-ui/react": "^1.6.0",
-    "@klice-start/env": "workspace:*",
-    "@klice-start/ui": "workspace:*",
+    "@ktab/env": "workspace:*",
+    "@ktab/ui": "workspace:*",
     "@shadcn/react": "^0.2.1",
     "@swc/helpers": "^0.5.23",
     "ai": "^7.0.13",
@@ -34,7 +34,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@klice-start/config": "workspace:*",
+    "@ktab/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@types/node": "^20",
     "@types/react": "catalog:",

@@ -46,7 +46,7 @@ const driver = spawn(
 );
 let session;
 let server;
-const temp = fs.mkdtempSync(path.join(os.tmpdir(), "klice-ff-driver-"));
+const temp = fs.mkdtempSync(path.join(os.tmpdir(), "ktab-ff-driver-"));
 async function command(method, endpoint, body) {
 	const response = await fetch(`http://127.0.0.1:${port}${endpoint}`, {
 		method,
@@ -380,8 +380,8 @@ try {
 			windows: await browser.windows.getAll(),
 			before: window.__originalWindows,
 			events: window.__events,
-			session: (await browser.storage.session.get("klice-refresh-batch"))[
-				"klice-refresh-batch"
+			session: (await browser.storage.session.get("ktab-refresh-batch"))[
+				"ktab-refresh-batch"
 			],
 			tabs: await browser.tabs.query({}),
 			captureUrl: browser.runtime.getURL("/capture.html"),
@@ -562,8 +562,8 @@ try {
 	const afterCancel = await evaluate(async () => ({
 		windows: await browser.windows.getAll(),
 		tabs: await browser.tabs.query({}),
-		session: (await browser.storage.session.get("klice-refresh-batch"))[
-			"klice-refresh-batch"
+		session: (await browser.storage.session.get("ktab-refresh-batch"))[
+			"ktab-refresh-batch"
 		],
 		dashId: (await browser.tabs.getCurrent()).id,
 		captureUrl: browser.runtime.getURL("/capture.html"),
@@ -646,7 +646,7 @@ try {
 				const card = document.querySelector("[data-marquee-id] .dial-card");
 				const cardStyle = card ? getComputedStyle(card) : null;
 				return {
-					attr: document.documentElement.dataset.kliceCorner ?? "",
+					attr: document.documentElement.dataset.ktabCorner ?? "",
 					collapsedVar: root
 						.getPropertyValue("--shape-search-collapsed")
 						.trim(),

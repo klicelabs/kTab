@@ -2,15 +2,15 @@ import {
 	FileTree,
 	FileTreeFile,
 	FileTreeFolder,
-} from "@klice-start/ui/components/motion/file-tree";
+} from "@ktab/ui/components/motion/file-tree";
 import {
 	Popover,
 	PopoverPopup,
 	PopoverPortal,
 	PopoverPositioner,
 	PopoverTrigger,
-} from "@klice-start/ui/components/popover";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/popover";
+import { Icon } from "@ktab/ui/icons/icon";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { SETTINGS_SCOPE_CLASS } from "../../lib/context-scope";
 import { buildTree, type FolderTreeNode } from "../../lib/folder-tree";
@@ -197,7 +197,7 @@ export function FolderTreePicker({
 								item: cn(
 									glassShape("control"),
 									isLiquid
-										? `${glassForeground()} hover:bg-foreground/[0.08] hover:text-[var(--klice-glass-foreground-primary)] focus-visible:bg-[var(--klice-accent)] focus-visible:text-[var(--klice-accent-foreground)]`
+										? `${glassForeground()} hover:bg-foreground/[0.08] hover:text-[var(--ktab-glass-foreground-primary)] focus-visible:bg-[var(--ktab-accent)] focus-visible:text-[var(--ktab-accent-foreground)]`
 										: "text-flat-ink-muted hover:bg-flat-face-hover hover:text-flat-ink",
 								),
 								icon: isLiquid
@@ -232,7 +232,7 @@ export function FolderTreePicker({
 								className={cn(
 									"inline-flex h-8 shrink-0 items-center justify-center px-2.5 font-medium text-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 									isLiquid ? glassForeground("secondary") : "text-muted-foreground",
-									isLiquid && "hover:text-[var(--klice-glass-foreground-primary)]",
+									isLiquid && "hover:text-[var(--ktab-glass-foreground-primary)]",
 									glassShape("control"),
 								)}
 							>

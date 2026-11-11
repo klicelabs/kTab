@@ -1,4 +1,4 @@
-import { KliceShape } from "@klice-start/ui/lib/shapes";
+import { KtabShape } from "@ktab/ui/lib/shapes";
 
 /**
  * Settings design tokens.
@@ -26,7 +26,7 @@ import { KliceShape } from "@klice-start/ui/lib/shapes";
  * The fallback is ~60% of the Chrome radius so both renderings read as the
  * same roundness — always change the pair together.
  */
-export const SETTINGS_RADIUS = KliceShape;
+export const SETTINGS_RADIUS = KtabShape;
 
 /** The scroll region: one vertical column, one card beat. */
 export const SETTINGS_PAGE = "flex flex-col gap-2.5";
@@ -71,7 +71,7 @@ export const SETTINGS_CONTROL_WIDTH = "w-[min(11rem,100%)]";
  * the surface. Light-first, dark override — always change the pair together.
  */
 export const SETTINGS_FOCUS_RING =
-	"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--klice-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#252525]";
+	"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ktab-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#252525]";
 
 /** Header close/back control — a quiet circular hit target. */
 export const SETTINGS_HEADER_CONTROL =
@@ -104,7 +104,7 @@ export const SETTINGS_ACTION =
 	"h-8 gap-1.5 border-0 bg-neutral-900/[0.05] px-2.5 text-neutral-800 text-xs shadow-none transition-[background-color,color,transform] duration-150 hover:bg-neutral-900/[0.09] active:scale-[0.98] dark:bg-white/[0.06] dark:text-neutral-100 dark:hover:bg-white/[0.1]";
 
 export const SETTINGS_ACTION_PRIMARY =
-	"h-8 gap-1.5 border-0 bg-[var(--klice-accent)] px-3 font-medium text-[var(--klice-accent-foreground)] text-xs shadow-none transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[0.98]";
+	"h-8 gap-1.5 border-0 bg-[var(--ktab-accent)] px-3 font-medium text-[var(--ktab-accent-foreground)] text-xs shadow-none transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[0.98]";
 
 export const SETTINGS_ACTION_DANGER =
 	"h-8 gap-1.5 border-0 bg-transparent px-2.5 text-red-600 text-xs shadow-none transition-[background-color,color,transform] duration-150 hover:bg-red-500/10 hover:text-red-500 active:scale-[0.98] dark:text-red-400 dark:hover:text-red-300";

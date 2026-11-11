@@ -1,5 +1,5 @@
 /**
- * Interaction benchmark for the Klice Start newtab.
+ * Interaction benchmark for the kTab newtab.
  *
  * Measures per-interaction: wall duration, React commits + PerformedWork
  * fibers, top re-rendered components, chrome.storage.local.set calls, long

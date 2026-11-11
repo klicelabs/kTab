@@ -1,5 +1,5 @@
 {
-  "name": "@klice-start/env",
+  "name": "@ktab/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@klice-start/config": "workspace:*",
+    "@ktab/config": "workspace:*",
     "@types/node": "^22.13.14",
     "typescript": "catalog:"
   }

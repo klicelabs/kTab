@@ -1,7 +1,7 @@
-import { GlassIcon } from "@klice-start/ui/components/glass-icon";
-import type { IconName } from "@klice-start/ui/icons/icon";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { flatControl, flatFocusRing } from "@klice-start/ui/lib/surface";
+import { GlassIcon } from "@ktab/ui/components/glass-icon";
+import type { IconName } from "@ktab/ui/icons/icon";
+import { Icon } from "@ktab/ui/icons/icon";
+import { flatControl, flatFocusRing } from "@ktab/ui/lib/surface";
 import {
 	glassFocusRing,
 	glassForeground,
@@ -141,7 +141,7 @@ export function ToolbarIconButton({
 							? cn("bg-foreground/10", glassForeground())
 							: cn(
 									glassForeground("secondary"),
-									"hover:bg-foreground/[0.10] hover:text-[var(--klice-glass-foreground-primary)] active:bg-foreground/15",
+									"hover:bg-foreground/[0.10] hover:text-[var(--ktab-glass-foreground-primary)] active:bg-foreground/15",
 								)
 						: active
 							? `${flatControl()} text-flat-ink shadow-none`

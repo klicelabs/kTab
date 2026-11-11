@@ -4,8 +4,8 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@klice-start/ui/components/motion/context-menu";
-import { Icon } from "@klice-start/ui/icons/icon";
+} from "@ktab/ui/components/motion/context-menu";
+import { Icon } from "@ktab/ui/icons/icon";
 import { useState } from "react";
 import { useQuickLinkReorder } from "../../hooks/use-quick-link-reorder";
 import { glassDropdownItem, glassFocusRing, glassMenu } from "../../lib/glass";

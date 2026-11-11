@@ -19,7 +19,7 @@ export interface ShortcutCombo {
 	key: string;
 }
 
-export const TAB_SWITCHER_SHORTCUT_KEY = "klice-tab-switcher-shortcut";
+export const TAB_SWITCHER_SHORTCUT_KEY = "ktab-tab-switcher-shortcut";
 export const DEFAULT_TAB_SWITCHER_SHORTCUT = "Alt+Q";
 
 type ModifierFlag = "alt" | "ctrl" | "shift" | "meta";

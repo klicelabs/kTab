@@ -41,23 +41,23 @@
 	--foreground: oklch(0.141 0.005 285.823);
 	/* Liquid Glass ink is intentionally stronger than generic foreground:
 	   primary content must read black on Light glass, white on Dark glass. */
-	--klice-glass-foreground-primary: rgb(0 0 0 / 1);
-	--klice-glass-foreground-secondary: rgb(0 0 0 / 0.72);
-	--klice-glass-foreground-muted: rgb(0 0 0 / 0.56);
-	--klice-glass-foreground-disabled: rgb(0 0 0 / 0.36);
+	--ktab-glass-foreground-primary: rgb(0 0 0 / 1);
+	--ktab-glass-foreground-secondary: rgb(0 0 0 / 0.72);
+	--ktab-glass-foreground-muted: rgb(0 0 0 / 0.56);
+	--ktab-glass-foreground-disabled: rgb(0 0 0 / 0.36);
 	--foreground-on-wallpaper: #ffffff;
 	--foreground-on-wallpaper-muted: rgb(255 255 255 / 0.84);
 	--foreground-on-wallpaper-subtle: rgb(255 255 255 / 0.64);
-	--klice-glass-intensity: 0.6;
+	--ktab-glass-intensity: 0.6;
 	/* Liquid Glass optical defaults. The extension overrides these from the
 	   single Glass intensity recipe; package consumers still get a coherent
 	   clear/dense fallback without inventing their own blur values. */
-	--klice-glass-blur-clear: 2px;
-	--klice-glass-blur-dense: 10.4px;
-	--klice-glass-saturation-clear: 1.04;
-	--klice-glass-saturation-dense: 1.12;
-	--klice-glass-brightness-clear: 1.02;
-	--klice-glass-brightness-dense: 1;
+	--ktab-glass-blur-clear: 2px;
+	--ktab-glass-blur-dense: 10.4px;
+	--ktab-glass-saturation-clear: 1.04;
+	--ktab-glass-saturation-dense: 1.12;
+	--ktab-glass-brightness-clear: 1.02;
+	--ktab-glass-brightness-dense: 1;
 	--liquid-glass-rim-light: rgb(255 255 255 / 0.16);
 	--liquid-glass-rim-dark: rgb(18 18 22 / 0.1);
 }
@@ -66,19 +66,19 @@
 	/* Neutral graphite ladder anchored by the Flat control base (#252525). */
 	--background: #171717;
 	--foreground: #f2f2f2;
-	--klice-glass-foreground-primary: rgb(255 255 255 / 1);
-	--klice-glass-foreground-secondary: rgb(255 255 255 / 0.78);
-	--klice-glass-foreground-muted: rgb(255 255 255 / 0.6);
-	--klice-glass-foreground-disabled: rgb(255 255 255 / 0.4);
+	--ktab-glass-foreground-primary: rgb(255 255 255 / 1);
+	--ktab-glass-foreground-secondary: rgb(255 255 255 / 0.78);
+	--ktab-glass-foreground-muted: rgb(255 255 255 / 0.6);
+	--ktab-glass-foreground-disabled: rgb(255 255 255 / 0.4);
 	--foreground-on-wallpaper: #ffffff;
 	--foreground-on-wallpaper-muted: rgb(255 255 255 / 0.84);
 	--foreground-on-wallpaper-subtle: rgb(255 255 255 / 0.64);
-	--klice-glass-blur-clear: 2px;
-	--klice-glass-blur-dense: 10.4px;
-	--klice-glass-saturation-clear: 1.12;
-	--klice-glass-saturation-dense: 1.35;
-	--klice-glass-brightness-clear: 0.92;
-	--klice-glass-brightness-dense: 0.912;
+	--ktab-glass-blur-clear: 2px;
+	--ktab-glass-blur-dense: 10.4px;
+	--ktab-glass-saturation-clear: 1.12;
+	--ktab-glass-saturation-dense: 1.35;
+	--ktab-glass-brightness-clear: 0.92;
+	--ktab-glass-brightness-dense: 0.912;
 	--liquid-glass-rim-light: rgb(255 255 255 / 0.24);
 	--liquid-glass-rim-dark: rgb(0 0 0 / 0.18);
 	--card: #252525;
@@ -496,7 +496,7 @@
    its first/last segment resolve to the same geometry instead of two shapes
    that only nearly agree. */
 :root {
-	--klice-toolbar-radius: 9999px;
+	--ktab-toolbar-radius: 9999px;
 }
 
 /* `corner-shape` is not an inherited property, so `rounded-[inherit]` alone
@@ -504,21 +504,21 @@
    surface's outline (the LiquidGlass rim hairline) must opt in explicitly —
    otherwise it draws a circular arc on top of a squircle surface and the
    control appears to have two different outlines. */
-.klice-corner-inherit {
+.ktab-corner-inherit {
 	corner-shape: inherit;
 }
 
 /* Squircle corners. `corner-shape: squircle` only renders in engines that
    support it; the @supports fallback swaps in a calibrated border-radius for
    Gecko/Zen. Both names remain available while feature code migrates to the
-   semantic Klice name. Unlayered on purpose: it beats Tailwind rounded-*.
+   semantic kTab name. Unlayered on purpose: it beats Tailwind rounded-*.
  */
-.klice-squircle,
+.ktab-squircle,
 .squircle {
 	corner-shape: squircle;
 }
 @supports not (corner-shape: squircle) {
-	.klice-squircle,
+	.ktab-squircle,
 	.squircle {
 		border-radius: var(--squircle-r, 12px);
 	}
@@ -526,18 +526,18 @@
 
 /* Toolbar pill. Every toolbar, tab, and standalone toolbar control is a true
    capsule (fully rounded), never squircle. Unlayered on purpose and declared
-   AFTER .klice-squircle so it wins ties: LiquidGlass defaults inject
-   .klice-squircle, and this resets the corner geometry back to round while
+   AFTER .ktab-squircle so it wins ties: LiquidGlass defaults inject
+   .ktab-squircle, and this resets the corner geometry back to round while
    keeping the capsule radius in engines with and without corner-shape support.
 
-   .klice-toolbar-group resolves to exactly the same geometry — the outer shell
+   .ktab-toolbar-group resolves to exactly the same geometry — the outer shell
    of a grouped control IS a toolbar pill. Declaring them together removes the
    ordering hazard that existed while they disagreed (18px squircle vs 20px
    squircle vs capsule on one element, decided only by stylesheet order).
  */
-.klice-toolbar-pill,
-.klice-toolbar-group {
-	border-radius: var(--klice-toolbar-radius);
+.ktab-toolbar-pill,
+.ktab-toolbar-group {
+	border-radius: var(--ktab-toolbar-radius);
 	corner-shape: round;
 }
 
@@ -554,14 +554,14 @@
    Tailwind's utilities, so it resolves the geometry ButtonGroup asks for in
    every engine — Chromium and Gecko alike.
  */
-.klice-button-group > [data-slot="button"] {
+.ktab-button-group > [data-slot="button"] {
 	border-radius: 0;
 }
-.klice-button-group > [data-slot="button"]:first-child {
+.ktab-button-group > [data-slot="button"]:first-child {
 	border-top-left-radius: inherit;
 	border-bottom-left-radius: inherit;
 }
-.klice-button-group > [data-slot="button"]:last-child {
+.ktab-button-group > [data-slot="button"]:last-child {
 	border-top-right-radius: inherit;
 	border-bottom-right-radius: inherit;
 }

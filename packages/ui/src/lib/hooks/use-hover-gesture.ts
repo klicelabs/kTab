@@ -1,6 +1,6 @@
 "use client";
 
-import { isHoveringPointer } from "@klice-start/ui/lib/touch";
+import { isHoveringPointer } from "@ktab/ui/lib/touch";
 import { useMemo, useRef } from "react";
 
 interface BoundaryEvent {

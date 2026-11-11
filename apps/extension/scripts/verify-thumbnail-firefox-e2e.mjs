@@ -143,7 +143,7 @@ try {
 	}
 	hashTree(build);
 	report.buildHashes = hashes;
-	temp = fs.mkdtempSync(path.join(os.tmpdir(), "klice-firefox-e2e-"));
+	temp = fs.mkdtempSync(path.join(os.tmpdir(), "ktab-firefox-e2e-"));
 	const addon = path.join(temp, "addon");
 	fs.cpSync(build, addon, { recursive: true });
 	if (process.env.GRANTED_CAPTURE === "1") {
@@ -310,8 +310,8 @@ try {
 		}))
 			event.addListener((...args) => emit(name, args));
 		browser.storage.onChanged.addListener((changes, area) => {
-			if (changes["klice-refresh-batch"])
-				emit("session", { area, change: changes["klice-refresh-batch"] });
+			if (changes["ktab-refresh-batch"])
+				emit("session", { area, change: changes["ktab-refresh-batch"] });
 		});
 	});
 	report.capabilities.backgroundCaptureTap = await observer.evaluate(
@@ -364,8 +364,8 @@ try {
 			tabs: await browser.tabs.query({}),
 			windows: await browser.windows.getAll(),
 			session:
-				(await browser.storage.session.get("klice-refresh-batch"))[
-					"klice-refresh-batch"
+				(await browser.storage.session.get("ktab-refresh-batch"))[
+					"ktab-refresh-batch"
 				] ?? null,
 		}));
 	}

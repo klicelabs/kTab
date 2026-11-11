@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { subscribeToPersistHealth } from "../lib/storage";
 
-const PERSISTENCE_ERROR_TOAST_ID = "klice-persistence-error";
+const PERSISTENCE_ERROR_TOAST_ID = "ktab-persistence-error";
 
 /**
  * Keep storage failures visible without adding status chrome to Settings.

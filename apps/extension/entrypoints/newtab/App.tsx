@@ -1,5 +1,5 @@
-import { SidebarInset } from "@klice-start/ui/components/sidebar";
-import { Toaster } from "@klice-start/ui/components/sonner";
+import { SidebarInset } from "@ktab/ui/components/sidebar";
+import { Toaster } from "@ktab/ui/components/sonner";
 import {
 	memo,
 	type RefObject,
@@ -235,7 +235,7 @@ const HomeSurface = memo(function HomeSurface({
 					{/* Ambient content remains in the normal page flow. */}
 					<div className="speed-dial-home-stack">
 						<main className="speed-dial-hero hero">
-							<div className="klice-ambient-hero" data-ambient-hero="true">
+							<div className="ktab-ambient-hero" data-ambient-hero="true">
 								<ClockWidget />
 							</div>
 							<div ref={searchAnchorRef} className="speed-dial-search-anchor">
@@ -1173,7 +1173,7 @@ export default function App() {
 							<SettingsMotionFrame
 								className={cn(
 									"squircle relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-									wakeActive && "klice-wake",
+									wakeActive && "ktab-wake",
 								)}
 								data-rest-mode={restMode ? "true" : undefined}
 								data-compact-search={

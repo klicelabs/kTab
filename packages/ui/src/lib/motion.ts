@@ -14,7 +14,7 @@ import {
 } from "./ease";
 
 /**
- * Klice motion vocabulary.
+ * kTab motion vocabulary.
  *
  * One language, shared by CSS transitions and Motion animations. Components
  * must never inline a raw `duration: 137` or a bespoke cubic-bezier — they

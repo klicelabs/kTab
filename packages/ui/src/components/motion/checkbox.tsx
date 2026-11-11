@@ -1,10 +1,10 @@
 "use client";
 
-import { EASE_OUT, SPRING_PRESS } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { EASE_OUT, SPRING_PRESS } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 // beui.dev/components/motion/checkbox — official default. Only the import
-// paths are adapted (@/ → @klice-start/ui); motion, geometry and the
-// draw-on mark are untouched. Klice positions the control and toggles its
+// paths are adapted (@/ → @ktab/ui); motion, geometry and the
+// draw-on mark are untouched. kTab positions the control and toggles its
 // visibility at the call site (see tokens.css `.selection-checkbox`).
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId } from "react";

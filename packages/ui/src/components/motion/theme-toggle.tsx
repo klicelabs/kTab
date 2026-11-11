@@ -2,9 +2,9 @@
 
 // beui.dev/components/motion/theme-toggle
 
-import { ActionSwapIcon } from "@klice-start/ui/components/motion/action-swap";
-import { EASE_OUT_CSS } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
+import { ActionSwapIcon } from "@ktab/ui/components/motion/action-swap";
+import { EASE_OUT_CSS } from "@ktab/ui/lib/ease";
+import { cn } from "@ktab/ui/lib/utils";
 import { Moon, Sun } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";

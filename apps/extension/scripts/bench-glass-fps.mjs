@@ -118,7 +118,7 @@ function buildFpsSeed() {
 /** Start the in-page rAF sampler (returns a stop promise). */
 async function startFpsSampling(page) {
 	await page.evaluate(() => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		r.reset();
 		r.enabled = true;
 		r.startFps();
@@ -127,7 +127,7 @@ async function startFpsSampling(page) {
 
 async function stopFpsSampling(page) {
 	return page.evaluate(() => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		const stats = r.stopFps();
 		r.enabled = false;
 		return {

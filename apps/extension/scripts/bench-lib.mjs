@@ -1,5 +1,5 @@
 /**
- * Shared harness for Klice Start performance benchmarks.
+ * Shared harness for kTab performance benchmarks.
  *
  * Launches the built MV3 extension (apps/extension/.output/chrome-mv3) in a
  * real Chromium with Playwright, resolves the extension id, seeds a dataset
@@ -191,7 +191,7 @@ export function buildInteractionSeed() {
 
 /**
  * Instrumentation injected before any page script runs.
- * Returns a recorder object exposed as window.__kliceBench.
+ * Returns a recorder object exposed as window.__ktabBench.
  */
 export const INSTRUMENT_SCRIPT = `
 (() => {
@@ -242,7 +242,7 @@ export const INSTRUMENT_SCRIPT = `
       };
     },
   };
-  window.__kliceBench = rec;
+  window.__ktabBench = rec;
 
   // --- raw event throughput (are handlers event-driven or frame-driven?)
   for (const type of ["pointermove", "pointerdown", "pointerup"]) {
@@ -320,14 +320,14 @@ export const INSTRUMENT_SCRIPT = `
   const armStorage = () => {
     try {
       const c = window.chrome;
-      if (!c || !c.storage || !c.storage.local || c.storage.local.__kliceWrapped) return;
+      if (!c || !c.storage || !c.storage.local || c.storage.local.__ktabWrapped) return;
       const orig = c.storage.local.set.bind(c.storage.local);
       const wrapped = (items, cb) => {
         rec.storageSets.push({ t: performance.now(), bytes: JSON.stringify(items).length });
         return orig(items, cb);
       };
       try { Object.defineProperty(c.storage.local, "set", { value: wrapped, writable: true, configurable: true }); } catch {}
-      c.storage.local.__kliceWrapped = true;
+      c.storage.local.__ktabWrapped = true;
     } catch (e) {}
   };
   armStorage();
@@ -369,7 +369,7 @@ export const TIMELINE_SCRIPT = `
     armedAt: null,
     _wdT0: 0,
   };
-  window.__kliceTimeline = rec;
+  window.__ktabTimeline = rec;
   const now = () => performance.now();
 
   // --- input gesture anchors (pointerdown = the instant the page sees input)
@@ -406,14 +406,14 @@ export const TIMELINE_SCRIPT = `
   const armStorage = () => {
     try {
       const c = window.chrome;
-      if (!c || !c.storage || !c.storage.local || c.storage.local.__kliceWrapped) return;
+      if (!c || !c.storage || !c.storage.local || c.storage.local.__ktabWrapped) return;
       const orig = c.storage.local.set.bind(c.storage.local);
       const wrapped = (items, cb) => {
         rec.storageSets.push({ t: Math.round(now()), bytes: JSON.stringify(items).length });
         return orig(items, cb);
       };
       try { Object.defineProperty(c.storage.local, "set", { value: wrapped, writable: true, configurable: true }); } catch {}
-      c.storage.local.__kliceWrapped = true;
+      c.storage.local.__ktabWrapped = true;
     } catch (e) {}
   };
   armStorage();
@@ -486,7 +486,7 @@ export async function launchExtension({
 		);
 	}
 	const userDataDir = fs.mkdtempSync(
-		path.join(process.env.TEMP ?? "/tmp", "klice-bench-"),
+		path.join(process.env.TEMP ?? "/tmp", "ktab-bench-"),
 	);
 	const context = await chromium.launchPersistentContext(userDataDir, {
 		headless,
@@ -616,7 +616,7 @@ export async function measureInteraction(
 	{ settleMs = 500, settlePredicate = null, settleTimeout = 5000 } = {},
 ) {
 	await page.evaluate(() => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		r.reset();
 		r.enabled = true;
 		r.startedAt = performance.now();
@@ -631,7 +631,7 @@ export async function measureInteraction(
 	await page.waitForTimeout(settleMs);
 	const durationMs = Math.round(performance.now() - t0);
 	const out = await page.evaluate(() => {
-		const r = window.__kliceBench;
+		const r = window.__ktabBench;
 		r.enabled = false;
 		r.endedAt = performance.now();
 		return {

@@ -1,5 +1,5 @@
-import { Input } from "@klice-start/ui/components/input";
-import { Switch } from "@klice-start/ui/components/switch";
+import { Input } from "@ktab/ui/components/input";
+import { Switch } from "@ktab/ui/components/switch";
 import { useMemo } from "react";
 import { useSvgIcon } from "../../../../hooks/use-svg-icon";
 import { SEARCH_ENGINES } from "../../../../lib/constants";

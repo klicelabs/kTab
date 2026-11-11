@@ -1,16 +1,16 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Button } from "@klice-start/ui/components/button";
-import { GlassButton } from "@klice-start/ui/components/glass-button";
+import { Button } from "@ktab/ui/components/button";
+import { GlassButton } from "@ktab/ui/components/glass-button";
 
-import { LiquidGlass } from "@klice-start/ui/components/liquid-glass";
+import { LiquidGlass } from "@ktab/ui/components/liquid-glass";
 
 import {
 	type FrostGlassVariant,
 	glassVariantStyles,
-} from "@klice-start/ui/lib/glass-variants";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/glass-variants";
+import { cn } from "@ktab/ui/lib/utils";
 import { XIcon } from "lucide-react";
 import type * as React from "react";
 
@@ -67,7 +67,7 @@ function DialogContent({
 	const surfaceClasses = isGlass
 		? cn(
 				glassVariantStyles[glassVariant],
-				"text-[var(--klice-glass-foreground-primary)]",
+				"text-[var(--ktab-glass-foreground-primary)]",
 				glassVariant === "liquid-refract" && "bg-transparent shadow-none ring-0",
 			)
 		: "bg-popover text-popover-foreground shadow-xl ring-1 ring-foreground/5 dark:ring-foreground/10";

@@ -17,7 +17,7 @@ export const EMPTY_SUGGESTIONS: SearchSuggestions = {
 
 /**
  * Optional web suggestion adapter. Suggestions are deliberately best-effort:
- * the local Klice index and the normal web-search action never depend on a
+ * the local kTab index and the normal web-search action never depend on a
  * third-party endpoint being reachable.
  */
 export interface SearchSuggestionProvider {

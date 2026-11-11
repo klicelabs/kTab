@@ -1,4 +1,4 @@
-import { DURATION, EASE } from "@klice-start/ui/lib/motion";
+import { DURATION, EASE } from "@ktab/ui/lib/motion";
 import {
 	AnimatePresence,
 	motion,

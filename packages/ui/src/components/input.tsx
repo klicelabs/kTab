@@ -2,8 +2,8 @@ import { Input as InputPrimitive } from "@base-ui/react/input";
 import {
 	type FrostGlassVariant,
 	glassVariantStyles,
-} from "@klice-start/ui/lib/glass-variants";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/glass-variants";
+import { cn } from "@ktab/ui/lib/utils";
 import type * as React from "react";
 
 import { LiquidGlass } from "./liquid-glass";
@@ -23,11 +23,11 @@ function Input({
 	const inputClassName = cn(
 		INPUT_BASE,
 		glassVariant === "liquid-refract"
-			? "border-0 bg-transparent text-[var(--klice-glass-foreground-primary)] shadow-none"
+			? "border-0 bg-transparent text-[var(--ktab-glass-foreground-primary)] shadow-none"
 			: isGlass
 				? cn(
 						glassVariantStyles[glassVariant],
-						"border-black/[0.12] text-[var(--klice-glass-foreground-primary)] placeholder:text-[var(--klice-glass-foreground-secondary)] dark:border-white/[0.16]",
+						"border-black/[0.12] text-[var(--ktab-glass-foreground-primary)] placeholder:text-[var(--ktab-glass-foreground-secondary)] dark:border-white/[0.16]",
 					)
 				: "border-transparent bg-input/50 file:text-foreground",
 		className,

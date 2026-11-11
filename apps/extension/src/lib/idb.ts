@@ -1,5 +1,5 @@
 /**
- * Low-level IndexedDB helpers for the Klice Start image database.
+ * Low-level IndexedDB helpers for the kTab image database.
  *
  * This is the single source of truth for the DB schema. Both the reactive
  * image store (newtab/popup) and the background service worker import from
@@ -7,7 +7,7 @@
  */
 
 // "perch-db" is the legacy database name; kept so existing installs retain
-// their thumbnails and backgrounds after the rename to Klice Start.
+// their thumbnails and backgrounds after the rename to kTab.
 export const DB_NAME = "perch-db";
 export const DB_VERSION = 1;
 export const STORE_THUMBS = "thumbnails";

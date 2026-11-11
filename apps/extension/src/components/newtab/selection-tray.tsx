@@ -5,9 +5,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
-} from "@klice-start/ui/components/dropdown-menu";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { DURATION, EASE } from "@klice-start/ui/lib/motion";
+} from "@ktab/ui/components/dropdown-menu";
+import { Icon } from "@ktab/ui/icons/icon";
+import { DURATION, EASE } from "@ktab/ui/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -311,16 +311,16 @@ export function SelectionTray({
 		freezeDragGroup(ordered);
 		// D4/NPD-4: mark the gesture as same-document so grid drop sites can
 		// refuse cross-window payloads.
-		(globalThis as { __kliceDndGestureEpoch?: number }).__kliceDndGestureEpoch =
-			((globalThis as { __kliceDndGestureEpoch?: number })
-				.__kliceDndGestureEpoch ?? 0) + 1;
+		(globalThis as { __ktabDndGestureEpoch?: number }).__ktabDndGestureEpoch =
+			((globalThis as { __ktabDndGestureEpoch?: number })
+				.__ktabDndGestureEpoch ?? 0) + 1;
 		e.dataTransfer.effectAllowed = "move";
 		setDragData(e, first.kind, first.id);
 		if (total > 1) showGroupDragGhost(e, total);
 	}
 
 	function handleTrayDragEnd() {
-		globalThis.__kliceDndGestureEpoch = 0;
+		globalThis.__ktabDndGestureEpoch = 0;
 		clearActiveDrag();
 		clearFrozenDragGroup();
 		clearGestureCapture();
@@ -392,7 +392,7 @@ export function SelectionTray({
 											? cn(
 													"bg-foreground/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]",
 													glassForeground(),
-													"hover:bg-foreground/15 hover:text-[var(--klice-glass-foreground-primary)]",
+													"hover:bg-foreground/15 hover:text-[var(--ktab-glass-foreground-primary)]",
 												)
 											: "bg-flat-sunken-raised text-flat-ink-muted shadow-control hover:text-flat-ink",
 									)}
@@ -413,7 +413,7 @@ export function SelectionTray({
 														? cn(
 																"bg-foreground/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]",
 																glassForeground(),
-																"hover:bg-foreground/15 hover:text-[var(--klice-glass-foreground-primary)] aria-expanded:bg-foreground/15",
+																"hover:bg-foreground/15 hover:text-[var(--ktab-glass-foreground-primary)] aria-expanded:bg-foreground/15",
 															)
 														: "bg-flat-sunken-raised text-flat-ink-muted shadow-control hover:text-flat-ink aria-expanded:bg-flat-sunken-raised",
 												)}
@@ -592,7 +592,7 @@ export function SelectionTray({
 												isLiquid
 													? cn(
 															glassForeground("secondary"),
-															"hover:bg-foreground/10 hover:text-[var(--klice-glass-foreground-primary)]",
+															"hover:bg-foreground/10 hover:text-[var(--ktab-glass-foreground-primary)]",
 														)
 													: "text-flat-ink-muted hover:bg-flat-sunken-raised hover:text-flat-ink",
 											)}
@@ -644,7 +644,7 @@ export function SelectionTray({
 													}
 										}
 										className={cn(
-											"inline-flex h-9 w-full shrink-0 items-center justify-center bg-[var(--klice-accent)] px-3.5 font-medium text-[12px] text-[var(--klice-accent-foreground)] accent-action-shadow transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
+											"inline-flex h-9 w-full shrink-0 items-center justify-center bg-[var(--ktab-accent)] px-3.5 font-medium text-[12px] text-[var(--ktab-accent-foreground)] accent-action-shadow transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
 											glassShape("control"),
 										)}
 									>
@@ -760,7 +760,7 @@ function TrayMini({
 					name="folder"
 					size={40}
 					fill="currentColor"
-					className="text-[var(--klice-accent)]"
+					className="text-[var(--ktab-accent)]"
 					aria-hidden="true"
 				/>
 			) : null}

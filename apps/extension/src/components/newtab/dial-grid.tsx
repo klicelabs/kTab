@@ -1,4 +1,4 @@
-import { REORDER_TWEEN } from "@klice-start/ui/lib/ease";
+import { REORDER_TWEEN } from "@ktab/ui/lib/ease";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";

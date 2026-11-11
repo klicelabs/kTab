@@ -177,7 +177,7 @@ useSetupStore.getState().updateBackground({
 	pexelsFrequency: "daily",
 });
 await flushPersist();
-values["klice-pexels-v1"] = {
+values["ktab-pexels-v1"] = {
 	version: 1,
 	queues: [],
 	recent: [123],
@@ -192,7 +192,7 @@ await resetStarted;
 releaseDecode();
 await Promise.all([refreshing, resetting]);
 assert.equal(
-	values["klice-pexels-v1"],
+	values["ktab-pexels-v1"],
 	undefined,
 	"reset removes query queue and recent history",
 );
@@ -205,4 +205,4 @@ assert.notEqual(useSetupStore.getState().settings.background.type, "pexels");
 assert.equal(JSON.stringify(values).includes("private search"), false);
 await engine.refreshWallpaper();
 assert.equal(apiCalls, 1);
-assert.equal(values["klice-pexels-v1"], undefined);
+assert.equal(values["ktab-pexels-v1"], undefined);

@@ -1,5 +1,5 @@
 /**
- * Cold-load benchmark for the Klice Start newtab.
+ * Cold-load benchmark for the kTab newtab.
  *
  * Each run creates a FRESH browser profile (cold extension storage + cold
  * HTTP cache) with only the built extension loaded. Measures:
@@ -113,7 +113,7 @@ for (let i = 0; i < RUNS; i += 1) {
 			});
 			await page
 				.waitForFunction(
-					() => window.__kliceBench && window.__kliceBench.gridReadyAt !== null,
+					() => window.__ktabBench && window.__ktabBench.gridReadyAt !== null,
 					null,
 					{ timeout: 20000 },
 				)
@@ -137,8 +137,8 @@ for (let i = 0; i < RUNS; i += 1) {
 					dclMs: Math.round(nav.domContentLoadedEventEnd),
 					loadEventMs: Math.round(nav.loadEventEnd),
 					fcpMs: fcp ? Math.round(fcp.startTime) : null,
-					gridInteractiveMs: window.__kliceBench?.gridReadyAt ?? null,
-					longTasks: (window.__kliceBench?.longTasks ?? []).slice(0, 20),
+					gridInteractiveMs: window.__ktabBench?.gridReadyAt ?? null,
+					longTasks: (window.__ktabBench?.longTasks ?? []).slice(0, 20),
 					scripts: resources,
 				};
 			});

@@ -68,7 +68,7 @@ function prepareSvg(svgXml: string, prefix: string): string {
 /** Inline brand art with an explicit viewport and instance-local SVG resources. */
 export function SvgIcon({ svgXml, className, alt }: SvgIconProps) {
 	const instanceId = useId();
-	const prefix = `klice-brand-${instanceId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+	const prefix = `ktab-brand-${instanceId.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 	const prepared = useMemo(
 		() => (svgXml ? prepareSvg(svgXml, prefix) : null),
 		[svgXml, prefix],

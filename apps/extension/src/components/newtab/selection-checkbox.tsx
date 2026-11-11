@@ -1,4 +1,4 @@
-import { Checkbox } from "@klice-start/ui/components/motion/checkbox";
+import { Checkbox } from "@ktab/ui/components/motion/checkbox";
 import type { MouseEvent } from "react";
 
 /**

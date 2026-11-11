@@ -2,14 +2,14 @@ import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
-} from "@klice-start/ui/components/input-group";
+} from "@ktab/ui/components/input-group";
 import {
 	MorphPopover,
 	MorphPopoverContent,
 	MorphPopoverTrigger,
-} from "@klice-start/ui/components/motion/popover-morph";
-import { Icon } from "@klice-start/ui/icons/icon";
-import { flatControl } from "@klice-start/ui/lib/surface";
+} from "@ktab/ui/components/motion/popover-morph";
+import { Icon } from "@ktab/ui/icons/icon";
+import { flatControl } from "@ktab/ui/lib/surface";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveDragRef, setActiveDrag } from "../../../lib/dnd";
 import { buildRenameEntry } from "../../../lib/history-capture";
@@ -262,7 +262,7 @@ export function FolderTabsOverflow({
 									// and the trailing button inset stay symmetric.
 									"h-8 min-w-0 py-0 text-[13px]",
 									isLiquid
-									? cn(glassForeground(), "placeholder:text-[var(--klice-glass-foreground-secondary)]")
+									? cn(glassForeground(), "placeholder:text-[var(--ktab-glass-foreground-secondary)]")
 										: "text-foreground placeholder:text-muted-foreground",
 								)}
 							/>
@@ -291,7 +291,7 @@ export function FolderTabsOverflow({
 											? cn("bg-foreground/10 hover:bg-foreground/15", glassForeground())
 												: `${flatControl()} text-flat-ink`
 											: isLiquid
-											? cn(glassForeground(), "hover:bg-foreground/10 hover:text-[var(--klice-glass-foreground-primary)] active:bg-foreground/15")
+											? cn(glassForeground(), "hover:bg-foreground/10 hover:text-[var(--ktab-glass-foreground-primary)] active:bg-foreground/15")
 												: "text-flat-ink-muted hover:bg-flat-sunken-raised hover:text-flat-ink active:bg-flat-sunken",
 									)}
 								>

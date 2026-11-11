@@ -75,7 +75,7 @@ import {
  * Semantic icon name → LucideIcon mapping.
  *
  * NUNCA importar lucide-react diretamente nos componentes da extensão.
- * Use <Icon name="settings" /> de @klice-start/ui/icons/icon.
+ * Use <Icon name="settings" /> de @ktab/ui/icons/icon.
  */
 export const iconMap = {
 	plus: Plus,

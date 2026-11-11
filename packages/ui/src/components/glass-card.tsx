@@ -5,9 +5,9 @@ import { type HTMLAttributes, forwardRef } from "react";
 import {
   type FrostGlassVariant,
   glassVariantStyles,
-} from "@klice-start/ui/lib/glass-variants";
-import { kliceShape } from "@klice-start/ui/lib/shapes";
-import { cn } from "@klice-start/ui/lib/utils";
+} from "@ktab/ui/lib/glass-variants";
+import { ktabShape } from "@ktab/ui/lib/shapes";
+import { cn } from "@ktab/ui/lib/utils";
 
 import { LiquidGlass, type LiquidGlassProps } from "./liquid-glass";
 
@@ -48,7 +48,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function GlassCard(
         {...liquidProps}
         ref={ref}
         className={cn(
-          kliceShape("surface"),
+          ktabShape("surface"),
           surfaceClassName,
           liquidProps?.className,
         )}
@@ -57,8 +57,8 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function GlassCard(
           data-slot="glass-card"
           data-glass-variant={variant}
           className={cn(
-				"relative overflow-hidden border-0 bg-transparent text-[var(--klice-glass-foreground-primary)] shadow-none",
-            kliceShape("surface"),
+				"relative overflow-hidden border-0 bg-transparent text-[var(--ktab-glass-foreground-primary)] shadow-none",
+            ktabShape("surface"),
             className,
           )}
           {...props}
@@ -74,7 +74,7 @@ const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(function GlassCard(
       ref={ref}
       data-slot="glass-card"
       data-glass-variant={variant}
-		className={cn("relative overflow-hidden text-[var(--klice-glass-foreground-primary)]", material, className)}
+		className={cn("relative overflow-hidden text-[var(--ktab-glass-foreground-primary)]", material, className)}
       {...props}
     />
   );

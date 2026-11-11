@@ -15,11 +15,11 @@
   "menuColor": "default-translucent",
   "menuAccent": "subtle",
   "aliases": {
-    "components": "@klice-start/ui/components",
-    "utils": "@klice-start/ui/lib/utils",
-    "ui": "@klice-start/ui/components",
-    "lib": "@klice-start/ui/lib",
-    "hooks": "@klice-start/ui/hooks"
+    "components": "@ktab/ui/components",
+    "utils": "@ktab/ui/lib/utils",
+    "ui": "@ktab/ui/components",
+    "lib": "@ktab/ui/lib",
+    "hooks": "@ktab/ui/hooks"
   },
   "registries": {
     "@glasscn": "https://glasscn-components.vercel.app/r/{name}.json"

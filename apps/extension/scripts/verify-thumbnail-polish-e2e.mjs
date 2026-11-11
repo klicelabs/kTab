@@ -12,7 +12,7 @@ const { context, extensionId } = await launchExtension({
 	headless: process.env.HEADFUL !== "1",
 });
 const screenshots = fs.mkdtempSync(
-	path.join(process.env.TEMP ?? "/tmp", "klice-motion-polish-"),
+	path.join(process.env.TEMP ?? "/tmp", "ktab-motion-polish-"),
 );
 let checks = 0;
 const errors = [];

@@ -221,7 +221,7 @@ export async function resetDevData(): Promise<void> {
 }
 
 export function installDevSeed(): void {
-	(window as unknown as Record<string, unknown>).__kliceSeed = {
+	(window as unknown as Record<string, unknown>).__ktabSeed = {
 		seed: seedDevData,
 		reset: resetDevData,
 	};
