@@ -47,7 +47,7 @@ export default defineConfig({
 		optional_host_permissions: ["<all_urls>"],
 		commands: {
 			"open-tab-switcher": {
-				suggested_key: { default: "Alt+T" },
+				suggested_key: { default: "Alt+Q" },
 				description: "Open tab switcher",
 			},
 			"add-current-page": {
