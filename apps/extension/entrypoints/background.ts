@@ -39,7 +39,16 @@ import {
 } from "../src/lib/thumbnail-refresh";
 import { canonicalizeForAutoCapture, isAbsoluteHttpUrl } from "../src/lib/url";
 import { uid } from "../src/lib/utils";
-import { orderTabsByRecency, type SwitcherTab } from "../src/lib/tab-switcher";
+import {
+	applyCachedTabPreviews,
+	cacheTabPreview,
+	orderTabsByRecency,
+	registerTabSwitcherSession,
+	removeTabSwitcherSession,
+	TAB_PREVIEW_MAX_CHARS,
+	type SwitcherTab,
+	type TabSwitcherSession,
+} from "../src/lib/tab-switcher";
 import type { Folder, Setup } from "../src/types";
 
 // Persistent identifiers from the Perch era — kept verbatim so existing
@@ -50,11 +59,17 @@ const NEW_FOLDER_SEPARATOR_ID = "klice-new-folder-separator";
 const NEW_FOLDER_MENU_ID = "klice-new-folder";
 const TAB_RECENCY_KEY = "klice-tab-switcher-recency";
 const TAB_SWITCHER_SESSIONS_KEY = "klice-tab-switcher-sessions";
+const TAB_PREVIEW_CACHE_KEY = "klice-tab-switcher-previews";
 const TAB_SWITCHER_COMMAND = "open-tab-switcher";
 const tabRecency = new Map<number, number[]>();
-const tabSwitcherSessions = new Map<number, { windowId: number; activeTabId: number }>();
+const tabSwitcherSessions = new Map<number, TabSwitcherSession>();
+const tabPreviewCache = new Map<number, string>();
 let tabRecencyHydration: Promise<void> | undefined;
 let tabRecencyWrite = Promise.resolve();
+let tabSwitcherWrite = Promise.resolve();
+let tabPreviewWrite = Promise.resolve();
+const visiblePreviewTimers = new Map<number, ReturnType<typeof setTimeout>>();
+const visiblePreviewCaptures = new Map<number, Promise<void>>();
 
 async function hydrateTabRecency(): Promise<void> {
 	if (!tabRecencyHydration) {
@@ -63,6 +78,7 @@ async function hydrateTabRecency(): Promise<void> {
 				const stored = await ext.storage.session.get([
 					TAB_RECENCY_KEY,
 					TAB_SWITCHER_SESSIONS_KEY,
+					TAB_PREVIEW_CACHE_KEY,
 				]);
 				const record = stored[TAB_RECENCY_KEY] as Record<string, number[]> | undefined;
 				for (const [windowId, ids] of Object.entries(record ?? {})) {
@@ -70,10 +86,22 @@ async function hydrateTabRecency(): Promise<void> {
 				}
 				const sessions = stored[TAB_SWITCHER_SESSIONS_KEY] as Record<
 					string,
-				{ windowId: number; activeTabId: number }
+				{ windowId: number; activeTabId: number; excludeClientTabId?: boolean }
 				> | undefined;
-				for (const [tabId, session] of Object.entries(sessions ?? {})) {
-					tabSwitcherSessions.set(Number(tabId), session);
+				for (const [clientTabId, session] of Object.entries(sessions ?? {})) {
+					registerTabSwitcherSession(
+						tabSwitcherSessions,
+						Number(clientTabId),
+						session.windowId,
+						session.activeTabId,
+						session.excludeClientTabId === true,
+					);
+				}
+				const previews = stored[TAB_PREVIEW_CACHE_KEY] as
+					| Record<string, string>
+					| undefined;
+				for (const [tabId, preview] of Object.entries(previews ?? {})) {
+					cacheTabPreview(tabPreviewCache, Number(tabId), preview);
 				}
 			} catch { /* A cold or restricted storage session simply starts with the active tab. */ }
 		})();
@@ -93,40 +121,158 @@ function persistTabRecency(): void {
 		.catch(() => undefined);
 }
 
+function persistTabSwitcherSessions(): void {
+	tabSwitcherWrite = tabSwitcherWrite
+		.then(() =>
+			ext.storage.session.set({
+				[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
+			}),
+		)
+		.catch(() => undefined);
+}
+
+function persistTabPreviewCache(): void {
+	tabPreviewWrite = tabPreviewWrite
+		.then(() =>
+			ext.storage.session.set({
+				[TAB_PREVIEW_CACHE_KEY]: Object.fromEntries(tabPreviewCache),
+			}),
+		)
+		.catch(() => undefined);
+}
+
+function clearTabPreview(tabId: number): void {
+	if (tabPreviewCache.delete(tabId)) persistTabPreviewCache();
+}
+
+const VISIBLE_PREVIEW_SETTLE_MS = 650;
+
+function scheduleVisiblePreviewCapture(
+	tabId: number,
+	windowId: number,
+	expectedUrl?: string,
+): void {
+	const pending = visiblePreviewTimers.get(tabId);
+	if (pending) clearTimeout(pending);
+	const timer = setTimeout(() => {
+		visiblePreviewTimers.delete(tabId);
+		const capture = captureVisibleTabPreview(tabId, windowId, expectedUrl);
+		visiblePreviewCaptures.set(tabId, capture);
+		void capture.finally(() => {
+			if (visiblePreviewCaptures.get(tabId) === capture)
+				visiblePreviewCaptures.delete(tabId);
+		});
+	}, VISIBLE_PREVIEW_SETTLE_MS);
+	visiblePreviewTimers.set(tabId, timer);
+}
+
+async function captureVisibleTabPreview(
+	tabId: number,
+	windowId: number,
+	expectedUrl?: string,
+): Promise<void> {
+	await hydrateTabRecency();
+	// Background tab changes have no activeTab gesture for their destination.
+	// Passive gallery capture is therefore limited to the product's existing,
+	// explicitly consented <all_urls> grant; the shortcut path captures only
+	// its current tab below.
+	if (!(await hasThumbnailCapturePermission())) return;
+	const getEligibleTab = async () => {
+		if (
+			tabSwitcherSessions.has(tabId) ||
+			refreshHiddenTabIds.has(tabId) ||
+			refreshCaptureWindowIds.has(windowId)
+		)
+			return null;
+		try {
+			const [tab, window] = await Promise.all([
+				ext.tabs.get(tabId),
+				ext.windows.get(windowId),
+			]);
+			if (
+				window.focused !== true ||
+				tab.windowId !== windowId ||
+				tab.active !== true ||
+				tab.status !== "complete" ||
+				!isThumbnailCaptureUrl(tab.url ?? "") ||
+				(expectedUrl !== undefined && tab.url !== expectedUrl)
+			)
+				return null;
+			return tab.url;
+		} catch {
+			return null;
+		}
+	};
+
+	const initialUrl = await getEligibleTab();
+	if (!initialUrl) return;
+	let capturedUrl: string | null = null;
+	const preview = await scheduleCapture(async () => {
+		capturedUrl = (await getEligibleTab()) ?? null;
+		if (!capturedUrl) return null;
+		try {
+			return await ext.tabs.captureVisibleTab(windowId, {
+				format: "jpeg",
+				quality: 42,
+			});
+		} catch {
+			return null;
+		}
+	});
+	if (
+		!preview ||
+		preview.length > TAB_PREVIEW_MAX_CHARS ||
+		capturedUrl !== (await getEligibleTab())
+	)
+		return;
+	if (cacheTabPreview(tabPreviewCache, tabId, preview)) persistTabPreviewCache();
+}
+
+async function cancelOrWaitForVisiblePreview(tabId: number): Promise<void> {
+	const pending = visiblePreviewTimers.get(tabId);
+	if (pending) {
+		clearTimeout(pending);
+		visiblePreviewTimers.delete(tabId);
+	}
+	await visiblePreviewCaptures.get(tabId)?.catch(() => undefined);
+}
+
 async function openTabSwitcher(): Promise<void> {
 	const active = (await ext.tabs.query({ active: true, currentWindow: true }))[0];
 	if (!active || active.id === undefined || active.windowId === undefined) return;
+	const activeTabId = active.id;
+	const activeWindowId = active.windowId;
 	await hydrateTabRecency();
-	rememberTab(active.windowId, active.id);
-	const allTabs = await ext.tabs.query({});
-	const windows = await ext.windows.getAll({ populate: false });
-	const windowOrder = [active.windowId, ...windows.map((window) => window.id).filter((id): id is number => id !== undefined && id !== active.windowId)];
-	const tabs: SwitcherTab[] = [];
-	for (const windowId of windowOrder) {
-		const group = allTabs.flatMap((tab) => {
-			if (tab.windowId !== windowId || tab.id === undefined) return [];
-			return [{
-				id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl,
-				active: tab.id === active.id,
-			}];
+	await cancelOrWaitForVisiblePreview(activeTabId);
+	if (
+		!tabPreviewCache.has(activeTabId) &&
+		isThumbnailCaptureUrl(active.url ?? "")
+	) {
+		const preview = await scheduleCapture(async () => {
+			try {
+				const [current, window] = await Promise.all([
+					ext.tabs.get(activeTabId),
+					ext.windows.get(activeWindowId),
+				]);
+				if (
+					window.focused !== true ||
+					current.active !== true ||
+					current.windowId !== activeWindowId ||
+					current.url !== active.url
+				)
+					return null;
+				return await ext.tabs.captureVisibleTab(activeWindowId, {
+					format: "jpeg",
+					quality: 42,
+				});
+			} catch {
+				return null;
+			}
 		});
-		tabs.push(...orderTabsByRecency(group, tabRecency.get(windowId) ?? []));
+		if (preview && cacheTabPreview(tabPreviewCache, activeTabId, preview))
+			persistTabPreviewCache();
 	}
-	const current = tabs.find((tab) => tab.id === active.id);
-	if (current) {
-		try { current.preview = await ext.tabs.captureVisibleTab(active.windowId, { format: "jpeg", quality: 55 }); } catch { /* Protected pages and missing capture grants use the favicon fallback. */ }
-	}
-	const payload = { tabs, activeTabId: active.id, windowId: active.windowId };
-	try {
-		await ext.tabs.sendMessage(active.id, { type: "tab-switcher:open", payload });
-	} catch {
-		const url = `${ext.runtime.getURL("tab-switcher.html")}?windowId=${active.windowId}&activeTabId=${active.id}`;
-		await ext.windows.create({ url, type: "popup", width: 940, height: 640, focused: true });
-	}
-}
-
-async function getSwitcherTabs(activeWindowId: number, activeTabId: number) {
-	await hydrateTabRecency();
+	rememberTab(activeWindowId, activeTabId);
 	const allTabs = await ext.tabs.query({});
 	const windows = await ext.windows.getAll({ populate: false });
 	const windowOrder = [activeWindowId, ...windows.map((window) => window.id).filter((id): id is number => id !== undefined && id !== activeWindowId)];
@@ -134,18 +280,91 @@ async function getSwitcherTabs(activeWindowId: number, activeTabId: number) {
 	for (const windowId of windowOrder) {
 		const group = allTabs.flatMap((tab) => {
 			if (tab.windowId !== windowId || tab.id === undefined) return [];
-			return [{ id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl, active: tab.id === activeTabId }];
+			return [{
+				id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl,
+				active: tab.id === activeTabId,
+			}];
 		});
 		tabs.push(...orderTabsByRecency(group, tabRecency.get(windowId) ?? []));
 	}
-	return { tabs, activeTabId, windowId: activeWindowId };
+	const payload = {
+		tabs: applyCachedTabPreviews(tabs, tabPreviewCache),
+		activeTabId,
+		windowId: activeWindowId,
+	};
+	try {
+		await ext.tabs.sendMessage(activeTabId, { type: "tab-switcher:open", payload });
+	} catch {
+		const url = `${ext.runtime.getURL("tab-switcher.html")}?windowId=${activeWindowId}&activeTabId=${activeTabId}`;
+		await ext.windows.create({ url, type: "popup", width: 940, height: 640, focused: true });
+	}
+}
+
+async function getSwitcherTabs(activeWindowId: number, activeTabId: number) {
+	return getSwitcherTabsForClient(activeWindowId, activeTabId);
+}
+
+async function getSwitcherTabsForClient(
+	requestedWindowId: number,
+	requestedActiveTabId: number,
+	excludeClientTabId?: number,
+) {
+	await hydrateTabRecency();
+	const allTabs = (await ext.tabs.query({})).filter(
+		(tab) => tab.id !== excludeClientTabId,
+	);
+	const windows = await ext.windows.getAll({ populate: false });
+	const requestedWindowTabs = allTabs.filter(
+		(tab) => tab.windowId === requestedWindowId && tab.id !== undefined,
+	);
+	const effectiveWindowId = requestedWindowTabs.length
+		? requestedWindowId
+		: allTabs.find((tab) => tab.active)?.windowId ?? requestedWindowId;
+	const effectiveWindowTabs = allTabs.filter(
+		(tab) => tab.windowId === effectiveWindowId && tab.id !== undefined,
+	);
+	const effectiveActiveTabId = effectiveWindowTabs.some(
+		(tab) => tab.id === requestedActiveTabId,
+	)
+		? requestedActiveTabId
+		: effectiveWindowTabs.find((tab) => tab.active)?.id ??
+			effectiveWindowTabs[0]?.id ??
+			requestedActiveTabId;
+	const windowOrder = [effectiveWindowId, ...windows.map((window) => window.id).filter((id): id is number => id !== undefined && id !== effectiveWindowId)];
+	const tabs: SwitcherTab[] = [];
+	for (const windowId of windowOrder) {
+		const group = allTabs.flatMap((tab) => {
+			if (tab.windowId !== windowId || tab.id === undefined) return [];
+			return [{ id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl, active: tab.id === effectiveActiveTabId }];
+		});
+		tabs.push(...orderTabsByRecency(group, tabRecency.get(windowId) ?? []));
+	}
+	return {
+		tabs: applyCachedTabPreviews(tabs, tabPreviewCache),
+		activeTabId: effectiveActiveTabId,
+		windowId: effectiveWindowId,
+	};
 }
 
 async function refreshTabSwitcherSessions(): Promise<void> {
+	await hydrateTabRecency();
 	await Promise.all(
 		[...tabSwitcherSessions].map(async ([clientTabId, session]) => {
 			try {
-				const payload = await getSwitcherTabs(session.windowId, session.activeTabId);
+				const payload = await getSwitcherTabsForClient(
+					session.windowId,
+					session.activeTabId,
+					session.excludeClientTabId ? clientTabId : undefined,
+				);
+				if (payload.activeTabId >= 0) {
+					tabSwitcherSessions.set(clientTabId, {
+						windowId: payload.windowId,
+						activeTabId: payload.activeTabId,
+						...(session.excludeClientTabId
+							? { excludeClientTabId: true }
+							: {}),
+					});
+				}
 				await ext.tabs.sendMessage(clientTabId, {
 					type: "tab-switcher:update",
 					payload,
@@ -155,9 +374,7 @@ async function refreshTabSwitcherSessions(): Promise<void> {
 			}
 		}),
 	);
-	void ext.storage.session.set({
-		[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
-	});
+	persistTabSwitcherSessions();
 }
 
 /**
@@ -486,6 +703,13 @@ export default defineBackground(() => {
 		if (refreshFocusEventLog.length > 64) refreshFocusEventLog.shift();
 		if (refreshCaptureWindowIds.has(windowId)) return;
 		refreshFocusRevision += 1;
+		if (windowId >= 0) {
+			void ext.tabs.query({ active: true, windowId }).then((tabs) => {
+				const active = tabs[0];
+				if (active?.id !== undefined && active.url)
+					scheduleVisiblePreviewCapture(active.id, windowId, active.url);
+			});
+		}
 		// WINDOW_ID_NONE can be the first half of a window-manager transition.
 		// Keep the last concrete target; restoration still checks current focus.
 		if (windowId >= 0) refreshLastNonCaptureWindowId = windowId;
@@ -511,29 +735,33 @@ export default defineBackground(() => {
 	// refresh:progress events (no polling). Unknown messages return false so
 	// other listeners in this worker stay unaffected.
 	ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
-		const request = message as { type?: string; tabId?: number; windowId?: number } | null;
+		const request = message as {
+			type?: string;
+			tabId?: number;
+			activeTabId?: number;
+			windowId?: number;
+		} | null;
 		if (request?.type === "tab-switcher:opened") {
 			if (
 				typeof sender.tab?.id === "number" &&
 				typeof request.windowId === "number" &&
-				typeof request.tabId === "number"
+				typeof request.activeTabId === "number"
 			) {
-				tabSwitcherSessions.set(sender.tab.id, {
-					windowId: request.windowId,
-					activeTabId: request.tabId,
-				});
-				void ext.storage.session.set({
-					[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
-				});
+				registerTabSwitcherSession(
+					tabSwitcherSessions,
+					sender.tab.id,
+					request.windowId,
+					request.activeTabId,
+					sender.url?.startsWith(ext.runtime.getURL("tab-switcher.html")) === true,
+				);
+				persistTabSwitcherSessions();
 			}
 			return false;
 		}
 		if (request?.type === "tab-switcher:closed") {
 			if (typeof sender.tab?.id === "number") {
-				tabSwitcherSessions.delete(sender.tab.id);
-				void ext.storage.session.set({
-					[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
-				});
+				removeTabSwitcherSession(tabSwitcherSessions, sender.tab.id);
+				persistTabSwitcherSessions();
 			}
 			return false;
 		}
@@ -627,6 +855,12 @@ export default defineBackground(() => {
 	});
 
 	ext.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+		if (changeInfo.status === "loading") {
+			const previewTimer = visiblePreviewTimers.get(tabId);
+			if (previewTimer) clearTimeout(previewTimer);
+			visiblePreviewTimers.delete(tabId);
+			void hydrateTabRecency().then(() => clearTabPreview(tabId));
+		}
 		// Refresh-owned tabs are loaded and captured by the queue; the visit
 		// pipeline must never schedule an automatic capture for them.
 		if (changeInfo.status === "loading") {
@@ -647,6 +881,8 @@ export default defineBackground(() => {
 		if (changeInfo.status !== "complete") return;
 		const currentUrl = tab.url ?? changeInfo.url;
 		if (!currentUrl) return;
+		if (tab.active === true && tab.windowId !== undefined)
+			scheduleVisiblePreviewCapture(tabId, tab.windowId, currentUrl);
 		queueMissingThumbnailCapture(
 			tabId,
 			{ ...tab, url: currentUrl },
@@ -668,6 +904,7 @@ export default defineBackground(() => {
 				// Activation is a fresh opportunity for an already-settled tab;
 				// do not reuse a stale redirect candidate from an old navigation.
 				navigationStartUrls.delete(tabId);
+				scheduleVisiblePreviewCapture(tabId, windowId, tab.url);
 				// onActivated is authoritative about the active tab, even if the
 				// immediately-following tabs.get snapshot still reports old state.
 				queueMissingThumbnailCapture(tabId, { ...tab, active: true }, tab.url);
@@ -678,11 +915,16 @@ export default defineBackground(() => {
 	});
 
 	ext.tabs.onRemoved.addListener((tabId, removeInfo) => {
+		const previewTimer = visiblePreviewTimers.get(tabId);
+		if (previewTimer) clearTimeout(previewTimer);
+		visiblePreviewTimers.delete(tabId);
 		void hydrateTabRecency().then(() => {
 			const ids = tabRecency.get(removeInfo.windowId);
-			if (!ids) return;
-			tabRecency.set(removeInfo.windowId, ids.filter((id) => id !== tabId));
-			persistTabRecency();
+			if (ids) {
+				tabRecency.set(removeInfo.windowId, ids.filter((id) => id !== tabId));
+				persistTabRecency();
+			}
+			clearTabPreview(tabId);
 		});
 		void refreshTabSwitcherSessions();
 	});
