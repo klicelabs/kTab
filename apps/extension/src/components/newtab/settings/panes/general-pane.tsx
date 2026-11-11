@@ -18,6 +18,7 @@ import {
 	SETTINGS_SWITCH,
 } from "../shared/settings-tokens";
 import { SliderRow } from "../shared/slider-row";
+import { TabSwitcherShortcut } from "../tab-switcher-shortcut";
 
 const TILE_SIZE_OPTIONS = [
 	{ value: "small", label: "Small" },
@@ -370,6 +371,10 @@ export function GeneralPane() {
 					/>
 				</SettingsExpandable>
 			</SectionCard>
+
+			{/* The one keyboard behavior the extension owns: the tab switcher
+			    hotkey, remappable here instead of chrome://extensions/shortcuts. */}
+			<TabSwitcherShortcut />
 		</div>
 	);
 }

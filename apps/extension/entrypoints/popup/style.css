@@ -1,8 +1,17 @@
+html,
+body,
+#root {
+	/* tokens.css sizes the newtab as a fixed viewport; the popup must instead
+	   shrink to its content so Chrome picks the natural window height. */
+	height: auto;
+	overflow: visible;
+}
+
 body {
-	width: 300px;
+	width: 320px;
 	margin: 0;
-	background: #141416;
-	color: #f5f5f7;
+	background: var(--background, #1d1d1d);
+	color: var(--foreground, #f5f5f7);
 	font-family:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
 		"Segoe UI Variable", "Segoe UI", system-ui, sans-serif, "Apple Color Emoji",

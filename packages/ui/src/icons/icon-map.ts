@@ -34,6 +34,7 @@ import {
 	Image,
 	Import,
 	Info,
+	Keyboard,
 	Layers,
 	LayoutGrid,
 	Link,
@@ -155,6 +156,8 @@ export const iconMap = {
 	shapes: Shapes,
 	// Icon mode — the optional glass tile wrapper (icon + label material).
 	stack: Layers,
+	// Tab switcher — the in-extension hotkey recorder row.
+	keyboard: Keyboard,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof iconMap;
