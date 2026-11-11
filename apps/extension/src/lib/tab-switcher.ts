@@ -168,6 +168,28 @@ function resolveDark(colorScheme: SwitcherAppearance["colorScheme"]): boolean {
  * renders in engines with `corner-shape`, and the `@supports` fallback swaps
  * in the paired Gecko radius.
  */
+const FROST_EASE_STEPS = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+const smoothstep = (t: number) => 3 * t * t - 2 * t * t * t;
+
+/**
+ * Vertical mask dissolving the frost over an eased `span` ramp from each edge.
+ * A two-stop gradient reads as a visible boundary because blur-vs-sharp is
+ * perceptually non-linear; the smoothstep ramp approaches zero alpha
+ * asymptotically so the band has no perceptible edge. Bottom stops are
+ * generated edge-first, so they are reversed to keep positions non-decreasing
+ * — out-of-order stops get clamped and silently flatten the ramp.
+ */
+function bandFrostMask(span: number): string {
+	const top = FROST_EASE_STEPS.map(
+		(u) => `rgba(0,0,0,${smoothstep(u).toFixed(3)}) ${(u * span).toFixed(1)}%`,
+	);
+	const bottom = FROST_EASE_STEPS.map(
+		(u) =>
+			`rgba(0,0,0,${smoothstep(u).toFixed(3)}) ${(100 - u * span).toFixed(1)}%`,
+	).reverse();
+	return `linear-gradient(to bottom, ${[...top, ...bottom].join(",")})`;
+}
+
 function buildStyles(appearance: SwitcherAppearance): string {
 	const dark = resolveDark(appearance.colorScheme);
 	const liquid = appearance.liquid;
@@ -206,6 +228,10 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	const frameFilter = liquid
 		? `backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation});-webkit-backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation});`
 		: "";
+	// ~380px dissolve at typical band heights; the ramp lives inside the band's
+	// negative inset so full frost strength arrives before the cards begin.
+	const bandMask = bandFrostMask(30);
+	const bandMaskCompact = bandFrostMask(28);
 	const selectedBackground = liquid
 		? toolbarVeil
 		: dark
@@ -217,7 +243,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 *{box-sizing:border-box}
 .klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px;overflow:hidden}
 .stage{position:relative;display:flex;width:100%;max-width:min(1200px,100%);max-height:100%}
-.band{position:absolute;inset:-200px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 82%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 82%,transparent 100%)}
+.band{position:absolute;inset:-420px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:${bandMask};mask-image:${bandMask}}
 .grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:${dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.24)"} transparent}
 .grid::-webkit-scrollbar{width:8px}
 .grid::-webkit-scrollbar-thumb{border-radius:99px;background:${dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.22)"}}
@@ -242,7 +268,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card:focus-visible{outline:none}
 @supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}.highlight{border-radius:13px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-110px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}.highlight{border-radius:18px}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-190px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}.highlight{border-radius:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
