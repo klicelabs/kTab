@@ -14,7 +14,6 @@ const mem = new Map<string, string>();
 const {
 	WALLPAPER_SNAPSHOT_KEY,
 	WALLPAPER_SNAPSHOT_NEUTRAL,
-	snapshotFromBackground,
 	writeWallpaperSnapshot,
 	readWallpaperSnapshot,
 	snapshotToCss,
@@ -34,7 +33,9 @@ function bg(overrides: Record<string, unknown>) {
 
 test("bundled wallpaper round-trips with its discriminator", () => {
 	mem.clear();
-	writeWallpaperSnapshot(bg({ type: "wallpaper", wallpaperId: "bonsai-rock-milky-way" }));
+	writeWallpaperSnapshot(
+		bg({ type: "wallpaper", wallpaperId: "bonsai-rock-milky-way" }),
+	);
 	expect(JSON.parse(mem.get(WALLPAPER_SNAPSHOT_KEY) as string)).toEqual({
 		type: "bundled",
 		id: "bonsai-rock-milky-way",
@@ -68,13 +69,23 @@ test("custom image maps to the neutral surface, never the default image", () => 
 	expect(css).not.toContain("url(");
 });
 
+test("none round-trips to the clean light surface recipe", () => {
+	mem.clear();
+	writeWallpaperSnapshot(bg({ type: "none" }));
+	expect(readWallpaperSnapshot()).toEqual({ type: "none" });
+	const css = snapshotToCss({ type: "none" });
+	expect(css).toBe("linear-gradient(180deg,#f6f7fa,#e9edf3)");
+});
+
 test("gradient/pexels/unknown ids keep no mirror; malformed mirror reads null", () => {
 	mem.clear();
 	writeWallpaperSnapshot(bg({ type: "gradient", gradientId: "sunset" }));
 	expect(mem.has(WALLPAPER_SNAPSHOT_KEY)).toBe(false);
 	writeWallpaperSnapshot(bg({ type: "pexels", pexelsImageId: "p1" }));
 	expect(mem.has(WALLPAPER_SNAPSHOT_KEY)).toBe(false);
-	writeWallpaperSnapshot(bg({ type: "wallpaper", wallpaperId: "deleted-pack" }));
+	writeWallpaperSnapshot(
+		bg({ type: "wallpaper", wallpaperId: "deleted-pack" }),
+	);
 	expect(mem.has(WALLPAPER_SNAPSHOT_KEY)).toBe(false);
 
 	mem.set(WALLPAPER_SNAPSHOT_KEY, "{not json");

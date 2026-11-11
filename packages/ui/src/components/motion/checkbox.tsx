@@ -1,13 +1,13 @@
 "use client";
 
+import { EASE_OUT, SPRING_PRESS } from "@klice-start/ui/lib/ease";
+import { cn } from "@klice-start/ui/lib/utils";
 // beui.dev/components/motion/checkbox — official default. Only the import
 // paths are adapted (@/ → @klice-start/ui); motion, geometry and the
 // draw-on mark are untouched. Klice positions the control and toggles its
 // visibility at the call site (see tokens.css `.selection-checkbox`).
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
-import { EASE_OUT, SPRING_PRESS } from "@klice-start/ui/lib/ease";
-import { cn } from "@klice-start/ui/lib/utils";
 
 const CHECK_PATH = "M5 13l4 4L19 7";
 const INDETERMINATE_PATH = "M6 12h12";
@@ -46,7 +46,8 @@ export function Checkbox({
 	const path = indeterminate ? INDETERMINATE_PATH : CHECK_PATH;
 	const descriptionId = description ? `${id}-description` : undefined;
 	// The wrapping <label> would fold the description into the name, so name from the label text alone.
-	const labelId = description && label && !ariaLabel ? `${id}-label` : undefined;
+	const labelId =
+		description && label && !ariaLabel ? `${id}-label` : undefined;
 	const describedBy =
 		[ariaDescribedBy, descriptionId].filter(Boolean).join(" ") || undefined;
 
@@ -56,7 +57,7 @@ export function Checkbox({
 			className={cn(
 				"inline-flex gap-3",
 				description ? "items-start" : "items-center",
-				disabled ? "cursor-not-allowed" : "cursor-pointer",
+				disabled ? "cursor-not-allowed" : "",
 				className,
 			)}
 		>
@@ -130,7 +131,7 @@ export function Checkbox({
 			{label || description ? (
 				<span
 					className={cn(
-						"flex min-w-0 flex-col gap-0.5 select-none",
+						"flex min-w-0 select-none flex-col gap-0.5",
 						disabled && "opacity-60",
 					)}
 				>
@@ -138,7 +139,7 @@ export function Checkbox({
 						<span
 							id={labelId}
 							className={cn(
-								"text-sm text-foreground",
+								"text-foreground text-sm",
 								description && "leading-4",
 							)}
 						>
@@ -146,7 +147,7 @@ export function Checkbox({
 						</span>
 					) : null}
 					{description ? (
-						<span id={descriptionId} className="text-xs text-muted-foreground">
+						<span id={descriptionId} className="text-muted-foreground text-xs">
 							{description}
 						</span>
 					) : null}

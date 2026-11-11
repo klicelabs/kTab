@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+	cleanSurfaceCss,
 	GRADIENTS,
 	MAX_BACKGROUND_IMAGE_BYTES,
 	WALLPAPERS,
@@ -28,6 +29,7 @@ import { PEXELS_LIBRARY_PREVIEW } from "../../../../lib/wallpaper-themes";
 import { useImageStore } from "../../../../stores/image-store";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { CustomWallpaper, Settings } from "../../../../types";
+import { useAppearance } from "../../appearance-provider";
 import { SectionCard } from "../shared/section-card";
 import { SettingsAction } from "../shared/settings-action";
 import {
@@ -39,7 +41,8 @@ import {
 type WallpaperLibraryItem =
 	| { kind: "wallpaper"; id: string; label: string; thumb: string }
 	| { kind: "gradient"; id: string; label: string; css: string }
-	| { kind: "solid"; id: "solid"; label: string; css: string };
+	| { kind: "solid"; id: "solid"; label: string; css: string }
+	| { kind: "none"; id: "none"; label: string; css: string };
 
 type PendingUpload = {
 	name: string;
@@ -368,7 +371,9 @@ function WallpaperTile({
 	const tileLabel =
 		item.kind === "gradient"
 			? `Use ${item.label} gradient`
-			: `Use ${item.label} wallpaper`;
+			: item.kind === "none"
+				? "Use no wallpaper"
+				: `Use ${item.label} wallpaper`;
 
 	return (
 		<div
@@ -480,6 +485,7 @@ function PexelsSourceTile({
 }
 
 export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
+	const { resolvedDark } = useAppearance();
 	const bg = useSetupStore((state) => state.settings.background);
 	const updateBackground = useSetupStore((state) => state.updateBackground);
 	const commitCustomWallpaper = useSetupStore(
@@ -560,6 +566,12 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 
 	const libraryItems = useMemo<WallpaperLibraryItem[]>(
 		() => [
+			{
+				kind: "none",
+				id: "none",
+				label: "None",
+				css: cleanSurfaceCss(resolvedDark),
+			},
 			{ kind: "solid", id: "solid", label: "Solid colour", css: bg.color },
 			...WALLPAPERS.map((wallpaper) => ({
 				kind: "wallpaper" as const,
@@ -574,7 +586,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 				css: gradient.css,
 			})),
 		],
-		[bg.color],
+		[bg.color, resolvedDark],
 	);
 
 	function isSelected(item: WallpaperLibraryItem) {
@@ -583,6 +595,7 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 		if (item.kind === "gradient")
 			return bg.type === "gradient" && bg.gradientId === item.id;
 		if (item.kind === "solid") return bg.type === "solid";
+		if (item.kind === "none") return bg.type === "none";
 		return false;
 	}
 
@@ -600,6 +613,13 @@ export function WallpaperPane({ onOpenPexels }: { onOpenPexels: () => void }) {
 				type: "gradient",
 				gradientId: item.id,
 				wallpaperId: null,
+				imageId: null,
+			} as Partial<Settings["background"]>);
+		} else if (item.kind === "none") {
+			updateBackground({
+				type: "none",
+				wallpaperId: null,
+				gradientId: null,
 				imageId: null,
 			} as Partial<Settings["background"]>);
 		}

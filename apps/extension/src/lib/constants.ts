@@ -205,6 +205,17 @@ export const DEFAULT_BACKGROUND: BackgroundSettings = {
 	pexelsPhoto: null,
 };
 
+/**
+ * Clean theme-aware surface for the "none" background: no image, just a
+ * quiet tinted gradient that glass widgets sit on. Shared by BackgroundLayer
+ * and the frame-1 prehydrate shim so both paint the same recipe.
+ */
+export function cleanSurfaceCss(dark: boolean): string {
+	return dark
+		? "linear-gradient(180deg,#17191f,#0f1116)"
+		: "linear-gradient(180deg,#f6f7fa,#e9edf3)";
+}
+
 export const DEFAULT_CLOCK: ClockSettings = {
 	enabled: true,
 	dateEnabled: true,

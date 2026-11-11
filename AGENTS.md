@@ -42,6 +42,10 @@ Reference, not required reading. Consult on demand.
 | Open decisions (backend, AI, billing, budget, i18n) | `docs/DECISIONS.md` |
 | Performance history and constraints | `docs/perf/diagnosis.md` |
 
+## UI rules
+
+- Always the default arrow cursor, on everything — never `cursor: pointer` (buttons, links, tiles, menu rows and text fields included). This is João's standing rule; `tokens.css` enforces it globally.
+
 ## Workflow
 
 1. Inspect `git status`, the active branch and pending work before editing. Preserve unrelated work; stage explicit paths. Commit completed prior work only when authorized. Never use `git add .` to collect other tasks.

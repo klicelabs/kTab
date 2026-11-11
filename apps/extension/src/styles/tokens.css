@@ -8,6 +8,12 @@ html.dark body {
 	color: #f2f2f2;
 }
 
+/* João's standing rule: the default arrow cursor everywhere — never pointer,
+   on any element, interactive or not (see agents.md, "UI rules"). */
+* {
+	cursor: default;
+}
+
 /* Semantic interaction accent. The provider swaps the selected light/dark
    value at runtime; the legacy alias remains for older semantic surfaces. */
 :root {
@@ -302,7 +308,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	   label is the flex item that gets squeezed out of existence. */
 	--icon-glass-pad: 12px;
 	--icon-glass-gap: 6px;
-	--icon-hover-scale: 1.04;
 	--icon-press-scale: 0.96;
 	grid-auto-rows: var(--icon-cell-h);
 }
@@ -312,14 +317,12 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 .dial-grid[data-layout="icon"][data-tile="small"] {
 	--icon-glass-pad: 10px;
 	--icon-glass-gap: 5px;
-	--icon-hover-scale: 1.03;
 	--icon-press-scale: 0.965;
 }
 
 .dial-grid[data-layout="icon"][data-tile="large"] {
 	--icon-glass-pad: 14px;
 	--icon-glass-gap: 6px;
-	--icon-hover-scale: 1.045;
 	--icon-press-scale: 0.955;
 }
 
@@ -611,23 +614,27 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-overflow: ellipsis;
 }
 
-/* Hover is pointer-only: the whole icon rises as one compact object. */
+/* Hover is pointer-only: the pane lights up — the switcher's milk container
+   painted as an overlay on the pane itself — never a zoom or lift. */
 @media (hover: hover) and (pointer: fine) {
-	/* With a glass pane, lift the pane and keep its icon face still inside it. */
-	.dial-grid[data-layout="icon"]:has(.icon-glass-tile) .dial-icon-item:not(
-			[data-dragging="true"]
-		):hover
-		.icon-app-tile,
-	.icon-mode-surface:has(.icon-glass-tile):not([data-dragging="true"]):hover
-		.icon-app-tile {
-		transform: none;
+	.icon-glass-tile::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		border-radius: inherit;
+		background: rgb(255 255 255 / 0.14);
+		box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
+		opacity: 0;
+		transition: opacity 180ms var(--ease-out);
+		pointer-events: none;
 	}
 
 	.dial-grid[data-layout="icon"]
 		.dial-icon-item:not([data-dragging="true"]):hover
-		.icon-glass-tile,
-	.icon-mode-surface:not([data-dragging="true"]):hover .icon-glass-tile {
-		transform: translateY(-3px) scale(var(--icon-hover-scale));
+		.icon-glass-tile::after,
+	.icon-mode-surface:not([data-dragging="true"]):hover .icon-glass-tile::after {
+		opacity: 1;
 	}
 }
 
@@ -675,12 +682,9 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	}
 }
 
-/* Reduced motion keeps the hover and press states in place without travel. */
+/* Reduced motion keeps the press state in place without travel; hover is
+   opacity-only (the pane overlay and cell container) and needs no reset. */
 @media (prefers-reduced-motion: reduce) {
-	.dial-grid[data-layout="icon"] .dial-icon-item:hover .icon-app-tile,
-	.icon-mode-surface:hover .icon-app-tile,
-	.dial-grid[data-layout="icon"] .dial-icon-item:hover .icon-glass-tile,
-	.icon-mode-surface:hover .icon-glass-tile,
 	.icon-mode-surface:active {
 		transform: none;
 	}
@@ -802,9 +806,9 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	border-radius: var(--icon-mini-radius);
 }
 
+/* No zoom on preview links either — brightness is the whole hover. */
 .icon-folder-preview-link:hover .icon-app-tile {
-	filter: brightness(1.04) saturate(1.06);
-	transform: scale(1.04);
+	filter: brightness(1.08) saturate(1.06);
 }
 
 .icon-folder-preview-link:focus-visible {
@@ -929,26 +933,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	transform: scale(0.97);
 }
 
-@media (hover: hover) and (pointer: fine) {
-	.dial-grid[data-layout="icon"]
-		.dial-icon-item:not([data-dragging="true"]):hover
-		.icon-app-tile,
-	.icon-mode-surface:not([data-dragging="true"]):hover .icon-app-tile {
-		transform: translateY(-3px) scale(var(--icon-hover-scale));
-		box-shadow:
-			0 18px 32px -18px rgb(4 8 18 / 0.7),
-			0 4px 10px -5px rgb(4 8 18 / 0.4);
-	}
-
-	.dial-grid[data-layout="icon"]
-		.dial-icon-folder-cell:not([data-dragging="true"]):hover
-		.icon-folder-tile {
-		box-shadow:
-			0 20px 36px -20px rgb(4 8 18 / 0.72),
-			0 4px 10px -5px rgb(4 8 18 / 0.38);
-	}
-}
-
 .dark .icon-app-tile-drop-active,
 .dark .icon-folder-tile-drop-active {
 	box-shadow:
@@ -1068,13 +1052,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	padding-right: 32px;
 }
 
-/* The image zoom is clipped by its own squircle, including Gecko's calibrated
-   radius. Hover stays pointer-only so touch cannot leave a stuck hover state. */
-.dial-card .thumb-media {
-	transition: transform 220ms var(--ease-out);
-}
-
-/* Give the zooming image its own top-corner clip. The outer card still clips
+/* Give the image its own top-corner clip. The outer card still clips
    the whole card; this inner clip prevents Gecko's transformed image layer
    from painting through the card's squircle edge. */
 .dial-grid[data-layout="card"] .dial-card .thumb {
@@ -1085,25 +1063,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	.dial-grid[data-layout="card"] .dial-card .thumb {
 		border-radius: var(--shape-card-fallback, 10px)
 			var(--shape-card-fallback, 10px) 0 0;
-	}
-}
-
-@media (hover: hover) and (pointer: fine) {
-	.dial-grid[data-layout="card"] .dial-card:not([data-dragging="true"]):hover {
-		transform: translateY(-3px);
-		box-shadow:
-			0 20px 38px -22px rgb(4 8 18 / 0.68),
-			0 5px 12px -7px rgb(4 8 18 / 0.38);
-	}
-	.dial-grid[data-layout="card"]
-		.dial-card:not([data-dragging="true"]):hover:active {
-		transform: scale(0.97);
-	}
-
-	.dial-grid[data-layout="card"]
-		.dial-card:not([data-dragging="true"]):hover
-		.thumb-media {
-		transform: scale(1.045);
 	}
 }
 
@@ -1345,6 +1304,100 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		calc(var(--tile-w) * var(--card-height-ratio, 1.12));
 }
 
+/* ── Home hover: the switcher's milk container, zero zoom ──────────────
+   João's round-13 rule: no zoom or lift on Home items. The hover is the
+   tab switcher's selection container — a milk-glass panel (same always-
+   light recipe as the switcher highlight) fading in BEHIND the item:
+   8px outset, squircle radius, black hairline, light bevel, opacity-only
+   tween. Cards anchor it on the cell (the card itself clips its paint);
+   flat icon items reuse the same cell anchor. Glass panes light their
+   own surface instead (.icon-glass-tile::after).
+
+   Cells carry content-visibility:auto, whose paint containment clips any
+   outset painting — hovered or focused cells flip to visible. Cell boxes
+   are fixed by CSS, so the flip cannot shift layout. The veil paints no
+   filter or mask, so glass tiles' backdrop sampling is untouched
+   (backdrop-root ancestry contract, research §4.3). */
+.dial-grid .dial-cell {
+	position: relative;
+}
+
+.dial-grid .dial-cell::before {
+	content: "";
+	position: absolute;
+	inset: -8px;
+	z-index: -1;
+	border-radius: calc(var(--shape-card, 18px) + 8px);
+	corner-shape: squircle;
+	background: rgb(
+		255 255 255 /
+		calc(0.34 + var(--klice-glass-intensity, 0.6) * 0.1)
+	);
+	box-shadow:
+		inset 0 0 0 1px rgb(0 0 0 / 0.1),
+		inset 0 1px 0 rgb(0 0 0 / 0.08),
+		inset 0 -10px 22px -10px rgb(60 90 140 / 0.08);
+	opacity: 0;
+	transition: opacity 180ms var(--ease-out);
+	pointer-events: none;
+}
+
+/* Card cells hold the card exactly, so the 8px outset hugs it. Icon cells
+   are wider than the tile, so the container is sized to the tile square
+   instead — the same tile + 8px relationship as the switcher, with the
+   label left outside the glass. Closed folders start 4px down
+   (.icon-folder-layout padding). */
+.dial-grid[data-layout="icon"] .dial-cell::before {
+	inset: auto auto auto 50%;
+	top: 0;
+	width: calc(var(--icon-size, 76px) + 16px);
+	height: calc(var(--icon-size, 76px) + 16px);
+	translate: -50% 0;
+}
+
+.dial-grid[data-layout="icon"] .dial-icon-folder-cell::before {
+	top: 4px;
+}
+
+@supports not (corner-shape: squircle) {
+	.dial-grid .dial-cell::before {
+		border-radius: calc(var(--shape-card-fallback, 10px) + 8px);
+	}
+}
+
+/* Lift paint containment only while the container is on screen. */
+.dial-grid .dial-cell:has(:hover),
+.dial-grid .dial-cell:has(:focus-within) {
+	content-visibility: visible;
+}
+
+/* Card items (bookmarks + folders): hover or keyboard focus on the card.
+   Two separate rules on purpose — :has() can't nest inside :has(), and one
+   invalid selector would drop the entire rule. */
+.dial-grid[data-layout="card"]
+.dial-cell:has(.dial-card:not([data-dragging="true"]):hover)::before {
+	opacity: 1;
+}
+.dial-grid[data-layout="card"]
+	.dial-cell:has(.dial-card :focus-visible)::before {
+	opacity: 1;
+}
+
+/* Flat icon items (no glass pane): the container hugs the tile square;
+   the label stays outside the glass, like the switcher. */
+@media (hover: hover) and (pointer: fine) {
+	.dial-grid[data-layout="icon"]
+		.dial-cell:not(:has(.icon-glass-tile)):not(
+			:has([data-dragging="true"])
+		):hover::before {
+		opacity: 1;
+	}
+}
+.dial-grid[data-layout="icon"]
+	.dial-cell:not(:has(.icon-glass-tile)):has(:focus-visible)::before {
+	opacity: 1;
+}
+
 /* Empty landing — unified stack entrance */
 @keyframes emptyLandingIn {
 	from {
@@ -1377,9 +1430,6 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	.dial-card,
 	.dial-card:active,
 	.dial-grid-stage > * {
-		transform: none !important;
-	}
-	.dial-card .thumb-media {
 		transform: none !important;
 	}
 }

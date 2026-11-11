@@ -490,7 +490,8 @@ function normalizeBackground(
 		rawType === "gradient" ||
 		rawType === "image" ||
 		rawType === "pexels" ||
-		rawType === "wallpaper"
+		rawType === "wallpaper" ||
+		rawType === "none"
 			? rawType
 			: null;
 	const migratedUnsplash = rawType === "unsplash";

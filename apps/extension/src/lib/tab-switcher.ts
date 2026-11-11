@@ -277,14 +277,14 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .grid::-webkit-scrollbar{width:8px}
 .grid::-webkit-scrollbar-thumb{border-radius:99px;background:rgba(255,255,255,0.24)}
 .grid::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.4)}
-.card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
+.card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
 .frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:26px;corner-shape:squircle;background:transparent}
 .highlight{position:absolute;left:0;top:0;border:0.5px solid ${highlightHairline};border-radius:26px;corner-shape:squircle;background:${selectedBackground};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6);pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1)}
 .highlight.on{opacity:1}
 .preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:18px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06)}
 .preview img{width:100%;height:100%;object-fit:cover}
 .preview .fallback{font-size:30px;font-weight:650;color:${inkMuted}}
-.close{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;corner-shape:squircle;background:transparent;color:rgba(255,255,255,0.88);opacity:0;transition:opacity .15s ease,background-color .15s ease,color .15s ease;cursor:pointer}
+.close{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;corner-shape:squircle;background:transparent;color:rgba(255,255,255,0.88);opacity:0;transition:opacity .15s ease,background-color .15s ease,color .15s ease}
 .card:hover .close,.close:focus-visible{opacity:1}
 .close:hover{background:rgba(235,60,60,0.16);color:#ff5f57}
 .close:focus-visible{outline:1px solid ${hairlineStrong};outline-offset:2px}

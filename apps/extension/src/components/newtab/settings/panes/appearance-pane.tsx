@@ -2,12 +2,17 @@ import { Icon } from "@klice-start/ui/icons/icon";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ACCENT_OPTIONS } from "../../../../lib/accent";
-import { GRADIENTS, WALLPAPERS } from "../../../../lib/constants";
+import {
+	cleanSurfaceCss,
+	GRADIENTS,
+	WALLPAPERS,
+} from "../../../../lib/constants";
 import { clampGlassIntensity } from "../../../../lib/glass";
 import { cn } from "../../../../lib/utils";
 import { useImageStore } from "../../../../stores/image-store";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { Settings } from "../../../../types";
+import { useAppearance } from "../../appearance-provider";
 import { ToolbarIconButton } from "../../toolbar/toolbar-icon-button";
 import { SectionCard } from "../shared/section-card";
 import { SegmentedControl } from "../shared/segmented-control";
@@ -77,6 +82,7 @@ function CurrentWallpaperPreview({
 	className,
 }: CurrentWallpaperPreviewProps & { className?: string }) {
 	const getBackgroundImage = useImageStore((state) => state.getBackgroundImage);
+	const { resolvedDark } = useAppearance();
 	const [imageUrl, setImageUrl] = useState<string | null>(null);
 	const activeImageId =
 		background.type === "image"
@@ -137,13 +143,18 @@ function CurrentWallpaperPreview({
 			style={{
 				background:
 					gradient?.css ??
-					(background.type === "solid" ? background.color : "#27272a"),
+					(background.type === "solid"
+						? background.color
+						: background.type === "none"
+							? cleanSurfaceCss(resolvedDark)
+							: "#27272a"),
 			}}
 		/>
 	);
 }
 
 function getCurrentWallpaperLabel(background: Settings["background"]): string {
+	if (background.type === "none") return "None";
 	if (background.type === "solid") return "Solid colour";
 	if (background.type === "gradient") {
 		return (

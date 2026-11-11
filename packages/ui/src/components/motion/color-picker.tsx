@@ -591,7 +591,7 @@ function ChannelSlider({
 				// translated by % of its own full-size box.
 				"relative h-3.5 w-full touch-none rounded-full contain-layout",
 				TOUCH_GESTURE_CLASS,
-				disabled ? "cursor-not-allowed" : "cursor-pointer",
+				disabled ? "cursor-not-allowed" : "",
 				className,
 			)}
 			style={{ background }}

@@ -198,8 +198,9 @@ export function DialCard({
 					dialLayout === "card" ? CARD_FOOTER_VARIANT : undefined
 				}
 				className={cn(
-					// Hover motion is shared in CSS so the card and thumbnail rise
-					// together while the card's material stays local to its surface.
+					// Hover feedback lives on the cell behind this card (the
+					// switcher-style milk container in tokens.css) — the card
+					// itself never transforms on hover.
 					// `cursor-default` is explicit because the card renders as an
 					// <a href>, which the UA stylesheet would otherwise give a
 					// hand cursor — Klice Start uses the platform arrow.

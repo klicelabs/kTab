@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_BACKGROUND, GRADIENTS, WALLPAPERS } from "../../lib/constants";
+import {
+	cleanSurfaceCss,
+	DEFAULT_BACKGROUND,
+	GRADIENTS,
+	WALLPAPERS,
+} from "../../lib/constants";
 import { glassForeground } from "../../lib/glass";
 import { cn, cssUrl } from "../../lib/utils";
 import {
@@ -17,9 +22,10 @@ import { useSetupStore } from "../../stores/setup-store";
 import { useAppearance } from "./appearance-provider";
 import { GlassSurface } from "./toolbar/glass-surface";
 
-function getInitialBackgroundCss(): string {
+function getInitialBackgroundCss(dark: boolean): string {
 	try {
 		const bg = useSetupStore.getState().settings.background;
+		if (bg.type === "none") return cleanSurfaceCss(dark);
 		if (bg.type === "wallpaper" && bg.wallpaperId) {
 			const wallpaper = WALLPAPERS.find((w) => w.id === bg.wallpaperId);
 			if (wallpaper) return `${cssUrl(wallpaper.src)} center / cover no-repeat`;
@@ -52,7 +58,7 @@ export function BackgroundLayer({
 }: {
 	contained?: boolean;
 }) {
-	const { isLiquid } = useAppearance();
+	const { isLiquid, resolvedDark } = useAppearance();
 	const type = useSetupStore((s) => s.settings.background.type);
 	const imageId = useSetupStore((s) => s.settings.background.imageId);
 	const wallpaperId = useSetupStore((s) => s.settings.background.wallpaperId);
@@ -87,7 +93,10 @@ export function BackgroundLayer({
 	const opacity = useSetupStore((s) => s.settings.background.opacity);
 
 	const getBackgroundImage = useImageStore((s) => s.getBackgroundImage);
-	const [bgCss, setBgCss] = useState<string>(getInitialBackgroundCss);
+	const cleanSurface = cleanSurfaceCss(resolvedDark);
+	const [bgCss, setBgCss] = useState<string>(() =>
+		getInitialBackgroundCss(resolvedDark),
+	);
 	const currentCssRef = useRef(bgCss);
 	const hasPaintedImage = useRef(type !== "pexels");
 	const [outgoingCss, setOutgoingCss] = useState<string | null>(null);
@@ -244,6 +253,15 @@ export function BackgroundLayer({
 				return;
 			}
 
+			if (type === "none") {
+				lastFetchedKeyRef.current = "";
+				if (isCurrent()) {
+					commitBackground(cleanSurface);
+					setDisplayedPhoto(null);
+				}
+				return;
+			}
+
 			lastFetchedKeyRef.current = "";
 			if (isCurrent()) {
 				commitBackground(fallback);
@@ -265,6 +283,7 @@ export function BackgroundLayer({
 		wallpaperId,
 		gradientId,
 		color,
+		cleanSurface,
 		previewBackgroundImage,
 		applyImage,
 		resolveImage,
@@ -294,7 +313,9 @@ export function BackgroundLayer({
 							: type === "solid"
 								? (previewBackgroundColor ??
 									(color || DEFAULT_BACKGROUND.color))
-								: bgCss,
+								: type === "none"
+									? cleanSurface
+									: bgCss,
 						position,
 					),
 					filter: `blur(${blur || 0}px) brightness(${brightness || 100}%)`,

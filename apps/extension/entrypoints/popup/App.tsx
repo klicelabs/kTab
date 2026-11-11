@@ -528,10 +528,7 @@ export default function App() {
 												setParentFolderId(event.target.value || null)
 											}
 											aria-label="Parent folder"
-											className={cn(
-												ROW_FIELD,
-												"cursor-pointer appearance-none pr-8",
-											)}
+											className={cn(ROW_FIELD, "appearance-none pr-8")}
 										>
 											<option
 												value=""
@@ -646,10 +643,7 @@ export default function App() {
 											if (saveState !== "idle") setSaveState("idle");
 										}}
 										aria-label="Folder"
-										className={cn(
-											ROW_FIELD,
-											"cursor-pointer appearance-none pr-8",
-										)}
+										className={cn(ROW_FIELD, "appearance-none pr-8")}
 									>
 										{folderOptions.map((opt) => (
 											<option
