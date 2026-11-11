@@ -21,3 +21,20 @@ body {
 * {
 	box-sizing: border-box;
 }
+
+/* Success feedback lives in the button itself: the check pops in as the
+   surface morphs. Runs once, no fill, so no compositing residue. */
+@keyframes klice-icon-pop {
+	from {
+		transform: scale(0.4);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.klice-icon-pop {
+	animation: klice-icon-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}

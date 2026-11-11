@@ -1,12 +1,7 @@
-import { Input } from "@klice-start/ui/components/input";
 import { Icon } from "@klice-start/ui/icons/icon";
 import { KliceShape } from "@klice-start/ui/lib/shapes";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import {
-	SETTINGS_ACTION_PRIMARY,
-	SETTINGS_FOCUS_RING,
-	SETTINGS_INPUT,
-} from "../../src/components/newtab/settings/shared/settings-tokens";
+import { SETTINGS_FOCUS_RING } from "../../src/components/newtab/settings/shared/settings-tokens";
 import { ACCENT_COLORS } from "../../src/lib/accent";
 import { findBookmarkInFolder } from "../../src/lib/bookmark-match";
 import { ext } from "../../src/lib/extension-api";
@@ -40,19 +35,28 @@ const pendingSaveQuery =
 		? null
 		: new URLSearchParams(window.location.search).get(PENDING_SAVE_QUERY_PARAM);
 
-const FIELD_LABEL =
-	"text-[11px] font-medium text-neutral-500 dark:text-neutral-400";
-const FIELD_INPUT = cn("h-9 text-[13px]", SETTINGS_INPUT, SETTINGS_FOCUS_RING);
-const FIELD_SELECT = cn(
-	KliceShape.control,
-	"h-9 w-full appearance-none border-0 bg-neutral-900/[0.05] px-3 pr-8 text-[13px] text-neutral-900 shadow-none outline-none transition-[background-color,box-shadow] duration-150 hover:bg-neutral-900/[0.08] dark:bg-white/[0.06] dark:text-neutral-100 dark:hover:bg-white/[0.09]",
-	SETTINGS_FOCUS_RING,
+/**
+ * The popup is one grouped-list card, mirroring the Settings row rhythm:
+ * a single quiet surface holds the title and folder rows, separated by a
+ * hairline, and the primary action below carries ALL save feedback by
+ * morphing itself (spinner → check) instead of growing a status line.
+ */
+const GROUP_SURFACE = cn(
+	KliceShape.section,
+	"overflow-hidden bg-neutral-900/[0.04] ring-1 ring-black/[0.06] ring-inset dark:bg-white/[0.05] dark:ring-white/[0.08]",
 );
-const PRIMARY_ACTION = cn(
+const GROUP_ROW =
+	"flex h-11 items-center px-3.5 transition-colors duration-150 focus-within:bg-neutral-900/[0.04] dark:focus-within:bg-white/[0.05]";
+const GROUP_DIVIDER = "h-px shrink-0 bg-black/[0.06] dark:bg-white/[0.08]";
+const ROW_FIELD =
+	"w-full border-0 bg-transparent px-0 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500";
+const PRIMARY_BASE = cn(
 	KliceShape.control,
-	SETTINGS_ACTION_PRIMARY,
 	SETTINGS_FOCUS_RING,
-	"h-9 w-full text-[13px] accent-action-shadow",
+	"inline-flex h-10 w-full items-center justify-center gap-2 border-0 px-3 font-medium text-[13px] transition-[background-color,color,filter,transform] duration-300 ease-out active:scale-[0.98] motion-reduce:transition-colors",
+);
+const PRIMARY_TONE = cn(
+	"bg-[var(--klice-accent)] text-[var(--klice-accent-foreground)] accent-action-shadow hover:brightness-95",
 );
 const QUIET_ACTION =
 	"text-[12px] font-medium text-neutral-500 transition-colors duration-150 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100";
@@ -428,8 +432,8 @@ export default function App() {
 			pendingRecord && (pendingState === "ready" || pendingState === "saving");
 		return (
 			<div className={shell}>
-				<div className="p-3">
-					<header className="mb-2.5 flex items-center justify-between gap-2">
+				<div className="flex flex-col gap-3 p-4">
+					<header className="flex items-center justify-between gap-2">
 						<h1 className="font-semibold text-[13px] tracking-[-0.01em]">
 							New folder &amp; save
 						</h1>
@@ -482,7 +486,7 @@ export default function App() {
 								favicon={pendingRecord.favicon}
 								title={pendingRecord.title}
 							/>
-							<div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+							<div className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
 								{pendingRecord.favicon && (
 									<img
 										src={pendingRecord.favicon}
@@ -494,47 +498,40 @@ export default function App() {
 							</div>
 
 							<form
-								className="mt-2.5 grid gap-2.5"
+								className="flex flex-col gap-3"
 								onSubmit={handlePendingCreate}
 							>
-								<div className="grid gap-1.5">
-									<label htmlFor="new-folder-name" className={FIELD_LABEL}>
-										Folder name
-									</label>
-									<Input
-										id="new-folder-name"
-										ref={pendingNameRef}
-										value={newFolderName}
-										onChange={(event) => {
-											setNewFolderName(event.target.value);
-											setPendingNameError(false);
-										}}
-										placeholder="e.g. Design references"
-										autoComplete="off"
-										aria-invalid={pendingNameError}
-										className={FIELD_INPUT}
-									/>
-									{pendingNameError && (
-										<p className="text-[11px] text-red-600 dark:text-red-400">
-											Folder name is required.
-										</p>
-									)}
-								</div>
-								<div className="grid gap-1.5">
-									<label htmlFor="parent-folder-select" className={FIELD_LABEL}>
-										Parent folder{" "}
-										<span className="font-normal text-neutral-400 dark:text-neutral-500">
-											(optional)
-										</span>
-									</label>
-									<div className="relative">
+								<div className={GROUP_SURFACE}>
+									<div className={GROUP_ROW}>
+										<input
+											id="new-folder-name"
+											ref={pendingNameRef}
+											value={newFolderName}
+											onChange={(event) => {
+												setNewFolderName(event.target.value);
+												setPendingNameError(false);
+											}}
+											placeholder="Folder name"
+											autoComplete="off"
+											spellCheck={false}
+											aria-label="Folder name"
+											aria-invalid={pendingNameError}
+											className={ROW_FIELD}
+										/>
+									</div>
+									<div className={GROUP_DIVIDER} />
+									<div className={cn(GROUP_ROW, "relative")}>
 										<select
 											id="parent-folder-select"
 											value={parentFolderId ?? ""}
 											onChange={(event) =>
 												setParentFolderId(event.target.value || null)
 											}
-											className={FIELD_SELECT}
+											aria-label="Parent folder"
+											className={cn(
+												ROW_FIELD,
+												"cursor-pointer appearance-none pr-8",
+											)}
 										>
 											<option
 												value=""
@@ -557,14 +554,29 @@ export default function App() {
 										<Chevron />
 									</div>
 								</div>
+								{pendingNameError && (
+									<p className="font-medium text-[11px] text-red-600 dark:text-red-400">
+										Folder name is required.
+									</p>
+								)}
 								<button
 									type="submit"
 									disabled={!hasHydrated || pendingState === "saving"}
-									className={PRIMARY_ACTION}
+									className={cn(PRIMARY_BASE, PRIMARY_TONE)}
 								>
-									{pendingState === "saving"
-										? "Creating…"
-										: "Create folder & save"}
+									{pendingState === "saving" ? (
+										<>
+											<Icon
+												name="loader"
+												size={15}
+												aria-hidden="true"
+												className="animate-spin"
+											/>
+											Creating…
+										</>
+									) : (
+										"Create folder & save"
+									)}
 								</button>
 							</form>
 						</>
@@ -574,37 +586,22 @@ export default function App() {
 		);
 	}
 
-	const statusText =
-		saveState === "saving"
-			? "Saving…"
-			: saveState === "saved"
-				? "Saved to Klice Start"
-				: saveState === "updated"
-					? "Bookmark updated"
-					: saveState === "error"
-						? "Could not save this page."
-						: "";
 	const success = saveState === "saved" || saveState === "updated";
 
 	return (
 		<div className={shell}>
-			<div className="p-3">
-				<header className="mb-2.5 flex items-center justify-between gap-2">
-					<h1 className="shrink-0 font-semibold text-[13px] tracking-[-0.01em]">
-						Save to Klice Start
-					</h1>
-					{tabInfo && (
-						<span className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-							{tabInfo.favicon && (
-								<img
-									src={tabInfo.favicon}
-									alt=""
-									className="size-3.5 shrink-0 rounded-[3px] object-contain"
-								/>
-							)}
-							<span className="truncate">{hostOf(tabInfo.url)}</span>
-						</span>
+			<div className="flex flex-col gap-3 p-4">
+				<header className="flex min-w-0 items-center gap-2">
+					{tabInfo?.favicon && (
+						<img
+							src={tabInfo.favicon}
+							alt=""
+							className="size-4 shrink-0 rounded-[5px] object-contain"
+						/>
 					)}
+					<span className="truncate font-medium text-[11px] text-neutral-500 dark:text-neutral-400">
+						{tabInfo ? hostOf(tabInfo.url) : ""}
+					</span>
 				</header>
 
 				{blocked ? (
@@ -619,31 +616,27 @@ export default function App() {
 							favicon={tabInfo?.favicon}
 							title={tabInfo?.title}
 						/>
-						<form className="mt-2.5 grid gap-2.5" onSubmit={handleSave}>
-							<div className="grid gap-1.5">
-								<label htmlFor="tab-title-input" className={FIELD_LABEL}>
-									Title
-								</label>
-								<Input
-									id="tab-title-input"
-									ref={titleRef}
-									type="text"
-									value={titleValue}
-									onChange={(event) => {
-										setTitleValue(event.target.value);
-										if (saveState !== "idle") setSaveState("idle");
-									}}
-									placeholder="Page title"
-									autoComplete="off"
-									className={FIELD_INPUT}
-								/>
-							</div>
-
-							<div className="grid gap-1.5">
-								<label htmlFor="folder-select-input" className={FIELD_LABEL}>
-									Folder
-								</label>
-								<div className="relative">
+						<form className="flex flex-col gap-3" onSubmit={handleSave}>
+							<div className={GROUP_SURFACE}>
+								<div className={GROUP_ROW}>
+									<input
+										id="tab-title-input"
+										ref={titleRef}
+										type="text"
+										value={titleValue}
+										onChange={(event) => {
+											setTitleValue(event.target.value);
+											if (saveState !== "idle") setSaveState("idle");
+										}}
+										placeholder="Page title"
+										autoComplete="off"
+										spellCheck={false}
+										aria-label="Page title"
+										className={ROW_FIELD}
+									/>
+								</div>
+								<div className={GROUP_DIVIDER} />
+								<div className={cn(GROUP_ROW, "relative")}>
 									<select
 										id="folder-select-input"
 										value={folderId}
@@ -652,7 +645,11 @@ export default function App() {
 											setFolderId(event.target.value);
 											if (saveState !== "idle") setSaveState("idle");
 										}}
-										className={FIELD_SELECT}
+										aria-label="Folder"
+										className={cn(
+											ROW_FIELD,
+											"cursor-pointer appearance-none pr-8",
+										)}
 									>
 										{folderOptions.map((opt) => (
 											<option
@@ -678,33 +675,61 @@ export default function App() {
 									saveState === "saved" ||
 									saveState === "updated"
 								}
-								className={PRIMARY_ACTION}
+								className={cn(
+									PRIMARY_BASE,
+									success
+										? "bg-emerald-500 text-white dark:bg-emerald-600"
+										: saveState === "error"
+											? "bg-red-500 text-white dark:bg-red-600"
+											: PRIMARY_TONE,
+								)}
 							>
-								{success && <Icon name="check" size={14} />}
+								{saveState === "saving" ? (
+									<>
+										<Icon
+											name="loader"
+											size={15}
+											aria-hidden="true"
+											className="animate-spin"
+										/>
+										Saving…
+									</>
+								) : success ? (
+									<>
+										<span
+											className="klice-icon-pop inline-flex"
+											aria-hidden="true"
+										>
+											<Icon name="check" size={15} strokeWidth={2.5} />
+										</span>
+										{saveState === "updated" ? "Updated" : "Saved"}
+									</>
+								) : saveState === "error" ? (
+									<>
+										<span
+											className="klice-icon-pop inline-flex"
+											aria-hidden="true"
+										>
+											<Icon name="alert" size={15} />
+										</span>
+										Couldn’t save — try again
+									</>
+								) : (
+									"Save page"
+								)}
+							</button>
+
+							<p aria-live="polite" className="sr-only">
 								{saveState === "saving"
 									? "Saving…"
 									: saveState === "saved"
-										? "Saved"
+										? "Saved to Klice Start"
 										: saveState === "updated"
-											? "Updated"
-											: "Save page"}
-							</button>
-
-							{statusText && (
-								<p
-									aria-live="polite"
-									className={cn(
-										"text-center font-medium text-[11px]",
-										saveState === "error"
-											? "text-red-600 dark:text-red-400"
-											: success
-												? "text-emerald-600 dark:text-emerald-400"
-												: "text-neutral-500 dark:text-neutral-400",
-									)}
-								>
-									{statusText}
-								</p>
-							)}
+											? "Bookmark updated"
+											: saveState === "error"
+												? "Could not save this page."
+												: ""}
+							</p>
 						</form>
 					</>
 				)}
