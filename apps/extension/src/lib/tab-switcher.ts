@@ -3,6 +3,19 @@ import { animate } from "motion";
 import type { AccentColor } from "../types";
 import { ext } from "./extension-api";
 import {
+	DEFAULT_TAB_SWITCHER_FIRST_PRESS,
+	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
+	normalizeTabSwitcherFirstPress,
+	normalizeTabSwitcherTitleSource,
+	readTabSwitcherFirstPress,
+	readTabSwitcherTitleSource,
+	resolveSwitcherTitle,
+	type SwitcherFirstPress,
+	type SwitcherTitleSource,
+	TAB_SWITCHER_FIRST_PRESS_KEY,
+	TAB_SWITCHER_TITLE_SOURCE_KEY,
+} from "./tab-switcher-settings";
+import {
 	comboModifierKeys,
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	formatShortcut,
@@ -15,14 +28,6 @@ import {
 	type ShortcutCombo,
 	TAB_SWITCHER_SHORTCUT_KEY,
 } from "./tab-switcher-shortcut";
-import {
-	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
-	normalizeTabSwitcherTitleSource,
-	readTabSwitcherTitleSource,
-	resolveSwitcherTitle,
-	type SwitcherTitleSource,
-	TAB_SWITCHER_TITLE_SOURCE_KEY,
-} from "./tab-switcher-title-source";
 
 export interface SwitcherTab {
 	id: number;
@@ -57,6 +62,8 @@ export interface SwitcherPayload {
 	shortcut?: string;
 	/** Caption title source, injected by the client like `shortcut`. */
 	titleSource?: SwitcherTitleSource;
+	/** First-press behavior, injected by the client like `shortcut`. */
+	firstPress?: SwitcherFirstPress;
 }
 
 export interface TabSwitcherSession {
@@ -150,6 +157,25 @@ export function orderTabsByRecency(
 	});
 }
 
+/**
+ * Opening selection. "stay" lands on the CURRENT tab (release = no-op);
+ * "next" lands one card ahead of it — the payload is recency-ordered, so that
+ * is the most recently used other tab, Alt+Tab style. Falls back to the first
+ * card when the active tab is not part of the payload.
+ */
+export function initialSwitcherSelection(
+	tabs: SwitcherTab[],
+	activeTabId: number,
+	firstPress: SwitcherFirstPress,
+): number {
+	const activeIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+	if (activeIndex === -1) return 0;
+	if (firstPress === "next" && tabs.length > 1) {
+		return (activeIndex + 1) % tabs.length;
+	}
+	return activeIndex;
+}
+
 const DEFAULT_APPEARANCE: SwitcherAppearance = {
 	colorScheme: "auto",
 	liquid: true,
@@ -227,9 +253,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	const bandFilter = liquid
 		? `backdrop-filter:blur(${bandBlur}px) saturate(${bandSaturation}) brightness(${bandBrightness});-webkit-backdrop-filter:blur(${bandBlur}px) saturate(${bandSaturation}) brightness(${bandBrightness});`
 		: "";
-	const bandBackground = liquid
-		? bandVeil
-		: "rgba(24,26,32,0.94)";
+	const bandBackground = liquid ? bandVeil : "rgba(24,26,32,0.94)";
 	const frameFilter = liquid
 		? `backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});-webkit-backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});`
 		: "";
@@ -283,8 +307,11 @@ function buildStyles(appearance: SwitcherAppearance): string {
  * masked blur band — no header, count, or help footer.
  *
  * Keyboard model (default Alt+Q), Alt+Tab style:
- *   • the full combo opens the overlay with the CURRENT tab highlighted —
- *     releasing a modifier right away commits the current tab (a no-op stay);
+ *   • with the default "stay" first press, the full combo opens the overlay
+ *     with the CURRENT tab highlighted — releasing a modifier right away
+ *     commits the current tab (a no-op stay);
+ *   • with the "next" first press, the opening press already selects the next
+ *     most recent tab, so a quick tap switches right away;
  *   • pressing the combo again cycles to the next card; releasing a combo
  *     modifier commits the highlighted card — the `activateOnMount` flag
  *     covers a fast tap whose modifiers went up before the payload arrived;
@@ -333,11 +360,13 @@ export function mountTabSwitcher(
 	highlight.setAttribute("aria-hidden", "true");
 	grid.append(highlight);
 
-	// The overlay opens on the CURRENT tab (release = stay); only a second
-	// combo press cycles, Alt+Tab style.
-	let selected = Math.max(
-		0,
-		payload.tabs.findIndex((tab) => tab.id === payload.activeTabId),
+	// "stay" opens on the CURRENT tab (release = stay); "next" already jumps to
+	// the next most recent tab, Alt+Tab style. Either way, further combo
+	// presses cycle and releasing the modifier commits the highlighted card.
+	let selected = initialSwitcherSelection(
+		payload.tabs,
+		payload.activeTabId,
+		payload.firstPress ?? DEFAULT_TAB_SWITCHER_FIRST_PRESS,
 	);
 	const cards: HTMLDivElement[] = [];
 	let cleanup = () => {};
@@ -599,12 +628,16 @@ export function installTabSwitcherHotkey(): () => void {
 	const heldModifiers = new Set<string>();
 
 	let titleSource: SwitcherTitleSource = DEFAULT_TAB_SWITCHER_TITLE_SOURCE;
+	let firstPress: SwitcherFirstPress = DEFAULT_TAB_SWITCHER_FIRST_PRESS;
 
 	void readTabSwitcherShortcut().then((value) => {
 		combo = parseShortcut(value) ?? combo;
 	});
 	void readTabSwitcherTitleSource().then((value) => {
 		titleSource = value;
+	});
+	void readTabSwitcherFirstPress().then((value) => {
+		firstPress = value;
 	});
 
 	const onChanged = (
@@ -621,6 +654,11 @@ export function installTabSwitcherHotkey(): () => void {
 		if (TAB_SWITCHER_TITLE_SOURCE_KEY in changes) {
 			titleSource = normalizeTabSwitcherTitleSource(
 				changes[TAB_SWITCHER_TITLE_SOURCE_KEY].newValue,
+			);
+		}
+		if (TAB_SWITCHER_FIRST_PRESS_KEY in changes) {
+			firstPress = normalizeTabSwitcherFirstPress(
+				changes[TAB_SWITCHER_FIRST_PRESS_KEY].newValue,
 			);
 		}
 	};
@@ -652,6 +690,7 @@ export function installTabSwitcherHotkey(): () => void {
 	const mount = (payload: SwitcherPayload) => {
 		payload.shortcut = formatShortcut(combo);
 		payload.titleSource = titleSource;
+		payload.firstPress = firstPress;
 		const modifiersHeld = comboModifierKeys(combo).some((key) =>
 			heldModifiers.has(key),
 		);

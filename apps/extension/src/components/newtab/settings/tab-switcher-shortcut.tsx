@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { ext } from "../../../lib/extension-api";
 import {
+	DEFAULT_TAB_SWITCHER_FIRST_PRESS,
+	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
+	normalizeTabSwitcherFirstPress,
+	normalizeTabSwitcherTitleSource,
+	readTabSwitcherFirstPress,
+	readTabSwitcherTitleSource,
+	type SwitcherFirstPress,
+	type SwitcherTitleSource,
+	TAB_SWITCHER_FIRST_PRESS_KEY,
+	TAB_SWITCHER_TITLE_SOURCE_KEY,
+	writeTabSwitcherFirstPress,
+	writeTabSwitcherTitleSource,
+} from "../../../lib/tab-switcher-settings";
+import {
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	eventToCombo,
 	formatShortcut,
@@ -11,14 +25,6 @@ import {
 	TAB_SWITCHER_SHORTCUT_KEY,
 	writeTabSwitcherShortcut,
 } from "../../../lib/tab-switcher-shortcut";
-import {
-	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
-	normalizeTabSwitcherTitleSource,
-	readTabSwitcherTitleSource,
-	type SwitcherTitleSource,
-	TAB_SWITCHER_TITLE_SOURCE_KEY,
-	writeTabSwitcherTitleSource,
-} from "../../../lib/tab-switcher-title-source";
 import { cn } from "../../../lib/utils";
 import { SectionCard } from "./shared/section-card";
 import { SelectRow } from "./shared/select-row";
@@ -40,6 +46,11 @@ const SWITCHER_TITLE_SOURCE_OPTIONS = [
 	{ value: "site", label: "Site name from URL" },
 ] as const;
 
+const SWITCHER_FIRST_PRESS_OPTIONS = [
+	{ value: "stay", label: "Opens the switcher" },
+	{ value: "next", label: "Jumps to the next tab" },
+] as const;
+
 /**
  * The tab switcher hotkey, remappable without leaving the extension. Chrome
  * cannot rebind a manifest command programmatically, so the key is owned by a
@@ -52,6 +63,9 @@ export function TabSwitcherShortcut() {
 	const [titleSource, setTitleSource] = useState<SwitcherTitleSource>(
 		DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
 	);
+	const [firstPress, setFirstPress] = useState<SwitcherFirstPress>(
+		DEFAULT_TAB_SWITCHER_FIRST_PRESS,
+	);
 	const [recording, setRecording] = useState(false);
 	const [feedback, setFeedback] = useState<Feedback | null>(null);
 
@@ -62,6 +76,9 @@ export function TabSwitcherShortcut() {
 		});
 		void readTabSwitcherTitleSource().then((value) => {
 			if (active) setTitleSource(value);
+		});
+		void readTabSwitcherFirstPress().then((value) => {
+			if (active) setFirstPress(value);
 		});
 		const onChanged = (
 			changes: Record<string, { newValue?: unknown }>,
@@ -77,6 +94,13 @@ export function TabSwitcherShortcut() {
 				setTitleSource(
 					normalizeTabSwitcherTitleSource(
 						changes[TAB_SWITCHER_TITLE_SOURCE_KEY].newValue,
+					),
+				);
+			}
+			if (TAB_SWITCHER_FIRST_PRESS_KEY in changes) {
+				setFirstPress(
+					normalizeTabSwitcherFirstPress(
+						changes[TAB_SWITCHER_FIRST_PRESS_KEY].newValue,
 					),
 				);
 			}
@@ -212,6 +236,18 @@ export function TabSwitcherShortcut() {
 					const next = normalizeTabSwitcherTitleSource(value);
 					setTitleSource(next);
 					void writeTabSwitcherTitleSource(next);
+				}}
+			/>
+			<SelectRow
+				label="First press"
+				icon="stack"
+				tooltip="What the first shortcut press does. 'Jumps to the next tab' switches right away, Alt+Tab style — hold the modifier and press again to keep cycling, release to commit. 'Opens the switcher' highlights the current tab and waits for you to pick."
+				value={firstPress}
+				options={SWITCHER_FIRST_PRESS_OPTIONS}
+				onChange={(value) => {
+					const next = normalizeTabSwitcherFirstPress(value);
+					setFirstPress(next);
+					void writeTabSwitcherFirstPress(next);
 				}}
 			/>
 		</SectionCard>
