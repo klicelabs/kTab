@@ -3,7 +3,6 @@ import {
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	eventToCombo,
 	formatShortcut,
-	isBareBaseKey,
 	isValidShortcut,
 	matchShortcut,
 	normalizeShortcut,
@@ -63,17 +62,6 @@ test("matches only the exact modifier set and base key", () => {
 	);
 	expect(matchShortcut(keyEvent("q"), target)).toBe(false);
 	expect(matchShortcut(keyEvent("w", { alt: true }), target)).toBe(false);
-});
-
-test("bare base key cycles only with no modifiers", () => {
-	const combo = parseShortcut("Alt+Q");
-	expect(combo).not.toBeNull();
-	const target = combo as NonNullable<typeof combo>;
-	expect(isBareBaseKey(keyEvent("q"), target)).toBe(true);
-	expect(isBareBaseKey(keyEvent("Q"), target)).toBe(true);
-	expect(isBareBaseKey(keyEvent("q", { alt: true }), target)).toBe(false);
-	expect(isBareBaseKey(keyEvent("q", { shift: true }), target)).toBe(false);
-	expect(isBareBaseKey(keyEvent("w"), target)).toBe(false);
 });
 
 test("recorder ignores modifier-only presses and captures the base key", () => {

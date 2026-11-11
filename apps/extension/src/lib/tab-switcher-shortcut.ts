@@ -99,24 +99,6 @@ export function matchShortcut(
 }
 
 /**
- * True when the combo's base key is pressed with NO modifiers — the Alt+Tab
- * style "cycle to the next tab" gesture inside the open switcher. The full
- * combo (matchShortcut) toggles; this bare press cycles.
- */
-export function isBareBaseKey(
-	event: KeyboardEvent,
-	combo: ShortcutCombo,
-): boolean {
-	return (
-		!event.altKey &&
-		!event.ctrlKey &&
-		!event.metaKey &&
-		!event.shiftKey &&
-		normalizeShortcutKey(event.key) === combo.key
-	);
-}
-
-/**
  * Build a combo from a live keypress for the recorder. Modifier-only presses
  * return null so the recorder keeps waiting for the actual base key.
  */

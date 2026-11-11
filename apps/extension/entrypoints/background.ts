@@ -853,6 +853,16 @@ export default defineBackground(() => {
 			sendResponse({ ok: true });
 			return false;
 		}
+		if (request?.type === "tab-switcher:close") {
+			if (typeof request.tabId !== "number") return false;
+			// tabs.onRemoved clears recency and the preview cache; this only
+			// performs the removal itself.
+			void ext.tabs.remove(request.tabId).then(
+				() => sendResponse({ ok: true }),
+				() => sendResponse({ ok: false }),
+			);
+			return true;
+		}
 		if (!isRefreshMessage(message)) return false;
 		handleRefreshMessage(message).then(
 			(result) => sendResponse({ ok: true, ...(result as object) }),

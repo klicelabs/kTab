@@ -3,10 +3,8 @@ import { ext } from "./extension-api";
 import {
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	formatShortcut,
-	isBareBaseKey,
 	matchShortcut,
 	normalizeShortcut,
-	normalizeShortcutKey,
 	parseShortcut,
 	readTabSwitcherShortcut,
 	type ShortcutCombo,
@@ -184,6 +182,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 		? `rgba(0,0,0,${(10 + t * 8) / 100})`
 		: `rgba(255,255,255,${(34 + t * 10) / 100})`;
 	const hoverVeil = dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.26)";
+	const followGlow = dark ? "rgba(255,255,255,0.55)" : "rgba(15,23,42,0.30)";
 	const bandVeil = dark
 		? `rgba(10,12,18,${(15 + t * 9) / 100})`
 		: `rgba(255,255,255,${(28 + t * 12) / 100})`;
@@ -215,30 +214,35 @@ function buildStyles(appearance: SwitcherAppearance): string {
 :host{all:initial;color-scheme:${dark ? "dark" : "light"};font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
 .klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px}
-.stage{position:relative;display:flex;max-width:min(1200px,100%);max-height:100%}
+.stage{position:relative;display:flex;width:100%;max-width:min(1200px,100%);max-height:100%}
 .band{position:absolute;inset:-136px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 76%,transparent 100%),linear-gradient(to right,transparent 0%,#000 8%,#000 92%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 76%,transparent 100%),linear-gradient(to right,transparent 0%,#000 8%,#000 92%,transparent 100%);mask-composite:intersect}
-.grid{position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:${dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.24)"} transparent}
+.grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:${dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.24)"} transparent}
 .grid::-webkit-scrollbar{width:8px}
 .grid::-webkit-scrollbar-thumb{border-radius:99px;background:${dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.22)"}}
 .grid::-webkit-scrollbar-thumb:hover{background:${dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.34)"}}
-.card{position:relative;display:flex;flex-direction:column;width:192px;flex:none;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;transition:transform .18s cubic-bezier(.16,1,.3,1);animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
+.card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
 .frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:22px;corner-shape:squircle;background:transparent;transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease}
-.card:hover{transform:translateY(-2px)}
+.frame::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:radial-gradient(120px circle at var(--mx,50%) var(--my,50%),${followGlow},transparent 65%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1);pointer-events:none}
 .card:hover .frame{background:${hoverVeil};border-color:${hairline}}
-.card[aria-selected=true]{transform:translateY(-3px)}
+.card:hover .frame::before{opacity:1}
 .card[aria-selected=true] .frame{background:${selectedBackground};border-color:${hairlineStrong};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6)}
 .preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:14px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}}
 .preview img{width:100%;height:100%;object-fit:cover}
 .preview .fallback{font-size:30px;font-weight:650;color:${inkMuted}}
+.close{position:absolute;top:6px;right:6px;display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;corner-shape:squircle;background:transparent;color:${dark ? "rgba(255,255,255,0.88)" : "rgba(15,18,26,0.62)"};opacity:0;transition:opacity .15s ease,background-color .15s ease,color .15s ease;cursor:pointer}
+.card:hover .close,.close:focus-visible{opacity:1}
+.close:hover{background:rgba(235,60,60,0.16);color:#ff5f57}
+.close:focus-visible{outline:1px solid ${hairlineStrong};outline-offset:2px}
+.close svg{display:block;filter:drop-shadow(0 1px 1.5px ${dark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)"})}
 .caption{display:flex;align-items:center;gap:6px;min-width:0;padding:9px 6px 0;text-align:left}
 .favicon{width:14px;height:14px;flex:none;object-fit:contain;border-radius:4px;corner-shape:squircle}
 .tabtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:550;letter-spacing:-.01em;color:${ink};opacity:.9}
 .card[aria-selected=true] .tabtitle{opacity:1}
 .empty{padding:40px 28px;text-align:center;font-size:13px;color:${inkMuted}}
 .card:focus-visible{outline:none}
-@supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}}
+@supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-72px calc(50% - 50vw)}.grid{gap:10px}.card{width:152px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-72px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
@@ -249,20 +253,18 @@ function buildStyles(appearance: SwitcherAppearance): string {
  *
  * Keyboard model (default Alt+Q):
  *   • the full combo toggles the overlay closed (it opened it);
- *   • a tap of the bare base key (Q) cycles to the next card, Alt+Tab style;
- *   • holding that key briefly activates the highlighted card, so the hand
- *     never leaves the mouse for Enter;
- *   • arrows move, Enter switches, Esc / outside-click dismiss.
+ *   • arrows / Tab move, Enter switches, Esc / outside-click dismiss;
+ *   • hovering a card highlights it, and each card carries a close control
+ *     in its top-right corner.
  *
  * The overlay also closes itself the moment its tab is hidden or the window
  * loses focus, so switching page can never leave a stale overlay behind.
  */
-const HOLD_ACTIVATE_MS = 300;
-
 export function mountTabSwitcher(
 	payload: SwitcherPayload,
 	onActivate: (tabId: number, windowId: number) => void,
 	onDismiss: () => void = () => {},
+	onClose: (tabId: number, windowId: number) => void = () => {},
 ): () => void {
 	document.getElementById("klice-tab-switcher")?.remove();
 	const appearance = payload.appearance ?? DEFAULT_APPEARANCE;
@@ -294,16 +296,8 @@ export function mountTabSwitcher(
 		0,
 		payload.tabs.findIndex((tab) => tab.id !== payload.activeTabId),
 	);
-	const buttons: HTMLButtonElement[] = [];
-	let holdTimer: ReturnType<typeof setTimeout> | null = null;
+	const cards: HTMLDivElement[] = [];
 	let cleanup = () => {};
-
-	const clearHold = () => {
-		if (holdTimer !== null) {
-			clearTimeout(holdTimer);
-			holdTimer = null;
-		}
-	};
 
 	const activate = (index: number) => {
 		const tab = payload.tabs[index];
@@ -312,13 +306,26 @@ export function mountTabSwitcher(
 		onActivate(tab.id, tab.windowId);
 	};
 
+	const closeTab = (index: number) => {
+		const tab = payload.tabs[index];
+		if (!tab) return;
+		payload.tabs.splice(index, 1);
+		cards.splice(index, 1)[0]?.remove();
+		if (payload.tabs.length) {
+			updateSelection(Math.min(index, payload.tabs.length - 1));
+		} else {
+			cleanup();
+		}
+		onClose(tab.id, tab.windowId);
+	};
+
 	for (const [index, tab] of payload.tabs.entries()) {
-		const card = document.createElement("button");
-		card.type = "button";
+		const card = document.createElement("div");
 		card.className = "card";
 		card.setAttribute("role", "option");
 		card.setAttribute("aria-selected", String(index === selected));
 		card.setAttribute("aria-label", tab.title || tab.url || "Untitled tab");
+		card.tabIndex = -1;
 		card.style.animationDelay = `${Math.min(index * 22, 180)}ms`;
 
 		const frame = document.createElement("div");
@@ -338,6 +345,28 @@ export function mountTabSwitcher(
 				(tab.title || tab.url || "?").trim().charAt(0).toUpperCase() || "?";
 			preview.append(fallback);
 		}
+
+		const close = document.createElement("button");
+		close.type = "button";
+		close.className = "close";
+		close.setAttribute("aria-label", "Close tab");
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("viewBox", "0 0 12 12");
+		svg.setAttribute("width", "12");
+		svg.setAttribute("height", "12");
+		svg.setAttribute("fill", "none");
+		svg.setAttribute("stroke", "currentColor");
+		svg.setAttribute("stroke-width", "1.6");
+		svg.setAttribute("stroke-linecap", "round");
+		const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", "M3 3l6 6M9 3l-6 6");
+		svg.append(path);
+		close.append(svg);
+		close.addEventListener("click", (event) => {
+			event.stopPropagation();
+			closeTab(payload.tabs.indexOf(tab));
+		});
+		preview.append(close);
 		frame.append(preview);
 
 		const caption = document.createElement("div");
@@ -358,12 +387,17 @@ export function mountTabSwitcher(
 		card.append(frame, caption);
 		card.addEventListener("click", (event) => {
 			event.stopPropagation();
-			activate(index);
+			const live = payload.tabs.indexOf(tab);
+			if (live !== -1) activate(live);
 		});
-		card.addEventListener("mousemove", () => {
-			if (index !== selected) updateSelection(index);
+		card.addEventListener("mousemove", (event) => {
+			const live = payload.tabs.indexOf(tab);
+			if (live !== -1 && live !== selected) updateSelection(live);
+			const rect = frame.getBoundingClientRect();
+			frame.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+			frame.style.setProperty("--my", `${event.clientY - rect.top}px`);
 		});
-		buttons.push(card);
+		cards.push(card);
 		grid.append(card);
 	}
 
@@ -380,13 +414,13 @@ export function mountTabSwitcher(
 	document.documentElement.append(host);
 
 	const updateSelection = (next: number) => {
-		if (!buttons.length) return;
-		selected = (next + buttons.length) % buttons.length;
-		buttons.forEach((button, index) => {
-			button.setAttribute("aria-selected", String(index === selected));
+		if (!cards.length) return;
+		selected = (next + cards.length) % cards.length;
+		cards.forEach((card, index) => {
+			card.setAttribute("aria-selected", String(index === selected));
 		});
-		buttons[selected].focus({ preventScroll: true });
-		buttons[selected].scrollIntoView({ block: "nearest", inline: "nearest" });
+		cards[selected].focus({ preventScroll: true });
+		cards[selected].scrollIntoView({ block: "nearest", inline: "nearest" });
 	};
 
 	const keydown = (event: KeyboardEvent) => {
@@ -396,21 +430,6 @@ export function mountTabSwitcher(
 			if (!event.repeat) cleanup();
 			return;
 		}
-		if (isBareBaseKey(event, combo)) {
-			event.preventDefault();
-			event.stopPropagation();
-			// A repeat means the key is being held: the hold timer owns the
-			// gesture now, so repeats must not keep cycling.
-			if (event.repeat) return;
-			updateSelection(selected + 1);
-			clearHold();
-			holdTimer = setTimeout(() => {
-				holdTimer = null;
-				activate(selected);
-			}, HOLD_ACTIVATE_MS);
-			return;
-		}
-		clearHold();
 		switch (event.key) {
 			case "Escape":
 				event.preventDefault();
@@ -432,20 +451,12 @@ export function mountTabSwitcher(
 				updateSelection(selected + (event.shiftKey ? -1 : 1));
 				break;
 			case "Enter":
-				if (buttons.length) {
+				if (cards.length) {
 					event.preventDefault();
 					event.stopPropagation();
 					activate(selected);
 				}
 				break;
-		}
-	};
-
-	// Releasing the base key ends the hold window; a tap therefore only
-	// cycles, while a press that outlives HOLD_ACTIVATE_MS opens the page.
-	const keyup = (event: KeyboardEvent) => {
-		if (holdTimer !== null && normalizeShortcutKey(event.key) === combo.key) {
-			clearHold();
 		}
 	};
 
@@ -464,9 +475,7 @@ export function mountTabSwitcher(
 	cleanup = () => {
 		if (cleanedUp) return;
 		cleanedUp = true;
-		clearHold();
 		document.removeEventListener("keydown", keydown, true);
-		document.removeEventListener("keyup", keyup, true);
 		document.removeEventListener("visibilitychange", onVisibilityChange);
 		window.removeEventListener("blur", onWindowBlur);
 		scrim.removeEventListener("click", onScrimClick);
@@ -474,11 +483,10 @@ export function mountTabSwitcher(
 		onDismiss();
 	};
 	document.addEventListener("keydown", keydown, true);
-	document.addEventListener("keyup", keyup, true);
 	document.addEventListener("visibilitychange", onVisibilityChange);
 	window.addEventListener("blur", onWindowBlur);
 	scrim.addEventListener("click", onScrimClick);
-	buttons[selected]?.focus({ preventScroll: true });
+	cards[selected]?.focus({ preventScroll: true });
 	return cleanup;
 }
 
@@ -534,9 +542,17 @@ export function installTabSwitcherHotkey(): () => void {
 		});
 	};
 
+	const closeTab = (tabId: number, windowId: number) => {
+		void ext.runtime.sendMessage({
+			type: "tab-switcher:close",
+			tabId,
+			windowId,
+		});
+	};
+
 	const mount = (payload: SwitcherPayload) => {
 		payload.shortcut = formatShortcut(combo);
-		currentCleanup = mountTabSwitcher(payload, activateTab, dismiss);
+		currentCleanup = mountTabSwitcher(payload, activateTab, dismiss, closeTab);
 	};
 
 	const open = async () => {
