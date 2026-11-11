@@ -165,6 +165,13 @@ function clearTabPreview(tabId: number): void {
 
 const VISIBLE_PREVIEW_SETTLE_MS = 650;
 
+// The switcher also previews the product's own newtab (a chrome-extension URL,
+// which the bookmark pipeline's http(s)-only rule deliberately excludes).
+const NEWTAB_PREVIEW_URL = ext.runtime.getURL("newtab.html");
+function isSwitcherPreviewUrl(rawUrl: string): boolean {
+	return isThumbnailCaptureUrl(rawUrl) || rawUrl === NEWTAB_PREVIEW_URL;
+}
+
 function scheduleVisiblePreviewCapture(
 	tabId: number,
 	windowId: number,
@@ -212,7 +219,7 @@ async function captureVisibleTabPreview(
 				tab.windowId !== windowId ||
 				tab.active !== true ||
 				tab.status !== "complete" ||
-				!isThumbnailCaptureUrl(tab.url ?? "") ||
+				!isSwitcherPreviewUrl(tab.url ?? "") ||
 				(expectedUrl !== undefined && tab.url !== expectedUrl)
 			)
 				return null;
@@ -286,7 +293,7 @@ async function buildSwitcherPayload(
 ): Promise<SwitcherPayload> {
 	await hydrateTabRecency();
 	await cancelOrWaitForVisiblePreview(activeTabId);
-	if (!tabPreviewCache.has(activeTabId) && isThumbnailCaptureUrl(activeUrl)) {
+	if (!tabPreviewCache.has(activeTabId) && isSwitcherPreviewUrl(activeUrl)) {
 		const preview = await scheduleCapture(async () => {
 			try {
 				const [current, window] = await Promise.all([

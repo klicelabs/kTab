@@ -194,18 +194,24 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	const dark = resolveDark(appearance.colorScheme);
 	const liquid = appearance.liquid;
 	const t = Math.min(100, Math.max(0, appearance.intensity)) / 100;
-	const bandBlur = 24 + 16 * t;
+	const bandBlur = 20 + 12 * t;
 	const bandSaturation = dark ? 1.08 + 0.22 * t : 1.02 + 0.06 * t;
 	const bandBrightness = dark ? 0.97 - 0.06 * t : 1.02;
 	const frameBlur = 1.5 + 3.5 * t;
 	const frameSaturation = dark ? 1.04 + 0.28 * t : 1.01 + 0.08 * t;
+	const frameBrightness = dark ? 0.94 - 0.12 * t : 1.02 + 0.01 * t;
 
 	const ink = dark ? "#f4f6fb" : "#1b1d23";
 	const inkMuted = dark ? "rgba(226,231,242,0.72)" : "rgba(40,44,55,0.66)";
 	const hairlineStrong = dark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.16)";
+	// The highlight wears the toolbar tier's own hairline (white/10, black/10),
+	// one step softer than the generic strong hairline.
+	const highlightHairline = dark
+		? "rgba(255,255,255,0.10)"
+		: "rgba(0,0,0,0.10)";
 
 	const toolbarVeil = dark
-		? `rgba(0,0,0,${(10 + t * 8) / 100})`
+		? `rgba(0,0,0,${(8 + t * 8) / 100})`
 		: `rgba(255,255,255,${(34 + t * 10) / 100})`;
 	const bandVeil = dark
 		? `rgba(10,12,18,${(15 + t * 9) / 100})`
@@ -226,7 +232,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 			? "rgba(24,26,32,0.94)"
 			: "rgba(248,249,252,0.95)";
 	const frameFilter = liquid
-		? `backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation});-webkit-backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation});`
+		? `backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});-webkit-backdrop-filter:blur(${frameBlur}px) saturate(${frameSaturation}) brightness(${frameBrightness});`
 		: "";
 	// ~380px dissolve at typical band heights; the ramp lives inside the band's
 	// negative inset so full frost strength arrives before the cards begin.
@@ -250,7 +256,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .grid::-webkit-scrollbar-thumb:hover{background:${dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.34)"}}
 .card{position:relative;display:flex;flex-direction:column;padding:0;border:0;background:none;color:${ink};text-align:left;cursor:pointer;animation:ks-card .24s cubic-bezier(.16,1,.3,1) backwards}
 .frame{position:relative;display:block;padding:8px;border:0.5px solid transparent;border-radius:22px;corner-shape:squircle;background:transparent}
-.highlight{position:absolute;left:0;top:0;border:0.5px solid ${hairlineStrong};border-radius:22px;corner-shape:squircle;background:${selectedBackground};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6);pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1)}
+.highlight{position:absolute;left:0;top:0;border:0.5px solid ${highlightHairline};border-radius:22px;corner-shape:squircle;background:${selectedBackground};${frameFilter}box-shadow:${bevel},0 22px 48px -28px rgba(0,0,0,0.6);pointer-events:none;opacity:0;transition:opacity .18s cubic-bezier(.16,1,.3,1)}
 .highlight.on{opacity:1}
 .preview{position:relative;aspect-ratio:16/10;display:grid;place-items:center;overflow:hidden;border-radius:14px;corner-shape:squircle;background:${previewFallback};box-shadow:inset 0 0 0 1px ${dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}}
 .preview img{width:100%;height:100%;object-fit:cover}
@@ -260,7 +266,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .close:hover{background:rgba(235,60,60,0.16);color:#ff5f57}
 .close:focus-visible{outline:1px solid ${hairlineStrong};outline-offset:2px}
 .close svg{display:block;filter:drop-shadow(0 1px 1.5px ${dark ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)"})}
-.caption{display:flex;align-items:center;gap:6px;min-width:0;padding:9px 6px 0;text-align:left}
+.caption{display:flex;align-items:center;gap:6px;min-width:0;padding:5px 8px 0;text-align:left}
 .favicon{width:14px;height:14px;flex:none;object-fit:contain;border-radius:4px;corner-shape:squircle}
 .tabtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:550;letter-spacing:-.01em;color:${ink};opacity:.9}
 .card[aria-selected=true] .tabtitle{opacity:1}
@@ -268,7 +274,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card:focus-visible{outline:none}
 @supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}.highlight{border-radius:13px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-190px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}.highlight{border-radius:18px}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-190px calc(50% - 50vw);-webkit-mask-image:${bandMaskCompact};mask-image:${bandMaskCompact}}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}.highlight{border-radius:18px}.caption{padding:4px 6px 0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
@@ -278,11 +284,11 @@ function buildStyles(appearance: SwitcherAppearance): string {
  * masked blur band — no header, count, or help footer.
  *
  * Keyboard model (default Alt+Q), Alt+Tab style:
- *   • the full combo opens the overlay; while it is open, pressing the combo
- *     again cycles to the next card;
- *   • releasing a combo modifier commits the highlighted card — the
- *     `activateOnMount` flag covers a fast tap whose modifiers went up before
- *     the payload arrived;
+ *   • the full combo opens the overlay with the CURRENT tab highlighted —
+ *     releasing a modifier right away commits the current tab (a no-op stay);
+ *   • pressing the combo again cycles to the next card; releasing a combo
+ *     modifier commits the highlighted card — the `activateOnMount` flag
+ *     covers a fast tap whose modifiers went up before the payload arrived;
  *   • arrows / Tab move, Enter switches, Esc / outside-click dismiss without
  *     switching;
  *   • each card carries a close control in its top-right corner.
@@ -327,9 +333,11 @@ export function mountTabSwitcher(
 	highlight.setAttribute("aria-hidden", "true");
 	grid.append(highlight);
 
+	// The overlay opens on the CURRENT tab (release = stay); only a second
+	// combo press cycles, Alt+Tab style.
 	let selected = Math.max(
 		0,
-		payload.tabs.findIndex((tab) => tab.id !== payload.activeTabId),
+		payload.tabs.findIndex((tab) => tab.id === payload.activeTabId),
 	);
 	const cards: HTMLDivElement[] = [];
 	let cleanup = () => {};
