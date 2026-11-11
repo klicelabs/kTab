@@ -1,8 +1,11 @@
 import type { AccentColor } from "../types";
 import { ext } from "./extension-api";
 import {
+	comboModifierKeys,
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	formatShortcut,
+	isComboModifierRelease,
+	MODIFIER_EVENT_KEYS,
 	matchShortcut,
 	normalizeShortcut,
 	parseShortcut,
@@ -213,9 +216,9 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	return `
 :host{all:initial;color-scheme:${dark ? "dark" : "light"};font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
-.klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px}
+.klice-switcher{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:8vh 32px;overflow:hidden}
 .stage{position:relative;display:flex;width:100%;max-width:min(1200px,100%);max-height:100%}
-.band{position:absolute;inset:-136px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 76%,transparent 100%),linear-gradient(to right,transparent 0%,#000 8%,#000 92%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 76%,transparent 100%),linear-gradient(to right,transparent 0%,#000 8%,#000 92%,transparent 100%);mask-composite:intersect}
+.band{position:absolute;inset:-200px calc(50% - 50vw);background:${bandBackground};${bandFilter}pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 82%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 82%,transparent 100%)}
 .grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));align-content:center;gap:16px;width:100%;max-height:min(74vh,760px);overflow-y:auto;overflow-x:hidden;padding:10px 8px;scrollbar-width:thin;scrollbar-color:${dark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.24)"} transparent}
 .grid::-webkit-scrollbar{width:8px}
 .grid::-webkit-scrollbar-thumb{border-radius:99px;background:${dark ? "rgba(255,255,255,0.24)" : "rgba(0,0,0,0.22)"}}
@@ -242,7 +245,7 @@ function buildStyles(appearance: SwitcherAppearance): string {
 .card:focus-visible{outline:none}
 @supports not (corner-shape:squircle){.frame{border-radius:13px}.preview{border-radius:9px}.close{border-radius:8px}}
 @keyframes ks-card{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-72px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}}
+@media(max-width:640px){.klice-switcher{padding:5vh 14px}.band{inset:-110px calc(50% - 50vw)}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.frame{padding:6px;border-radius:18px}.preview{border-radius:11px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 `;
 }
@@ -251,11 +254,15 @@ function buildStyles(appearance: SwitcherAppearance): string {
  * Mount the switcher overlay. Clean by design: only the card grid over a
  * masked blur band — no header, count, or help footer.
  *
- * Keyboard model (default Alt+Q):
- *   • the full combo toggles the overlay closed (it opened it);
- *   • arrows / Tab move, Enter switches, Esc / outside-click dismiss;
- *   • hovering a card highlights it, and each card carries a close control
- *     in its top-right corner.
+ * Keyboard model (default Alt+Q), Alt+Tab style:
+ *   • the full combo opens the overlay; while it is open, pressing the combo
+ *     again cycles to the next card;
+ *   • releasing a combo modifier commits the highlighted card — the
+ *     `activateOnMount` flag covers a fast tap whose modifiers went up before
+ *     the payload arrived;
+ *   • arrows / Tab move, Enter switches, Esc / outside-click dismiss without
+ *     switching;
+ *   • each card carries a close control in its top-right corner.
  *
  * The overlay also closes itself the moment its tab is hidden or the window
  * loses focus, so switching page can never leave a stale overlay behind.
@@ -265,6 +272,7 @@ export function mountTabSwitcher(
 	onActivate: (tabId: number, windowId: number) => void,
 	onDismiss: () => void = () => {},
 	onClose: (tabId: number, windowId: number) => void = () => {},
+	activateOnMount = false,
 ): () => void {
 	document.getElementById("klice-tab-switcher")?.remove();
 	const appearance = payload.appearance ?? DEFAULT_APPEARANCE;
@@ -427,7 +435,7 @@ export function mountTabSwitcher(
 		if (matchShortcut(event, combo)) {
 			event.preventDefault();
 			event.stopPropagation();
-			if (!event.repeat) cleanup();
+			if (!event.repeat) updateSelection(selected + 1);
 			return;
 		}
 		switch (event.key) {
@@ -460,6 +468,12 @@ export function mountTabSwitcher(
 		}
 	};
 
+	// Releasing a combo modifier commits the highlighted card, the way Alt+Tab
+	// switches the moment Alt goes up.
+	const keyup = (event: KeyboardEvent) => {
+		if (isComboModifierRelease(event.key, combo)) activate(selected);
+	};
+
 	const onScrimClick = (event: MouseEvent) => {
 		if ((event.target as HTMLElement).closest(".card")) return;
 		cleanup();
@@ -476,6 +490,7 @@ export function mountTabSwitcher(
 		if (cleanedUp) return;
 		cleanedUp = true;
 		document.removeEventListener("keydown", keydown, true);
+		document.removeEventListener("keyup", keyup, true);
 		document.removeEventListener("visibilitychange", onVisibilityChange);
 		window.removeEventListener("blur", onWindowBlur);
 		scrim.removeEventListener("click", onScrimClick);
@@ -483,10 +498,12 @@ export function mountTabSwitcher(
 		onDismiss();
 	};
 	document.addEventListener("keydown", keydown, true);
+	document.addEventListener("keyup", keyup, true);
 	document.addEventListener("visibilitychange", onVisibilityChange);
 	window.addEventListener("blur", onWindowBlur);
 	scrim.addEventListener("click", onScrimClick);
 	cards[selected]?.focus({ preventScroll: true });
+	if (activateOnMount && cards.length) activate(selected);
 	return cleanup;
 }
 
@@ -510,6 +527,9 @@ export function installTabSwitcherHotkey(): () => void {
 	let currentCleanup: (() => void) | null = null;
 	let requesting = false;
 	let suppressClosed = false;
+	// Modifier keys currently physically held, needed to detect a fast tap
+	// whose modifiers were released while the payload was still in flight.
+	const heldModifiers = new Set<string>();
 
 	void readTabSwitcherShortcut().then((value) => {
 		combo = parseShortcut(value) ?? combo;
@@ -552,7 +572,16 @@ export function installTabSwitcherHotkey(): () => void {
 
 	const mount = (payload: SwitcherPayload) => {
 		payload.shortcut = formatShortcut(combo);
-		currentCleanup = mountTabSwitcher(payload, activateTab, dismiss, closeTab);
+		const modifiersHeld = comboModifierKeys(combo).some((key) =>
+			heldModifiers.has(key),
+		);
+		currentCleanup = mountTabSwitcher(
+			payload,
+			activateTab,
+			dismiss,
+			closeTab,
+			!modifiersHeld,
+		);
 	};
 
 	const open = async () => {
@@ -564,11 +593,15 @@ export function installTabSwitcherHotkey(): () => void {
 			})) as { payload?: SwitcherPayload } | undefined;
 			if (!response?.payload) return;
 			mount(response.payload);
-			void ext.runtime.sendMessage({
-				type: "tab-switcher:opened",
-				windowId: response.payload.windowId,
-				activeTabId: response.payload.activeTabId,
-			});
+			// A mount-time commit (fast tap) already closed the overlay; only
+			// register the session when it is actually on screen.
+			if (currentCleanup) {
+				void ext.runtime.sendMessage({
+					type: "tab-switcher:opened",
+					windowId: response.payload.windowId,
+					activeTabId: response.payload.activeTabId,
+				});
+			}
 		} catch {
 			/* The worker may be unavailable; the hotkey simply does nothing. */
 		} finally {
@@ -577,6 +610,7 @@ export function installTabSwitcherHotkey(): () => void {
 	};
 
 	const keydown = (event: KeyboardEvent) => {
+		if (event.key in MODIFIER_EVENT_KEYS) heldModifiers.add(event.key);
 		if (currentCleanup || event.repeat) return;
 		if (matchShortcut(event, combo)) {
 			event.preventDefault();
@@ -584,7 +618,11 @@ export function installTabSwitcherHotkey(): () => void {
 			void open();
 		}
 	};
+	const keyup = (event: KeyboardEvent) => {
+		if (event.key in MODIFIER_EVENT_KEYS) heldModifiers.delete(event.key);
+	};
 	document.addEventListener("keydown", keydown, true);
+	document.addEventListener("keyup", keyup, true);
 
 	const onMessage = (message: unknown) => {
 		const update = message as {
@@ -606,6 +644,7 @@ export function installTabSwitcherHotkey(): () => void {
 
 	return () => {
 		document.removeEventListener("keydown", keydown, true);
+		document.removeEventListener("keyup", keyup, true);
 		ext.storage.onChanged.removeListener(onChanged);
 		ext.runtime.onMessage.removeListener(onMessage);
 		currentCleanup?.();

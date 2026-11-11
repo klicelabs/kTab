@@ -1,8 +1,10 @@
 import { expect, test } from "bun:test";
 import {
+	comboModifierKeys,
 	DEFAULT_TAB_SWITCHER_SHORTCUT,
 	eventToCombo,
 	formatShortcut,
+	isComboModifierRelease,
 	isValidShortcut,
 	matchShortcut,
 	normalizeShortcut,
@@ -62,6 +64,38 @@ test("matches only the exact modifier set and base key", () => {
 	);
 	expect(matchShortcut(keyEvent("q"), target)).toBe(false);
 	expect(matchShortcut(keyEvent("w", { alt: true }), target)).toBe(false);
+});
+
+test("combo modifier helpers drive the Alt+Tab release-to-commit flow", () => {
+	const altQ = parseShortcut("Alt+Q");
+	const ctrlShiftK = parseShortcut("Ctrl+Shift+K");
+	expect(altQ).not.toBeNull();
+	expect(ctrlShiftK).not.toBeNull();
+	expect(comboModifierKeys(altQ as NonNullable<typeof altQ>)).toEqual(["Alt"]);
+	expect(
+		comboModifierKeys(ctrlShiftK as NonNullable<typeof ctrlShiftK>),
+	).toEqual(["Control", "Shift"]);
+	expect(isComboModifierRelease("Alt", altQ as NonNullable<typeof altQ>)).toBe(
+		true,
+	);
+	expect(isComboModifierRelease("Q", altQ as NonNullable<typeof altQ>)).toBe(
+		false,
+	);
+	expect(
+		isComboModifierRelease("Shift", altQ as NonNullable<typeof altQ>),
+	).toBe(false);
+	expect(
+		isComboModifierRelease(
+			"Shift",
+			ctrlShiftK as NonNullable<typeof ctrlShiftK>,
+		),
+	).toBe(true);
+	expect(
+		isComboModifierRelease(
+			"Meta",
+			ctrlShiftK as NonNullable<typeof ctrlShiftK>,
+		),
+	).toBe(false);
 });
 
 test("recorder ignores modifier-only presses and captures the base key", () => {

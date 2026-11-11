@@ -85,6 +85,32 @@ export function formatShortcut(combo: ShortcutCombo): string {
 	return parts.join("+");
 }
 
+/** KeyboardEvent.key of each modifier, mapped to its ShortcutCombo flag. */
+export const MODIFIER_EVENT_KEYS = {
+	Alt: "alt",
+	Control: "ctrl",
+	Shift: "shift",
+	Meta: "meta",
+} as const;
+
+export type ModifierEventKey = keyof typeof MODIFIER_EVENT_KEYS;
+
+/** Event keys of the modifiers this combo actually uses, in canonical order. */
+export function comboModifierKeys(combo: ShortcutCombo): ModifierEventKey[] {
+	return (Object.keys(MODIFIER_EVENT_KEYS) as ModifierEventKey[]).filter(
+		(key) => combo[MODIFIER_EVENT_KEYS[key]],
+	);
+}
+
+/** True when `key` going up should commit the overlay (a held combo modifier). */
+export function isComboModifierRelease(
+	key: string,
+	combo: ShortcutCombo,
+): boolean {
+	if (!(key in MODIFIER_EVENT_KEYS)) return false;
+	return combo[MODIFIER_EVENT_KEYS[key as ModifierEventKey]];
+}
+
 export function matchShortcut(
 	event: KeyboardEvent,
 	combo: ShortcutCombo,
