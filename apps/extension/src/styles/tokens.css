@@ -1285,17 +1285,19 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 
 /* ── Home hover: one shared container, switcher glide, zero zoom ───────
    João's rule: no zoom or lift on Home items. Instead of a per-cell veil,
-   the grid owns ONE frame (rendered by DialHoverVeil) that springs between
-   items with the tab switcher's SPRING_LAYOUT — the same glide its
+   the grid owns ONE frame (DialHoverVeil, its first child) that springs
+   between items with the tab switcher's SPRING_LAYOUT — the same glide its
    selection container uses. It wraps the card (Card layout), the whole
-   glass pane including the label (Icon layout + Icon surfaces), or the
+   glass pane exactly edge-to-edge (Icon layout + Icon surfaces), or the
    bare tile square (flat Icon layout, label left outside the glass).
 
    The frame wears the app material for the active theme: milky light glass
-   in Light, smoked dark glass in Dark, both driven by
-   --ktab-glass-intensity. It sits behind the grid (z-index) so cards,
-   icons and labels stay sharp, and it paints on the padded stage so its
-   8px outset never clips. Hover is pointer-only; keyboard focus reuses it. */
+   in Light, a GRAY smoked glass in Dark (white-ink mix, not black — João
+   found the black recipe too heavy for this one component), both driven by
+   --ktab-glass-intensity. Being inside .dial-grid is what lets its radii
+   resolve the grid-owned icon vars. Cells paint above it by DOM order, and
+   it paints inside the padded grid so the 8px outset never clips. Hover is
+   pointer-only; keyboard focus reuses it. */
 .dial-grid-stage {
 	position: relative;
 }
@@ -1315,16 +1317,16 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	z-index: 0;
 	pointer-events: none;
 	opacity: 0;
-	border: 0.5px solid rgb(255 255 255 / 0.1);
+	border: 0.5px solid rgb(255 255 255 / 0.14);
 	border-radius: var(--veil-radius);
 	corner-shape: squircle;
 	background: rgb(
-		8 10 14 /
-		calc(0.16 + var(--ktab-glass-intensity, 0.6) * 0.1)
+		255 255 255 /
+		calc(0.1 + var(--ktab-glass-intensity, 0.6) * 0.08)
 	);
 	box-shadow:
-		inset 0 1px 0 rgb(255 255 255 / 0.1),
-		inset 0 -10px 22px -10px rgb(0 0 0 / 0.35);
+		inset 0 1px 0 rgb(255 255 255 / 0.16),
+		inset 0 -10px 22px -12px rgb(0 0 0 / 0.28);
 	backdrop-filter: blur(calc(2px + var(--ktab-glass-intensity, 0.6) * 4px))
 		saturate(1.06);
 	-webkit-backdrop-filter: blur(
@@ -1336,11 +1338,11 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 }
 
 .dial-hover-veil[data-veil="pane"] {
+	/* Edge-to-edge: same radius as the pane itself, no outset padding. */
 	--veil-radius: calc(
 		var(--icon-size) *
 		var(--icon-radius-ratio) +
-		var(--icon-glass-pad) +
-		8px
+		var(--icon-glass-pad)
 	);
 }
 
@@ -1378,8 +1380,7 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		border-radius: calc(
 			var(--icon-size) *
 			var(--icon-radius-fallback-ratio) +
-			var(--icon-glass-pad) +
-			8px
+			var(--icon-glass-pad)
 		);
 	}
 	.dial-hover-veil[data-veil="icon"] {
@@ -1395,10 +1396,10 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	.dial-hover-veil {
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
-		background: rgb(21 23 26 / 0.98);
+		background: rgb(96 102 112 / 0.96);
 		border-color: transparent;
 		box-shadow:
-			inset 0 1px 0 rgb(255 255 255 / 0.1),
+			inset 0 1px 0 rgb(255 255 255 / 0.14),
 			0 6px 14px rgb(0 0 0 / 0.25);
 	}
 	:root.light .dial-hover-veil {

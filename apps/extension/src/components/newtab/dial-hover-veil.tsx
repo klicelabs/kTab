@@ -1,7 +1,11 @@
 import { SPRING_LAYOUT } from "@ktab/ui/lib/ease";
 import { animate } from "motion";
 import { useEffect, useRef } from "react";
-import { homeHoverBox, resolveHomeHoverTarget } from "../../lib/home-hover";
+import {
+	homeHoverBox,
+	homeHoverOutset,
+	resolveHomeHoverTarget,
+} from "../../lib/home-hover";
 
 interface DialHoverVeilProps {
 	/** Page key (folder id): a container swap hides the frame. */
@@ -11,16 +15,19 @@ interface DialHoverVeilProps {
 /**
  * One shared Home hover frame, the switcher's selection container translated
  * to the grid: it springs between items with SPRING_LAYOUT instead of fading
- * per cell. Rendered as the first child of the grid stage so the grid (and
- * every card/label) paints above it while its backdrop samples the wallpaper.
+ * per cell. Rendered as the FIRST CHILD of the .dial-grid itself — being
+ * inside the grid is what lets the frame resolve the grid-owned icon vars
+ * (--icon-size, --icon-glass-pad) for its squircle radii, and cells paint
+ * above it by DOM order while its backdrop samples the wallpaper.
  */
 export function DialHoverVeil({ resetKey }: DialHoverVeilProps) {
 	const veilRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const veil = veilRef.current;
-		const stage = veil?.parentElement;
-		if (!veil || !stage) return;
+		// The grid owns the icon geometry vars, so every box is grid-relative.
+		const grid = veil?.parentElement;
+		if (!veil || !grid) return;
 		const finePointer = window.matchMedia(
 			"(hover: hover) and (pointer: fine)",
 		).matches;
@@ -46,7 +53,8 @@ export function DialHoverVeil({ resetKey }: DialHoverVeilProps) {
 			}
 			const box = homeHoverBox(
 				target.element.getBoundingClientRect(),
-				stage.getBoundingClientRect(),
+				grid.getBoundingClientRect(),
+				homeHoverOutset(target.kind),
 			);
 			veil.dataset.veil = target.kind;
 			veil.style.width = `${box.width}px`;
@@ -67,12 +75,12 @@ export function DialHoverVeil({ resetKey }: DialHoverVeilProps) {
 		const cellFrom = (node: EventTarget | null) => {
 			if (!(node instanceof Element)) return null;
 			const cell = node.closest<HTMLElement>(".dial-cell");
-			return cell && stage.contains(cell) ? cell : null;
+			return cell && grid.contains(cell) ? cell : null;
 		};
 
 		const onPointerOver = (event: PointerEvent) => {
 			if (!finePointer) return;
-			if (stage.closest("[data-drag-active='true']")) return;
+			if (grid.closest("[data-drag-active='true']")) return;
 			const cell = cellFrom(event.target);
 			if (!cell) {
 				hide();
@@ -96,22 +104,22 @@ export function DialHoverVeil({ resetKey }: DialHoverVeilProps) {
 
 		const onPointerLeave = () => hide();
 
-		stage.addEventListener("pointerover", onPointerOver);
-		stage.addEventListener("pointerleave", onPointerLeave);
-		stage.addEventListener("focusin", onFocusIn);
-		stage.addEventListener("focusout", onFocusOut);
-		stage.addEventListener("dragstart", hide);
+		grid.addEventListener("pointerover", onPointerOver);
+		grid.addEventListener("pointerleave", onPointerLeave);
+		grid.addEventListener("focusin", onFocusIn);
+		grid.addEventListener("focusout", onFocusOut);
+		grid.addEventListener("dragstart", hide);
 		window.addEventListener("scroll", hide, { passive: true });
 		window.addEventListener("resize", hide);
 
 		hide();
 		return () => {
 			glide?.stop();
-			stage.removeEventListener("pointerover", onPointerOver);
-			stage.removeEventListener("pointerleave", onPointerLeave);
-			stage.removeEventListener("focusin", onFocusIn);
-			stage.removeEventListener("focusout", onFocusOut);
-			stage.removeEventListener("dragstart", hide);
+			grid.removeEventListener("pointerover", onPointerOver);
+			grid.removeEventListener("pointerleave", onPointerLeave);
+			grid.removeEventListener("focusin", onFocusIn);
+			grid.removeEventListener("focusout", onFocusOut);
+			grid.removeEventListener("dragstart", hide);
 			window.removeEventListener("scroll", hide);
 			window.removeEventListener("resize", hide);
 		};

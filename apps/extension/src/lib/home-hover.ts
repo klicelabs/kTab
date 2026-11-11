@@ -49,3 +49,12 @@ export function homeHoverBox(
 		height: target.height + outset * 2,
 	};
 }
+
+/**
+ * Frame outset per target kind. Glass panes already ARE a finished surface
+ * (icon + label behind one material), so the frame hugs them exactly — an
+ * outset would read as the hover floating past the pane.
+ */
+export function homeHoverOutset(kind: HomeHoverTargetKind): number {
+	return kind === "pane" ? 0 : HOME_HOVER_OUTSET;
+}

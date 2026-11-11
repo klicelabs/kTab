@@ -728,14 +728,11 @@ export function DialGrid({
 					marginInline: "auto",
 					...(dialLayout === "icon"
 						? {
-							["--icon-safe-padding" as string]: `${iconGrid.safePadding}px`,
-						}
+								["--icon-safe-padding" as string]: `${iconGrid.safePadding}px`,
+							}
 						: {}),
 				}}
 			>
-				{/* One shared hover frame behind the grid: it springs between
-				    items with the switcher motion instead of fading per cell. */}
-				<DialHoverVeil resetKey={folderId} />
 				<AnimatePresence initial={false} mode="sync" custom={motionContext}>
 					<motion.div
 						key={folderId}
@@ -780,6 +777,11 @@ export function DialGrid({
 							...cellAspectStyle,
 						}}
 					>
+						{/* One shared hover frame behind the items: it springs
+						    between them with the switcher motion instead of fading
+						    per cell. First child of the grid so the grid-owned icon
+						    vars resolve for its radii and cells paint above it. */}
+						<DialHoverVeil resetKey={folderId} />
 						{orderedRefs.length === 0
 							? emptyState
 							: orderedRefs.map((ref) => {

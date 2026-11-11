@@ -3,6 +3,7 @@ import { parseHTML } from "linkedom";
 import {
 	HOME_HOVER_OUTSET,
 	homeHoverBox,
+	homeHoverOutset,
 	resolveHomeHoverTarget,
 } from "../src/lib/home-hover";
 
@@ -77,4 +78,16 @@ test("box math is stage-relative and outsets every edge", () => {
 		width: 160 + 16,
 		height: 190 + 16,
 	});
+});
+
+test("glass panes are framed edge-to-edge, tiles and cards get the outset", () => {
+	expect(homeHoverOutset("pane")).toBe(0);
+	expect(homeHoverOutset("icon")).toBe(HOME_HOVER_OUTSET);
+	expect(homeHoverOutset("card")).toBe(HOME_HOVER_OUTSET);
+	const paneBox = homeHoverBox(
+		rect(100, 100, 100, 122),
+		rect(0, 0, 800, 600),
+		homeHoverOutset("pane"),
+	);
+	expect(paneBox).toEqual({ x: 100, y: 100, width: 100, height: 122 });
 });
