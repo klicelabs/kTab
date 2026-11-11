@@ -39,6 +39,7 @@ import {
 } from "../src/lib/thumbnail-refresh";
 import { canonicalizeForAutoCapture, isAbsoluteHttpUrl } from "../src/lib/url";
 import { uid } from "../src/lib/utils";
+import { orderTabsByRecency, type SwitcherTab } from "../src/lib/tab-switcher";
 import type { Folder, Setup } from "../src/types";
 
 // Persistent identifiers from the Perch era — kept verbatim so existing
@@ -47,6 +48,117 @@ const STORAGE_KEY = "perch-setup";
 const MENU_ID = "add-to-perch";
 const NEW_FOLDER_SEPARATOR_ID = "klice-new-folder-separator";
 const NEW_FOLDER_MENU_ID = "klice-new-folder";
+const TAB_RECENCY_KEY = "klice-tab-switcher-recency";
+const TAB_SWITCHER_SESSIONS_KEY = "klice-tab-switcher-sessions";
+const TAB_SWITCHER_COMMAND = "open-tab-switcher";
+const tabRecency = new Map<number, number[]>();
+const tabSwitcherSessions = new Map<number, { windowId: number; activeTabId: number }>();
+let tabRecencyHydration: Promise<void> | undefined;
+let tabRecencyWrite = Promise.resolve();
+
+async function hydrateTabRecency(): Promise<void> {
+	if (!tabRecencyHydration) {
+		tabRecencyHydration = (async () => {
+			try {
+				const stored = await ext.storage.session.get([
+					TAB_RECENCY_KEY,
+					TAB_SWITCHER_SESSIONS_KEY,
+				]);
+				const record = stored[TAB_RECENCY_KEY] as Record<string, number[]> | undefined;
+				for (const [windowId, ids] of Object.entries(record ?? {})) {
+					if (Array.isArray(ids)) tabRecency.set(Number(windowId), ids);
+				}
+				const sessions = stored[TAB_SWITCHER_SESSIONS_KEY] as Record<
+					string,
+				{ windowId: number; activeTabId: number }
+				> | undefined;
+				for (const [tabId, session] of Object.entries(sessions ?? {})) {
+					tabSwitcherSessions.set(Number(tabId), session);
+				}
+			} catch { /* A cold or restricted storage session simply starts with the active tab. */ }
+		})();
+	}
+	await tabRecencyHydration;
+}
+
+function rememberTab(windowId: number, tabId: number): void {
+	const ids = tabRecency.get(windowId) ?? [];
+	tabRecency.set(windowId, [tabId, ...ids.filter((id) => id !== tabId)].slice(0, 100));
+	persistTabRecency();
+}
+
+function persistTabRecency(): void {
+	tabRecencyWrite = tabRecencyWrite
+		.then(() => ext.storage.session.set({ [TAB_RECENCY_KEY]: Object.fromEntries(tabRecency) }))
+		.catch(() => undefined);
+}
+
+async function openTabSwitcher(): Promise<void> {
+	const active = (await ext.tabs.query({ active: true, currentWindow: true }))[0];
+	if (!active || active.id === undefined || active.windowId === undefined) return;
+	await hydrateTabRecency();
+	rememberTab(active.windowId, active.id);
+	const allTabs = await ext.tabs.query({});
+	const windows = await ext.windows.getAll({ populate: false });
+	const windowOrder = [active.windowId, ...windows.map((window) => window.id).filter((id): id is number => id !== undefined && id !== active.windowId)];
+	const tabs: SwitcherTab[] = [];
+	for (const windowId of windowOrder) {
+		const group = allTabs.flatMap((tab) => {
+			if (tab.windowId !== windowId || tab.id === undefined) return [];
+			return [{
+				id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl,
+				active: tab.id === active.id,
+			}];
+		});
+		tabs.push(...orderTabsByRecency(group, tabRecency.get(windowId) ?? []));
+	}
+	const current = tabs.find((tab) => tab.id === active.id);
+	if (current) {
+		try { current.preview = await ext.tabs.captureVisibleTab(active.windowId, { format: "jpeg", quality: 55 }); } catch { /* Protected pages and missing capture grants use the favicon fallback. */ }
+	}
+	const payload = { tabs, activeTabId: active.id, windowId: active.windowId };
+	try {
+		await ext.tabs.sendMessage(active.id, { type: "tab-switcher:open", payload });
+	} catch {
+		const url = `${ext.runtime.getURL("tab-switcher.html")}?windowId=${active.windowId}&activeTabId=${active.id}`;
+		await ext.windows.create({ url, type: "popup", width: 940, height: 640, focused: true });
+	}
+}
+
+async function getSwitcherTabs(activeWindowId: number, activeTabId: number) {
+	await hydrateTabRecency();
+	const allTabs = await ext.tabs.query({});
+	const windows = await ext.windows.getAll({ populate: false });
+	const windowOrder = [activeWindowId, ...windows.map((window) => window.id).filter((id): id is number => id !== undefined && id !== activeWindowId)];
+	const tabs: SwitcherTab[] = [];
+	for (const windowId of windowOrder) {
+		const group = allTabs.flatMap((tab) => {
+			if (tab.windowId !== windowId || tab.id === undefined) return [];
+			return [{ id: tab.id, windowId, title: tab.title ?? "", url: tab.url ?? "", favIconUrl: tab.favIconUrl, active: tab.id === activeTabId }];
+		});
+		tabs.push(...orderTabsByRecency(group, tabRecency.get(windowId) ?? []));
+	}
+	return { tabs, activeTabId, windowId: activeWindowId };
+}
+
+async function refreshTabSwitcherSessions(): Promise<void> {
+	await Promise.all(
+		[...tabSwitcherSessions].map(async ([clientTabId, session]) => {
+			try {
+				const payload = await getSwitcherTabs(session.windowId, session.activeTabId);
+				await ext.tabs.sendMessage(clientTabId, {
+					type: "tab-switcher:update",
+					payload,
+				});
+			} catch {
+				tabSwitcherSessions.delete(clientTabId);
+			}
+		}),
+	);
+	void ext.storage.session.set({
+		[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
+	});
+}
 
 /**
  * Read and normalize the persisted setup, or null when nothing is stored.
@@ -379,6 +491,10 @@ export default defineBackground(() => {
 		if (windowId >= 0) refreshLastNonCaptureWindowId = windowId;
 	});
 	ext.windows.onRemoved?.addListener((windowId) => {
+		void hydrateTabRecency().then(() => {
+			tabRecency.delete(windowId);
+			persistTabRecency();
+		});
 		tabActivationRevisions.delete(windowId);
 		refreshCaptureWindowIds.delete(windowId);
 		if (refreshHiddenWindowId === windowId) refreshHiddenWindowId = null;
@@ -394,7 +510,63 @@ export default defineBackground(() => {
 	// Refresh control plane: single, batch, cancel. Progress flows back as
 	// refresh:progress events (no polling). Unknown messages return false so
 	// other listeners in this worker stay unaffected.
-	ext.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+	ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
+		const request = message as { type?: string; tabId?: number; windowId?: number } | null;
+		if (request?.type === "tab-switcher:opened") {
+			if (
+				typeof sender.tab?.id === "number" &&
+				typeof request.windowId === "number" &&
+				typeof request.tabId === "number"
+			) {
+				tabSwitcherSessions.set(sender.tab.id, {
+					windowId: request.windowId,
+					activeTabId: request.tabId,
+				});
+				void ext.storage.session.set({
+					[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
+				});
+			}
+			return false;
+		}
+		if (request?.type === "tab-switcher:closed") {
+			if (typeof sender.tab?.id === "number") {
+				tabSwitcherSessions.delete(sender.tab.id);
+				void ext.storage.session.set({
+					[TAB_SWITCHER_SESSIONS_KEY]: Object.fromEntries(tabSwitcherSessions),
+				});
+			}
+			return false;
+		}
+		if (request?.type === "tab-switcher:get-tabs") {
+			const windowId = request.windowId;
+			const activeTabId = request.tabId;
+			if (typeof windowId !== "number" || typeof activeTabId !== "number") {
+				sendResponse({ ok: false });
+				return false;
+			}
+			getSwitcherTabs(windowId, activeTabId).then(
+				(payload) => sendResponse({ ok: true, payload }),
+				() => sendResponse({ ok: false }),
+			);
+			return true;
+		}
+		if (request?.type === "tab-switcher:activate") {
+			const targetTabId = request.tabId;
+			const targetWindowId = request.windowId;
+			if (typeof targetTabId === "number" && typeof targetWindowId === "number") {
+				void ext.windows.update(targetWindowId, { focused: true }).then(() =>
+					ext.tabs.update(targetTabId, { active: true }),
+				);
+			}
+			sendResponse({ ok: true });
+			return false;
+		}
+		if (request?.type === "tab-switcher:shortcuts") {
+			const isFirefox = /firefox/i.test(navigator.userAgent);
+			void ext.tabs.create({ url: isFirefox ? "about:addons" : "chrome://extensions/shortcuts" });
+			sendResponse({ ok: true });
+			return false;
+		}
 		if (!isRefreshMessage(message)) return false;
 		handleRefreshMessage(message).then(
 			(result) => sendResponse({ ok: true, ...(result as object) }),
@@ -443,6 +615,10 @@ export default defineBackground(() => {
 	});
 
 	ext.commands.onCommand.addListener((command) => {
+		if (command === TAB_SWITCHER_COMMAND) {
+			void openTabSwitcher();
+			return;
+		}
 		if (command === "add-current-page") {
 			ext.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
 				if (tabs[0]) captureAndAdd(tabs[0]);
@@ -484,6 +660,8 @@ export default defineBackground(() => {
 			(tabActivationRevisions.get(windowId) ?? 0) + 1,
 		);
 		if (refreshHiddenTabIds.has(tabId)) return;
+		await hydrateTabRecency();
+		rememberTab(windowId, tabId);
 		try {
 			const tab = await ext.tabs.get(tabId);
 			if (tab.url) {
@@ -497,6 +675,16 @@ export default defineBackground(() => {
 		} catch {
 			// Tab may not exist anymore
 		}
+	});
+
+	ext.tabs.onRemoved.addListener((tabId, removeInfo) => {
+		void hydrateTabRecency().then(() => {
+			const ids = tabRecency.get(removeInfo.windowId);
+			if (!ids) return;
+			tabRecency.set(removeInfo.windowId, ids.filter((id) => id !== tabId));
+			persistTabRecency();
+		});
+		void refreshTabSwitcherSessions();
 	});
 
 	// webNavigation.onCompleted is the precise visit signal: it fires once per

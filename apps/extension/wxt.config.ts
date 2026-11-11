@@ -46,6 +46,10 @@ export default defineConfig({
 		host_permissions: ["http://*/*", "https://*/*"],
 		optional_host_permissions: ["<all_urls>"],
 		commands: {
+			"open-tab-switcher": {
+				suggested_key: { default: "Alt+T" },
+				description: "Open tab switcher",
+			},
 			"add-current-page": {
 				// Ctrl+Shift+D is Chrome's native "Bookmark all tabs" — it used
 				// to fire both actions. Alt+Shift+D is unclaimed in Chromium
