@@ -24,6 +24,7 @@ import { PageContextMenu } from "../../src/components/newtab/page-context-menu";
 import { QuickLinks } from "../../src/components/newtab/quick-links";
 import { RefreshProgressToast } from "../../src/components/newtab/refresh-progress-toast";
 import { RestMode } from "../../src/components/newtab/rest-mode";
+import { WidgetSection } from "../../src/components/newtab/widget-section";
 import {
 	bindSearchShortcut,
 	searchAccess,
@@ -247,6 +248,7 @@ const HomeSurface = memo(function HomeSurface({
 						</main>
 
 						<QuickLinks />
+						<WidgetSection />
 
 						<div className="speed-dial-grid-region">
 							<DialGrid

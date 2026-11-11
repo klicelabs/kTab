@@ -257,6 +257,8 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		--speed-dial-content-gutter: 24px;
 		--speed-dial-toolbar-gutter: 20px;
 		--speed-dial-toolbar-compact-gap: 8px;
+		--speed-dial-widget-max-width: 1280px;
+		--speed-dial-widget-gap: 16px;
 		/* THE shared toolbar control height: the single outer height every
 		   toolbar cluster resolves to (Back/Forward group, Tabbar shell,
 		   Settings, compact Search). The TS mirror is TOOLBAR_HEIGHT.surface
@@ -2136,6 +2138,25 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	width: 100%;
 	justify-content: center;
 	padding-inline: var(--speed-dial-content-gutter);
+}
+
+/* Widgets get their own responsive shelf between Quick Links and the grid.
+   Its width is intentionally independent of the user-selected bookmark grid. */
+.speed-dial-widget-section {
+	display: flex;
+	width: 100%;
+	max-width: var(--speed-dial-widget-max-width);
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: var(--speed-dial-widget-gap);
+	margin-inline: auto;
+	padding-inline: var(--speed-dial-content-gutter);
+}
+
+.speed-dial-widget-slot {
+	min-width: 0;
+	max-width: 100%;
 }
 
 /* Quick Links scale the established Icon mode tokens for a compact rail. The
