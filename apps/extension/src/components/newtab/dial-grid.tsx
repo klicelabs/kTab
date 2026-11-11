@@ -35,6 +35,7 @@ import { useSelectionStore } from "../../stores/selection-store";
 import { computeGridMaxWidth, useSetupStore } from "../../stores/setup-store";
 import type { Card, Folder } from "../../types";
 import { DialCard } from "./dial-card";
+import { DialHoverVeil } from "./dial-hover-veil";
 import {
 	FolderPreviewCard,
 	type FolderPreviewItem,
@@ -732,6 +733,9 @@ export function DialGrid({
 						: {}),
 				}}
 			>
+				{/* One shared hover frame behind the grid: it springs between
+				    items with the switcher motion instead of fading per cell. */}
+				<DialHoverVeil resetKey={folderId} />
 				<AnimatePresence initial={false} mode="sync" custom={motionContext}>
 					<motion.div
 						key={folderId}

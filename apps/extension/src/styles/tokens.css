@@ -614,29 +614,8 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 	text-overflow: ellipsis;
 }
 
-/* Hover is pointer-only: the pane lights up — the switcher's milk container
-   painted as an overlay on the pane itself — never a zoom or lift. */
-@media (hover: hover) and (pointer: fine) {
-	.icon-glass-tile::after {
-		content: "";
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		border-radius: inherit;
-		background: rgb(255 255 255 / 0.14);
-		box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
-		opacity: 0;
-		transition: opacity 180ms var(--ease-out);
-		pointer-events: none;
-	}
-
-	.dial-grid[data-layout="icon"]
-		.dial-icon-item:not([data-dragging="true"]):hover
-		.icon-glass-tile::after,
-	.icon-mode-surface:not([data-dragging="true"]):hover .icon-glass-tile::after {
-		opacity: 1;
-	}
-}
+/* Hover feedback for these panes comes from the grid's shared
+   .dial-hover-veil, which wraps the whole pane — see the Home hover section. */
 
 /* Pressure: the surface class no longer hardcodes active:scale-[0.97] —
    the press scale follows the tile tier. */
@@ -1304,98 +1283,131 @@ html [data-slot="switch"][data-checked] [data-slot="switch-thumb"] {
 		calc(var(--tile-w) * var(--card-height-ratio, 1.12));
 }
 
-/* ── Home hover: the switcher's milk container, zero zoom ──────────────
-   João's round-13 rule: no zoom or lift on Home items. The hover is the
-   tab switcher's selection container — a milk-glass panel (same always-
-   light recipe as the switcher highlight) fading in BEHIND the item:
-   8px outset, squircle radius, black hairline, light bevel, opacity-only
-   tween. Cards anchor it on the cell (the card itself clips its paint);
-   flat icon items reuse the same cell anchor. Glass panes light their
-   own surface instead (.icon-glass-tile::after).
+/* ── Home hover: one shared container, switcher glide, zero zoom ───────
+   João's rule: no zoom or lift on Home items. Instead of a per-cell veil,
+   the grid owns ONE frame (rendered by DialHoverVeil) that springs between
+   items with the tab switcher's SPRING_LAYOUT — the same glide its
+   selection container uses. It wraps the card (Card layout), the whole
+   glass pane including the label (Icon layout + Icon surfaces), or the
+   bare tile square (flat Icon layout, label left outside the glass).
 
-   Cells carry content-visibility:auto, whose paint containment clips any
-   outset painting — hovered or focused cells flip to visible. Cell boxes
-   are fixed by CSS, so the flip cannot shift layout. The veil paints no
-   filter or mask, so glass tiles' backdrop sampling is untouched
-   (backdrop-root ancestry contract, research §4.3). */
-.dial-grid .dial-cell {
+   The frame wears the app material for the active theme: milky light glass
+   in Light, smoked dark glass in Dark, both driven by
+   --ktab-glass-intensity. It sits behind the grid (z-index) so cards,
+   icons and labels stay sharp, and it paints on the padded stage so its
+   8px outset never clips. Hover is pointer-only; keyboard focus reuses it. */
+.dial-grid-stage {
 	position: relative;
 }
 
-.dial-grid .dial-cell::before {
-	content: "";
+.dial-grid-stage > .dial-grid {
+	position: relative;
+	z-index: 1;
+}
+
+.dial-hover-veil {
+	--veil-radius: calc(var(--shape-card, 18px) + 8px);
 	position: absolute;
-	inset: -8px;
-	z-index: -1;
-	border-radius: calc(var(--shape-card, 18px) + 8px);
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 0;
+	z-index: 0;
+	pointer-events: none;
+	opacity: 0;
+	border: 0.5px solid rgb(255 255 255 / 0.1);
+	border-radius: var(--veil-radius);
 	corner-shape: squircle;
+	background: rgb(
+		8 10 14 /
+		calc(0.16 + var(--ktab-glass-intensity, 0.6) * 0.1)
+	);
+	box-shadow:
+		inset 0 1px 0 rgb(255 255 255 / 0.1),
+		inset 0 -10px 22px -10px rgb(0 0 0 / 0.35);
+	backdrop-filter: blur(calc(2px + var(--ktab-glass-intensity, 0.6) * 4px))
+		saturate(1.06);
+	-webkit-backdrop-filter: blur(
+			calc(2px + var(--ktab-glass-intensity, 0.6) * 4px)
+		)
+		saturate(1.06);
+	transition: opacity 180ms var(--ease-out);
+	will-change: transform;
+}
+
+.dial-hover-veil[data-veil="pane"] {
+	--veil-radius: calc(
+		var(--icon-size) *
+		var(--icon-radius-ratio) +
+		var(--icon-glass-pad) +
+		8px
+	);
+}
+
+.dial-hover-veil[data-veil="icon"] {
+	--veil-radius: calc(var(--icon-size) * var(--icon-radius-ratio) + 8px);
+}
+
+/* Light theme keeps the switcher's milky material; the app's dark theme
+   swaps in the smoked toolbar veil instead of that always-light panel. */
+:root.light .dial-hover-veil {
+	border-color: rgb(0 0 0 / 0.1);
 	background: rgb(
 		255 255 255 /
 		calc(0.34 + var(--ktab-glass-intensity, 0.6) * 0.1)
 	);
 	box-shadow:
-		inset 0 0 0 1px rgb(0 0 0 / 0.1),
 		inset 0 1px 0 rgb(0 0 0 / 0.08),
 		inset 0 -10px 22px -10px rgb(60 90 140 / 0.08);
-	opacity: 0;
-	transition: opacity 180ms var(--ease-out);
-	pointer-events: none;
 }
 
-/* Card cells hold the card exactly, so the 8px outset hugs it. Icon cells
-   are wider than the tile, so the container is sized to the tile square
-   instead — the same tile + 8px relationship as the switcher, with the
-   label left outside the glass. Closed folders start 4px down
-   (.icon-folder-layout padding). */
-.dial-grid[data-layout="icon"] .dial-cell::before {
-	inset: auto auto auto 50%;
-	top: 0;
-	width: calc(var(--icon-size, 76px) + 16px);
-	height: calc(var(--icon-size, 76px) + 16px);
-	translate: -50% 0;
+.dial-hover-veil.on {
+	opacity: 1;
 }
 
-.dial-grid[data-layout="icon"] .dial-icon-folder-cell::before {
-	top: 4px;
+:root[data-ktab-material="flat"] .dial-hover-veil {
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
 }
 
 @supports not (corner-shape: squircle) {
-	.dial-grid .dial-cell::before {
+	.dial-hover-veil {
 		border-radius: calc(var(--shape-card-fallback, 10px) + 8px);
 	}
-}
-
-/* Lift paint containment only while the container is on screen. */
-.dial-grid .dial-cell:has(:hover),
-.dial-grid .dial-cell:has(:focus-within) {
-	content-visibility: visible;
-}
-
-/* Card items (bookmarks + folders): hover or keyboard focus on the card.
-   Two separate rules on purpose — :has() can't nest inside :has(), and one
-   invalid selector would drop the entire rule. */
-.dial-grid[data-layout="card"]
-.dial-cell:has(.dial-card:not([data-dragging="true"]):hover)::before {
-	opacity: 1;
-}
-.dial-grid[data-layout="card"]
-	.dial-cell:has(.dial-card :focus-visible)::before {
-	opacity: 1;
-}
-
-/* Flat icon items (no glass pane): the container hugs the tile square;
-   the label stays outside the glass, like the switcher. */
-@media (hover: hover) and (pointer: fine) {
-	.dial-grid[data-layout="icon"]
-		.dial-cell:not(:has(.icon-glass-tile)):not(
-			:has([data-dragging="true"])
-		):hover::before {
-		opacity: 1;
+	.dial-hover-veil[data-veil="pane"] {
+		border-radius: calc(
+			var(--icon-size) *
+			var(--icon-radius-fallback-ratio) +
+			var(--icon-glass-pad) +
+			8px
+		);
+	}
+	.dial-hover-veil[data-veil="icon"] {
+		border-radius: calc(
+			var(--icon-size) *
+			var(--icon-radius-fallback-ratio) +
+			8px
+		);
 	}
 }
-.dial-grid[data-layout="icon"]
-	.dial-cell:not(:has(.icon-glass-tile)):has(:focus-visible)::before {
-	opacity: 1;
+
+@media (prefers-reduced-transparency: reduce) {
+	.dial-hover-veil {
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		background: rgb(21 23 26 / 0.98);
+		border-color: transparent;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.1),
+			0 6px 14px rgb(0 0 0 / 0.25);
+	}
+	:root.light .dial-hover-veil {
+		background: rgb(242 242 242 / 0.98);
+		border-color: transparent;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.3),
+			0 4px 10px rgb(0 0 0 / 0.1);
+	}
 }
 
 /* Empty landing — unified stack entrance */
