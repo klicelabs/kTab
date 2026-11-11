@@ -11,8 +11,17 @@ import {
 	TAB_SWITCHER_SHORTCUT_KEY,
 	writeTabSwitcherShortcut,
 } from "../../../lib/tab-switcher-shortcut";
+import {
+	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
+	normalizeTabSwitcherTitleSource,
+	readTabSwitcherTitleSource,
+	type SwitcherTitleSource,
+	TAB_SWITCHER_TITLE_SOURCE_KEY,
+	writeTabSwitcherTitleSource,
+} from "../../../lib/tab-switcher-title-source";
 import { cn } from "../../../lib/utils";
 import { SectionCard } from "./shared/section-card";
+import { SelectRow } from "./shared/select-row";
 import { SettingRow } from "./shared/setting-row";
 import { SettingsIconButton } from "./shared/settings-action";
 import { SettingsStatus } from "./shared/settings-feedback";
@@ -26,6 +35,11 @@ interface Feedback {
 	text: string;
 }
 
+const SWITCHER_TITLE_SOURCE_OPTIONS = [
+	{ value: "title", label: "Tab title" },
+	{ value: "site", label: "Site name from URL" },
+] as const;
+
 /**
  * The tab switcher hotkey, remappable without leaving the extension. Chrome
  * cannot rebind a manifest command programmatically, so the key is owned by a
@@ -35,6 +49,9 @@ interface Feedback {
  */
 export function TabSwitcherShortcut() {
 	const [shortcut, setShortcut] = useState(DEFAULT_TAB_SWITCHER_SHORTCUT);
+	const [titleSource, setTitleSource] = useState<SwitcherTitleSource>(
+		DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
+	);
 	const [recording, setRecording] = useState(false);
 	const [feedback, setFeedback] = useState<Feedback | null>(null);
 
@@ -43,14 +60,26 @@ export function TabSwitcherShortcut() {
 		void readTabSwitcherShortcut().then((value) => {
 			if (active) setShortcut(value);
 		});
+		void readTabSwitcherTitleSource().then((value) => {
+			if (active) setTitleSource(value);
+		});
 		const onChanged = (
 			changes: Record<string, { newValue?: unknown }>,
 			area: string,
 		) => {
-			if (area !== "local" || !(TAB_SWITCHER_SHORTCUT_KEY in changes)) return;
-			setShortcut(
-				normalizeShortcut(changes[TAB_SWITCHER_SHORTCUT_KEY].newValue),
-			);
+			if (area !== "local") return;
+			if (TAB_SWITCHER_SHORTCUT_KEY in changes) {
+				setShortcut(
+					normalizeShortcut(changes[TAB_SWITCHER_SHORTCUT_KEY].newValue),
+				);
+			}
+			if (TAB_SWITCHER_TITLE_SOURCE_KEY in changes) {
+				setTitleSource(
+					normalizeTabSwitcherTitleSource(
+						changes[TAB_SWITCHER_TITLE_SOURCE_KEY].newValue,
+					),
+				);
+			}
 		};
 		ext.storage.onChanged.addListener(onChanged);
 		return () => {
@@ -173,6 +202,18 @@ export function TabSwitcherShortcut() {
 			{feedback ? (
 				<SettingsStatus tone={feedback.tone}>{feedback.text}</SettingsStatus>
 			) : null}
+			<SelectRow
+				label="Default title source"
+				icon="text"
+				tooltip="Chooses the title shown under tab switcher thumbnails."
+				value={titleSource}
+				options={SWITCHER_TITLE_SOURCE_OPTIONS}
+				onChange={(value) => {
+					const next = normalizeTabSwitcherTitleSource(value);
+					setTitleSource(next);
+					void writeTabSwitcherTitleSource(next);
+				}}
+			/>
 		</SectionCard>
 	);
 }

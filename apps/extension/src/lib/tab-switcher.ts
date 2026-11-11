@@ -15,6 +15,14 @@ import {
 	type ShortcutCombo,
 	TAB_SWITCHER_SHORTCUT_KEY,
 } from "./tab-switcher-shortcut";
+import {
+	DEFAULT_TAB_SWITCHER_TITLE_SOURCE,
+	normalizeTabSwitcherTitleSource,
+	readTabSwitcherTitleSource,
+	resolveSwitcherTitle,
+	type SwitcherTitleSource,
+	TAB_SWITCHER_TITLE_SOURCE_KEY,
+} from "./tab-switcher-title-source";
 
 export interface SwitcherTab {
 	id: number;
@@ -44,6 +52,8 @@ export interface SwitcherPayload {
 	appearance?: SwitcherAppearance;
 	/** Configured hotkey, injected by the client so the overlay can toggle/cycle. */
 	shortcut?: string;
+	/** Caption title source, injected by the client like `shortcut`. */
+	titleSource?: SwitcherTitleSource;
 }
 
 export interface TabSwitcherSession {
@@ -195,30 +205,32 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	const liquid = appearance.liquid;
 	const t = Math.min(100, Math.max(0, appearance.intensity)) / 100;
 	const bandBlur = 20 + 12 * t;
-	const bandSaturation = dark ? 1.08 + 0.22 * t : 1.02 + 0.06 * t;
-	const bandBrightness = dark ? 0.97 - 0.06 * t : 1.02;
+	// The band wears the DARK frost treatment in both themes: the near-neutral
+	// light recipe read washed-out on wallpapers, while the dark one keeps the
+	// chromatic bleed that makes the haze feel alive. Only the veil tint stays
+	// theme-aware (white frost under light ink).
+	const bandSaturation = 1.08 + 0.22 * t;
+	const bandBrightness = 0.97 - 0.06 * t;
 	const frameBlur = 1.5 + 3.5 * t;
-	const frameSaturation = dark ? 1.04 + 0.28 * t : 1.01 + 0.08 * t;
-	const frameBrightness = dark ? 0.94 - 0.12 * t : 1.02 + 0.01 * t;
+	// The selection container wears the LIGHT toolbar recipe in both themes:
+	// the smoked dark veil read too transparent around a thumbnail, while the
+	// milky veil gives the selection a solid, readable body.
+	const frameSaturation = 1.01 + 0.08 * t;
+	const frameBrightness = 1.02 + 0.01 * t;
 
 	const ink = dark ? "#f4f6fb" : "#1b1d23";
 	const inkMuted = dark ? "rgba(226,231,242,0.72)" : "rgba(40,44,55,0.66)";
 	const hairlineStrong = dark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.16)";
-	// The highlight wears the toolbar tier's own hairline (white/10, black/10),
-	// one step softer than the generic strong hairline.
-	const highlightHairline = dark
-		? "rgba(255,255,255,0.10)"
-		: "rgba(0,0,0,0.10)";
+	// The highlight wears the toolbar tier's hairline in its light form
+	// (black/10) in both themes — part of the milky container material.
+	const highlightHairline = "rgba(0,0,0,0.10)";
 
-	const toolbarVeil = dark
-		? `rgba(0,0,0,${(8 + t * 8) / 100})`
-		: `rgba(255,255,255,${(34 + t * 10) / 100})`;
 	const bandVeil = dark
 		? `rgba(10,12,18,${(15 + t * 9) / 100})`
 		: `rgba(255,255,255,${(28 + t * 12) / 100})`;
-	const bevel = dark
-		? "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -10px 22px -10px rgba(180,210,255,0.12), inset 0.5px 0 0 rgba(255,255,255,0.075), inset -0.5px 0 0 rgba(255,255,255,0.06)"
-		: "inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -10px 22px -10px rgba(60,90,140,0.08), inset 0.5px 0 0 rgba(0,0,0,0.045), inset -0.5px 0 0 rgba(0,0,0,0.035)";
+	// Bevel belongs to the container's light material in both themes.
+	const bevel =
+		"inset 0 1px 0 rgba(0,0,0,0.08), inset 0 -10px 22px -10px rgba(60,90,140,0.08), inset 0.5px 0 0 rgba(0,0,0,0.045), inset -0.5px 0 0 rgba(0,0,0,0.035)";
 	const previewFallback = dark
 		? "linear-gradient(150deg,#333c50,#232a38)"
 		: "linear-gradient(150deg,#e9edf5,#d7dce8)";
@@ -239,7 +251,8 @@ function buildStyles(appearance: SwitcherAppearance): string {
 	const bandMask = bandFrostMask(30);
 	const bandMaskCompact = bandFrostMask(28);
 	const selectedBackground = liquid
-		? toolbarVeil
+		? // Milky light toolbar veil in both themes — see frameSaturation.
+			`rgba(255,255,255,${(34 + t * 10) / 100})`
 		: dark
 			? "rgba(40,44,54,0.96)"
 			: "rgba(255,255,255,0.98)";
@@ -305,6 +318,7 @@ export function mountTabSwitcher(
 ): () => void {
 	document.getElementById("klice-tab-switcher")?.remove();
 	const appearance = payload.appearance ?? DEFAULT_APPEARANCE;
+	const titleSource = payload.titleSource ?? DEFAULT_TAB_SWITCHER_TITLE_SOURCE;
 	const combo: ShortcutCombo =
 		parseShortcut(payload.shortcut ?? DEFAULT_TAB_SWITCHER_SHORTCUT) ??
 		(parseShortcut(DEFAULT_TAB_SWITCHER_SHORTCUT) as ShortcutCombo);
@@ -367,7 +381,7 @@ export function mountTabSwitcher(
 		card.className = "card";
 		card.setAttribute("role", "option");
 		card.setAttribute("aria-selected", String(index === selected));
-		card.setAttribute("aria-label", tab.title || tab.url || "Untitled tab");
+		card.setAttribute("aria-label", resolveSwitcherTitle(tab, titleSource));
 		card.tabIndex = -1;
 		card.style.animationDelay = `${Math.min(index * 22, 180)}ms`;
 
@@ -424,7 +438,7 @@ export function mountTabSwitcher(
 		}
 		const title = document.createElement("span");
 		title.className = "tabtitle";
-		title.textContent = tab.title || tab.url || "Untitled tab";
+		title.textContent = resolveSwitcherTitle(tab, titleSource);
 		caption.append(title);
 
 		card.append(frame, caption);
@@ -598,19 +612,31 @@ export function installTabSwitcherHotkey(): () => void {
 	// whose modifiers were released while the payload was still in flight.
 	const heldModifiers = new Set<string>();
 
+	let titleSource: SwitcherTitleSource = DEFAULT_TAB_SWITCHER_TITLE_SOURCE;
+
 	void readTabSwitcherShortcut().then((value) => {
 		combo = parseShortcut(value) ?? combo;
+	});
+	void readTabSwitcherTitleSource().then((value) => {
+		titleSource = value;
 	});
 
 	const onChanged = (
 		changes: Record<string, { newValue?: unknown }>,
 		area: string,
 	) => {
-		if (area !== "local" || !(TAB_SWITCHER_SHORTCUT_KEY in changes)) return;
-		combo =
-			parseShortcut(
-				normalizeShortcut(changes[TAB_SWITCHER_SHORTCUT_KEY].newValue),
-			) ?? combo;
+		if (area !== "local") return;
+		if (TAB_SWITCHER_SHORTCUT_KEY in changes) {
+			combo =
+				parseShortcut(
+					normalizeShortcut(changes[TAB_SWITCHER_SHORTCUT_KEY].newValue),
+				) ?? combo;
+		}
+		if (TAB_SWITCHER_TITLE_SOURCE_KEY in changes) {
+			titleSource = normalizeTabSwitcherTitleSource(
+				changes[TAB_SWITCHER_TITLE_SOURCE_KEY].newValue,
+			);
+		}
 	};
 	ext.storage.onChanged.addListener(onChanged);
 
@@ -639,6 +665,7 @@ export function installTabSwitcherHotkey(): () => void {
 
 	const mount = (payload: SwitcherPayload) => {
 		payload.shortcut = formatShortcut(combo);
+		payload.titleSource = titleSource;
 		const modifiersHeld = comboModifierKeys(combo).some((key) =>
 			heldModifiers.has(key),
 		);
