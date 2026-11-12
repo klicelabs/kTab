@@ -16,7 +16,7 @@ Shared UI code lives in `packages/ui`. The web and docs apps are separate worksp
 Run these from `apps/extension` before committing product changes:
 
 ```sh
-bun test scripts/
+bun test --isolate scripts/
 bun run compile
 bun run build
 ```

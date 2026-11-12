@@ -7,6 +7,7 @@
  */
 
 import type { CachedWeather, Setup } from "../types";
+import { withIndexedDbWriteLock } from "./idb-write-lock";
 
 // "perch-db" is the legacy database name; kept so existing installs retain
 // their thumbnails and backgrounds after the rename to kTab.
@@ -70,31 +71,35 @@ export async function idbPut(
 	key: string,
 	value: string,
 ): Promise<void> {
-	const db = await openIDB();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	const tx = db.transaction(store, "readwrite");
-	tx.objectStore(store).put(value, key);
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		const tx = db.transaction(store, "readwrite");
+		tx.objectStore(store).put(value, key);
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		return promise;
+	});
 }
 export async function putImages(images: readonly ImageWrite[]): Promise<void> {
 	if (images.length === 0) return;
-	const db = await openIDB();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	const tx = db.transaction([STORE_THUMBS, STORE_BG], "readwrite");
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () =>
-		reject(tx.error ?? new Error("Image restore transaction aborted."));
-	try {
-		for (const image of images) {
-			tx.objectStore(image.store).put(image.value, image.key);
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		const tx = db.transaction([STORE_THUMBS, STORE_BG], "readwrite");
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Image restore transaction aborted."));
+		try {
+			for (const image of images) {
+				tx.objectStore(image.store).put(image.value, image.key);
+			}
+		} catch (error) {
+			reject(error);
 		}
-	} catch (error) {
-		reject(error);
-	}
-	return promise;
+		return promise;
+	});
 }
 export async function idbGet(
 	store: ImageStoreName,
@@ -113,13 +118,15 @@ export async function idbDelete(
 	store: ImageStoreName,
 	key: string,
 ): Promise<void> {
-	const db = await openIDB();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	const tx = db.transaction(store, "readwrite");
-	tx.objectStore(store).delete(key);
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		const tx = db.transaction(store, "readwrite");
+		tx.objectStore(store).delete(key);
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		return promise;
+	});
 }
 
 /** List every stored key (used by the hydration orphan sweep for thumbs). */
@@ -136,13 +143,15 @@ export async function idbGetAllKeys(
 }
 
 export async function idbClearStores(stores: ImageStoreName[]): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(stores, "readwrite");
-	for (const store of stores) tx.objectStore(store).clear();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(stores, "readwrite");
+		for (const store of stores) tx.objectStore(store).clear();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		return promise;
+	});
 }
 
 export interface CachedIconBlob {
@@ -158,15 +167,18 @@ export async function putIconBlob(
 	value: CachedIconBlob,
 	shouldWrite: () => boolean = () => true,
 ): Promise<void> {
-	const db = await openIDB();
-	if (!shouldWrite()) return;
-	const tx = db.transaction(STORE_ICONS, "readwrite");
-	tx.objectStore(STORE_ICONS).put(value, key);
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () => reject(tx.error ?? new Error("Icon cache write aborted."));
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		if (!shouldWrite()) return;
+		const db = await openIDB();
+		const tx = db.transaction(STORE_ICONS, "readwrite");
+		tx.objectStore(STORE_ICONS).put(value, key);
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Icon cache write aborted."));
+		return promise;
+	});
 }
 
 /** Read a cached icon Blob for a domain. */
@@ -193,26 +205,30 @@ export async function getIconBlob(key: string): Promise<CachedIconBlob | null> {
 
 /** Remove every locally cached resolved icon. */
 export async function clearIconBlobs(): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(STORE_ICONS, "readwrite");
-	tx.objectStore(STORE_ICONS).clear();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_ICONS, "readwrite");
+		tx.objectStore(STORE_ICONS).clear();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		return promise;
+	});
 }
 
 /** Keep a single current-condition snapshot; no weather history is retained. */
 export async function putWeatherCache(value: CachedWeather): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(STORE_WEATHER, "readwrite");
-	tx.objectStore(STORE_WEATHER).put(value, "current");
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () =>
-		reject(tx.error ?? new Error("Weather cache write aborted."));
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_WEATHER, "readwrite");
+		tx.objectStore(STORE_WEATHER).put(value, "current");
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Weather cache write aborted."));
+		return promise;
+	});
 }
 
 /** Read the last cached condition, validating the stored payload first. */
@@ -242,15 +258,17 @@ export async function getWeatherCache(): Promise<CachedWeather | null> {
 
 /** Remove the single cached weather reading, for reset and privacy cleanup. */
 export async function clearWeatherCache(): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(STORE_WEATHER, "readwrite");
-	tx.objectStore(STORE_WEATHER).clear();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () =>
-		reject(tx.error ?? new Error("Weather cache clear aborted."));
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_WEATHER, "readwrite");
+		tx.objectStore(STORE_WEATHER).clear();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Weather cache clear aborted."));
+		return promise;
+	});
 }
 
 export type BookmarkTreeSnapshot = Pick<
@@ -262,15 +280,17 @@ export type BookmarkTreeSnapshot = Pick<
 export async function putBookmarkTree(
 	value: BookmarkTreeSnapshot,
 ): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
-	tx.objectStore(STORE_BOOKMARKS).put(value, "current");
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () =>
-		reject(tx.error ?? new Error("Bookmark tree write aborted."));
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
+		tx.objectStore(STORE_BOOKMARKS).put(value, "current");
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Bookmark tree write aborted."));
+		return promise;
+	});
 }
 
 /** Read the single persisted bookmark tree; callers normalize its records. */
@@ -294,15 +314,17 @@ export async function getBookmarkTree(): Promise<BookmarkTreeSnapshot | null> {
 
 /** Remove the tree during a confirmed full reset. */
 export async function clearBookmarkTree(): Promise<void> {
-	const db = await openIDB();
-	const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
-	tx.objectStore(STORE_BOOKMARKS).clear();
-	const { promise, resolve, reject } = Promise.withResolvers<void>();
-	tx.oncomplete = () => resolve();
-	tx.onerror = () => reject(tx.error);
-	tx.onabort = () =>
-		reject(tx.error ?? new Error("Bookmark tree clear aborted."));
-	return promise;
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
+		tx.objectStore(STORE_BOOKMARKS).clear();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Bookmark tree clear aborted."));
+		return promise;
+	});
 }
 
 /** Generate a prefixed, collision-resistant image id. */

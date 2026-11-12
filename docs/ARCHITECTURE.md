@@ -6,7 +6,7 @@ Local-first MV3 extension. Dashboard data stays on-device, with no accounts, bil
 
 - Runtime: React 19.2 + TypeScript 5.9, Zustand 5 (all state), motion 13 (animation), Base UI 1.6 + shadcn-style primitives (`@ktab/ui`), Tailwind 4, sonner toasts, lucide icons.
 - Build: WXT 0.20 + Vite, `@wxt-dev/module-react`. Manifest V3, `manifest.version 1.3.0`.
-- Dev: `bun run dev` (WXT port 5555, strict). Typecheck: `bun run compile` (`tsc --noEmit`). Tests: `bun test scripts/` (bun:test, ~233). Lint/format: Biome via root `bun run check`.
+- Dev: `bun run dev` (WXT port 5555, strict). Typecheck: `bun run compile` (`tsc --noEmit`). Tests: `bun test --isolate scripts/` (bun:test; file globals are isolated because tests install browser shims). Lint/format: Biome via root `bun run check`.
 - Package manager: bun 1.3.13 (workspaces + catalog). Turbo orchestrates `apps/*`.
 
 ## Monorepo layout
@@ -37,7 +37,8 @@ Normalization is load-bearing: `normalizeState` repairs folders (orphans→root,
 - `useSetupStore` (zustand + persist) owns folders/cards/settings/itemOrder in memory; every structural mutation keeps `itemOrder` in sync atomically. Settings and active view persist in `chrome.storage.local`; bookmark trees persist in IndexedDB.
 - `useImageStore` owns thumbnail and wallpaper bytes (IDB only, never persisted to chrome.storage). Icon artwork blobs use the same database.
 - Session-only stores (selection, rename, move-dialog, history UI, settings-motion) are never persisted.
-- Cross-tab: `storage.onChanged` → echo-consume → `mergeConcurrentSetup` → history invalidation (`use-cross-tab-sync.ts`, `background.ts:284`).
+- Cross-tab: `BroadcastChannel('ktab_state_sync')` promptly carries theme, layout, and wallpaper settings; `storage.onChanged` still handles full setup merges → echo-consume → `mergeConcurrentSetup` → history invalidation (`use-cross-tab-sync.ts`, `background.ts:284`).
+- IndexedDB mutations request the shared `ktab-idb-write` Web Lock. Browsers without Web Locks use IndexedDB transaction ordering directly.
 - Reset protocol: generation barrier (`perch-reset-generation`); stale envelopes read as empty; reset cancels pending writes first.
 
 ## Permissions & MV3 specifics

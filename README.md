@@ -27,7 +27,7 @@ The development server uses strict port 5555. Load `apps/extension/.output/chrom
 From `apps/extension`:
 
 ```sh
-bun test scripts/
+bun test --isolate scripts/
 bun run compile
 bun run build
 ```

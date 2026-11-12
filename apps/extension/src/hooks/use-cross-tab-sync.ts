@@ -3,8 +3,16 @@ import type { Browser } from "wxt/browser";
 import { extApi } from "../lib/extension-api";
 import { mergeConcurrentSetup } from "../lib/merge-external-setup";
 import {
+	createStateSyncMessage,
+	isStateSyncMessage,
+	realtimeSettings,
+	realtimeSettingsSignature,
+	STATE_SYNC_CHANNEL,
+} from "../lib/state-sync";
+import {
 	consumeOwnWriteEcho,
 	getResetGeneration,
+	normalizeState,
 	PERSIST_GENERATION_KEY,
 	readSetupEnvelope,
 } from "../lib/storage";
@@ -22,78 +30,140 @@ import type { Setup } from "../types";
 export function useCrossTabSync() {
 	const lastCommonSetup = useRef<Setup | null>(null);
 	useEffect(() => {
-		if (!extApi() || !extApi().storage?.onChanged) return;
-		type OnChangedCb = Parameters<
-			(typeof Browser.storage.onChanged)["addListener"]
-		>[0];
-		let readSequence = 0;
-		const handler: OnChangedCb = (changes, area) => {
-			// "perch-setup" is the legacy persist name; kept for data continuity.
-			if (area !== "local" || !changes["perch-setup"]) return;
+		let storageCleanup: () => void = () => undefined;
+		const extensionStorage = extApi()?.storage?.onChanged;
+		if (extensionStorage) {
+			type OnChangedCb = Parameters<
+				(typeof Browser.storage.onChanged)["addListener"]
+			>[0];
+			let readSequence = 0;
+			const handler: OnChangedCb = (changes, area) => {
+				// "perch-setup" is the legacy persist name; kept for data continuity.
+				if (area !== "local" || !changes["perch-setup"]) return;
 
-			const newValue = changes["perch-setup"].newValue;
-			if (!newValue) return;
+				const newValue = changes["perch-setup"].newValue;
+				if (!newValue) return;
 
-			const raw =
-				typeof newValue === "string" ? newValue : JSON.stringify(newValue);
+				const raw =
+					typeof newValue === "string" ? newValue : JSON.stringify(newValue);
 
-			if (consumeOwnWriteEcho(raw)) {
-				lastCommonSetup.current = useSetupStore.getState();
-				return;
-			}
-
-			try {
-				const parsed =
-					typeof newValue === "string" ? JSON.parse(newValue) : newValue;
-
-				if (!parsed || typeof parsed !== "object" || !("state" in parsed))
+				if (consumeOwnWriteEcho(raw)) {
+					lastCommonSetup.current = useSetupStore.getState();
 					return;
+				}
 
-				const persistedGenerationValue = (parsed as Record<string, unknown>)[
-					PERSIST_GENERATION_KEY
-				];
-				const persistedGeneration =
-					typeof persistedGenerationValue === "number" &&
-					Number.isSafeInteger(persistedGenerationValue) &&
-					persistedGenerationValue >= 0
-						? persistedGenerationValue
-						: 0;
-				if (persistedGeneration < getResetGeneration()) return;
+				try {
+					const parsed =
+						typeof newValue === "string" ? JSON.parse(newValue) : newValue;
 
-				const sequence = ++readSequence;
-				void readSetupEnvelope("perch-setup")
-					.then((incoming) => {
-						if (
-							!incoming ||
-							sequence !== readSequence ||
-							persistedGeneration < getResetGeneration()
-						)
-							return;
+					if (!parsed || typeof parsed !== "object" || !("state" in parsed))
+						return;
 
-						const current = useSetupStore.getState();
-						const base = lastCommonSetup.current ?? current;
-						const update = mergeConcurrentSetup(base, current, incoming);
-						if (update) useSetupStore.setState(update);
-						lastCommonSetup.current = update
-							? { ...current, ...update }
-							: current;
+					const persistedGenerationValue = (parsed as Record<string, unknown>)[
+						PERSIST_GENERATION_KEY
+					];
+					const persistedGeneration =
+						typeof persistedGenerationValue === "number" &&
+						Number.isSafeInteger(persistedGenerationValue) &&
+						persistedGenerationValue >= 0
+							? persistedGenerationValue
+							: 0;
+					if (persistedGeneration < getResetGeneration()) return;
 
-						// M4/NPD-3: external state arrived. Invalidate the redo branch and
-						// prune undo entries whose snapshots no longer match live state —
-						// stale cascades must never replay over another tab's writes.
-						useHistoryStore
-							.getState()
-							.invalidateForExternalSync(buildLiveShape(incoming));
-					})
-					.catch(() => undefined);
+					const sequence = ++readSequence;
+					void readSetupEnvelope("perch-setup")
+						.then((incoming) => {
+							if (
+								!incoming ||
+								sequence !== readSequence ||
+								persistedGeneration < getResetGeneration()
+							)
+								return;
+
+							const current = useSetupStore.getState();
+							const base = lastCommonSetup.current ?? current;
+							const update = mergeConcurrentSetup(base, current, incoming);
+							if (update) useSetupStore.setState(update);
+							lastCommonSetup.current = update
+								? { ...current, ...update }
+								: current;
+
+							// M4/NPD-3: external state arrived. Invalidate the redo branch and
+							// prune undo entries whose snapshots no longer match live state —
+							// stale cascades must never replay over another tab's writes.
+							useHistoryStore
+								.getState()
+								.invalidateForExternalSync(buildLiveShape(incoming));
+						})
+						.catch(() => undefined);
+				} catch {
+					// Ignore parse errors
+				}
+			};
+
+			extensionStorage.addListener(handler);
+			storageCleanup = () => extensionStorage.removeListener(handler);
+		}
+
+		let channel: BroadcastChannel | null = null;
+		if (typeof BroadcastChannel !== "undefined") {
+			try {
+				channel = new BroadcastChannel(STATE_SYNC_CHANNEL);
 			} catch {
-				// Ignore parse errors
+				channel = null;
+			}
+		}
+		if (!channel) return storageCleanup;
+
+		const senderId =
+			globalThis.crypto?.randomUUID?.() ??
+			`ktab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+		let sequence = 0;
+		let lastSentSignature = realtimeSettingsSignature(
+			useSetupStore.getState().settings,
+		);
+		const receivedSequences = new Map<string, number>();
+		const unsubscribe = useSetupStore.subscribe((state) => {
+			const signature = realtimeSettingsSignature(state.settings);
+			if (signature === lastSentSignature) return;
+			lastSentSignature = signature;
+			sequence += 1;
+			try {
+				channel?.postMessage(
+					createStateSyncMessage(senderId, sequence, state.settings),
+				);
+			} catch {
+				// Storage onChanged remains the fallback if a message cannot clone.
+			}
+		});
+
+		channel.onmessage = (event: MessageEvent<unknown>) => {
+			if (!isStateSyncMessage(event.data) || event.data.senderId === senderId)
+				return;
+			const previousSequence = receivedSequences.get(event.data.senderId) ?? 0;
+			if (event.data.sequence <= previousSequence) return;
+			receivedSequences.set(event.data.senderId, event.data.sequence);
+
+			const current = useSetupStore.getState();
+			const normalized = normalizeState({
+				...current,
+				settings: { ...current.settings, ...event.data.settings },
+			});
+			const nextSettings = {
+				...current.settings,
+				...realtimeSettings(normalized.settings),
+			};
+			lastSentSignature = realtimeSettingsSignature(nextSettings);
+			lastCommonSetup.current = { ...current, settings: nextSettings };
+			if (lastSentSignature !== realtimeSettingsSignature(current.settings)) {
+				useSetupStore.setState({ settings: nextSettings });
 			}
 		};
 
-		extApi().storage.onChanged.addListener(handler);
 		return () => {
-			extApi().storage.onChanged.removeListener(handler);
+			storageCleanup();
+			unsubscribe();
+			channel?.close();
 		};
 	}, []);
 }

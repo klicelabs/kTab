@@ -4,7 +4,7 @@ Describe the problem and resulting behavior. Link the issue when available.
 
 ## Validation
 
-- [ ] Extension tests pass (`bun test scripts/` in `apps/extension`).
+- [ ] Extension tests pass (`bun test --isolate scripts/` in `apps/extension`).
 - [ ] TypeScript passes (`bun run compile` in `apps/extension`).
 - [ ] Chrome production build passes (`bun run build` in `apps/extension`).
 - [ ] Relevant behavior, keyboard access and reduced motion have been checked.

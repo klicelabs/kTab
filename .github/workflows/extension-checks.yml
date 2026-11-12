@@ -30,7 +30,7 @@ jobs:
         run: bun run compile
         working-directory: apps/extension
       - name: Test extension
-        run: bun test scripts/
+        run: bun test --isolate scripts/
         working-directory: apps/extension
       - name: Build Chrome MV3
         run: bun run build
