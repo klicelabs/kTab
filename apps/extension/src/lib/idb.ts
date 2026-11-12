@@ -6,13 +6,16 @@
  * here — do not re-open "perch-db" or redefine these stores anywhere else.
  */
 
+import type { CachedWeather } from "../types";
+
 // "perch-db" is the legacy database name; kept so existing installs retain
 // their thumbnails and backgrounds after the rename to kTab.
 export const DB_NAME = "perch-db";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 export const STORE_THUMBS = "thumbnails";
 export const STORE_BG = "backgrounds";
 export const STORE_ICONS = "icons";
+export const STORE_WEATHER = "weather";
 
 export type ImageStoreName = typeof STORE_THUMBS | typeof STORE_BG;
 export interface ImageWrite {
@@ -39,6 +42,8 @@ export function openIDB(): Promise<IDBDatabase> {
 				db.createObjectStore(STORE_BG);
 			if (!db.objectStoreNames.contains(STORE_ICONS))
 				db.createObjectStore(STORE_ICONS);
+			if (!db.objectStoreNames.contains(STORE_WEATHER))
+				db.createObjectStore(STORE_WEATHER);
 		};
 		req.onsuccess = () => {
 			const db = req.result;
@@ -191,6 +196,57 @@ export async function clearIconBlobs(): Promise<void> {
 	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	tx.oncomplete = () => resolve();
 	tx.onerror = () => reject(tx.error);
+	return promise;
+}
+
+/** Keep a single current-condition snapshot; no weather history is retained. */
+export async function putWeatherCache(value: CachedWeather): Promise<void> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_WEATHER, "readwrite");
+	tx.objectStore(STORE_WEATHER).put(value, "current");
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	tx.onabort = () =>
+		reject(tx.error ?? new Error("Weather cache write aborted."));
+	return promise;
+}
+
+/** Read the last cached condition, validating the stored payload first. */
+export async function getWeatherCache(): Promise<CachedWeather | null> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_WEATHER, "readonly");
+	const request = tx.objectStore(STORE_WEATHER).get("current");
+	const { promise, resolve, reject } =
+		Promise.withResolvers<CachedWeather | null>();
+	request.onsuccess = () => {
+		const value = request.result as CachedWeather | undefined;
+		const reading = value?.reading;
+		resolve(
+			typeof value?.locationKey === "string" &&
+				Number.isFinite(value.fetchedAt) &&
+				typeof reading?.temperatureC === "number" &&
+				Number.isFinite(reading.temperatureC) &&
+				Number.isInteger(reading.weatherCode) &&
+				typeof reading.isDay === "boolean"
+				? value
+				: null,
+		);
+	};
+	request.onerror = () => reject(request.error);
+	return promise;
+}
+
+/** Remove the single cached weather reading, for reset and privacy cleanup. */
+export async function clearWeatherCache(): Promise<void> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_WEATHER, "readwrite");
+	tx.objectStore(STORE_WEATHER).clear();
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	tx.onabort = () =>
+		reject(tx.error ?? new Error("Weather cache clear aborted."));
 	return promise;
 }
 

@@ -94,3 +94,56 @@ test("migrates the legacy icon glass flag to the icon surface setting", () => {
 	legacySettings.iconTileSurface = false;
 	expect(normalizeState(legacy).settings.iconTileSurface).toBe(false);
 });
+
+test("weather is off by default and rejects invalid saved locations", () => {
+	const defaults = normalizeState(null);
+	expect(defaults.settings.weather).toEqual({
+		enabled: false,
+		display: "widget",
+		place: "",
+		latitude: null,
+		longitude: null,
+		dynamicAtmosphere: false,
+	});
+
+	const state = structuredClone(DEFAULT_SETUP);
+	const settings = state.settings as unknown as Record<string, unknown>;
+	settings.weather = {
+		enabled: true,
+		display: "compact",
+		place: "Saquarema",
+		latitude: 91,
+		longitude: -42.5,
+		dynamicAtmosphere: true,
+	};
+	const normalized = normalizeState(state);
+	expect(normalized.settings.weather).toEqual({
+		enabled: true,
+		display: "widget",
+		place: "",
+		latitude: null,
+		longitude: -42.5,
+		dynamicAtmosphere: true,
+	});
+});
+
+test("keeps a valid weather display and manual city coordinates", () => {
+	const state = structuredClone(DEFAULT_SETUP);
+	state.settings.weather = {
+		enabled: true,
+		display: "toolbar",
+		place: " Saquarema, Brazil ",
+		latitude: -22.92,
+		longitude: -42.51,
+		dynamicAtmosphere: true,
+	};
+
+	expect(normalizeState(state).settings.weather).toEqual({
+		enabled: true,
+		display: "toolbar",
+		place: "Saquarema, Brazil",
+		latitude: -22.92,
+		longitude: -42.51,
+		dynamicAtmosphere: true,
+	});
+});

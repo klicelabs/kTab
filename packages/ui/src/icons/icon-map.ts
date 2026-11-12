@@ -43,7 +43,9 @@ import {
 	Moon,
 	Palette,
 	PanelTop,
+	Pause,
 	Pencil,
+	Play,
 	Plus,
 	RectangleHorizontal,
 	RectangleVertical,
@@ -158,6 +160,8 @@ export const iconMap = {
 	stack: Layers,
 	// Tab switcher — the in-extension hotkey recorder row.
 	keyboard: Keyboard,
+	pause: Pause,
+	play: Play,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof iconMap;

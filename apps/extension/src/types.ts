@@ -154,6 +154,27 @@ export interface QuickLinksSettings {
 	items: QuickLink[];
 }
 
+export interface WeatherSettings {
+	enabled: boolean;
+	display: "toolbar" | "widget";
+	place: string;
+	latitude: number | null;
+	longitude: number | null;
+	dynamicAtmosphere: boolean;
+}
+
+export interface WeatherReading {
+	temperatureC: number;
+	weatherCode: number;
+	isDay: boolean;
+}
+
+export interface CachedWeather {
+	locationKey: string;
+	fetchedAt: number;
+	reading: WeatherReading;
+}
+
 export interface Settings {
 	tileSize: "small" | "medium" | "large";
 	maxColumns: number;
@@ -185,6 +206,7 @@ export interface Settings {
 	greeting: GreetingSettings;
 	search: SearchSettings;
 	quickLinks: QuickLinksSettings;
+	weather: WeatherSettings;
 	appearanceMode: AppearanceMode;
 	colorScheme: ColorScheme;
 	accentColor: AccentColor;

@@ -169,6 +169,7 @@ interface SetupActions {
 	updateBackground: (changes: Partial<Settings["background"]>) => void;
 	updateClock: (changes: Partial<Settings["clock"]>) => void;
 	updateGreeting: (changes: Partial<Settings["greeting"]>) => void;
+	updateWeather: (changes: Partial<Settings["weather"]>) => void;
 	updateSearch: (changes: Partial<Settings["search"]>) => void;
 	updateQuickLinks: (changes: Partial<Settings["quickLinks"]>) => void;
 	addQuickLink: (link: Omit<QuickLink, "id">) => string | null;
@@ -211,7 +212,8 @@ type NestedSettingsKey =
 	| "greeting"
 	| "quickLinks"
 	| "search"
-	| "thumbnailCapture";
+	| "thumbnailCapture"
+	| "weather";
 
 function applyNestedSettingsUpdate<K extends NestedSettingsKey>(
 	state: SetupStore,
@@ -1117,6 +1119,9 @@ export const useSetupStore = create<SetupStore>()(
 
 			updateGreeting: (changes) =>
 				set((s) => applyNestedSettingsUpdate(s, "greeting", changes)),
+
+			updateWeather: (changes) =>
+				set((s) => applyNestedSettingsUpdate(s, "weather", changes)),
 
 			updateSearch: (changes) =>
 				set((s) => applyNestedSettingsUpdate(s, "search", changes)),

@@ -24,7 +24,6 @@ import { PageContextMenu } from "../../src/components/newtab/page-context-menu";
 import { QuickLinks } from "../../src/components/newtab/quick-links";
 import { RefreshProgressToast } from "../../src/components/newtab/refresh-progress-toast";
 import { RestMode } from "../../src/components/newtab/rest-mode";
-import { WidgetSection } from "../../src/components/newtab/widget-section";
 import {
 	bindSearchShortcut,
 	searchAccess,
@@ -45,6 +44,9 @@ import {
 } from "../../src/components/newtab/settings/settings-motion-workspace";
 import { NavigationToolbar } from "../../src/components/newtab/toolbar/navigation-toolbar";
 import { ToolbarActions } from "../../src/components/newtab/toolbar/toolbar-actions";
+import { WeatherToolbar } from "../../src/components/newtab/weather/weather-toolbar";
+import { WeatherWidget } from "../../src/components/newtab/weather/weather-widget";
+import { WidgetSection } from "../../src/components/newtab/widget-section";
 import { MoveToDialog } from "../../src/components/shared/move-to-dialog";
 import { useCrossTabSync } from "../../src/hooks/use-cross-tab-sync";
 import { usePersistenceErrorToast } from "../../src/hooks/use-persistence-error-toast";
@@ -248,7 +250,9 @@ const HomeSurface = memo(function HomeSurface({
 						</main>
 
 						<QuickLinks />
-						<WidgetSection />
+						<WidgetSection>
+							<WeatherWidget />
+						</WidgetSection>
 
 						<div className="speed-dial-grid-region">
 							<DialGrid
@@ -1216,7 +1220,8 @@ export default function App() {
 											isRootFolder={isRootFolder}
 											canNestFolder={canNestFolder}
 										/>
-										<div className="pointer-events-auto flex items-center">
+										<div className="pointer-events-auto flex min-w-0 items-center gap-1.5">
+											<WeatherToolbar />
 											<SettingsMotionToolbarActions
 												onSettings={handleToggleSettings}
 												onSearch={handleToggleSearch}

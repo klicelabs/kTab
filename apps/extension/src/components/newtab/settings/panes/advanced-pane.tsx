@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SETTINGS_SCOPE_CLASS } from "../../../../lib/context-scope";
 import { clearIconBlobCache } from "../../../../lib/icon-blob-cache";
+import { clearWeatherCache } from "../../../../lib/idb";
 import { cn } from "../../../../lib/utils";
 import { clearMacOSiconsSettings } from "../../../../services/macosicons";
 import { useIconCacheStore } from "../../../../stores/icon-cache-store";
@@ -66,6 +67,7 @@ export function AdvancedPane({ onCloseParent }: AdvancedPaneProps) {
 			await resetAll();
 			useIconCacheStore.setState({ records: {} });
 			await clearIconBlobCache();
+			await clearWeatherCache();
 			await clearMacOSiconsSettings();
 			setConfirmResetOpen(false);
 			onCloseParent?.();
@@ -183,8 +185,8 @@ export function AdvancedPane({ onCloseParent }: AdvancedPaneProps) {
 							This deletes {cards.length} bookmark
 							{cards.length === 1 ? "" : "s"} across {folders.length} folder
 							{folders.length === 1 ? "" : "s"}, your custom wallpaper, and
-							every cached preview and site icon, plus your saved macOSicons key.
-							This can&rsquo;t be undone.
+							every cached preview and site icon, plus your saved macOSicons
+							key. This can&rsquo;t be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className="pt-2">

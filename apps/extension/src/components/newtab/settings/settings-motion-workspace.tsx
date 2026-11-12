@@ -14,6 +14,8 @@ import {
 	useSettingsMotionStore,
 } from "../../../stores/settings-motion-store";
 import { BackgroundLayer } from "../background-layer";
+import { WeatherAtmosphereOverlay } from "../weather/weather-atmosphere-overlay";
+import { WeatherRuntime } from "../weather/weather-runtime";
 import { SettingsSidebar } from "./settings-sidebar";
 
 type SettingsMotionWorkspaceProps = {
@@ -48,6 +50,8 @@ export function SettingsMotionFrame({
 	return (
 		<div {...props}>
 			<BackgroundLayer contained />
+			<WeatherRuntime />
+			<WeatherAtmosphereOverlay />
 			{children}
 		</div>
 	);

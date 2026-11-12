@@ -249,6 +249,21 @@ function normalizeSettings(
 	const greeting = isRecord(raw.greeting) ? raw.greeting : {};
 	const search = isRecord(raw.search) ? raw.search : {};
 	const quickLinks = isRecord(raw.quickLinks) ? raw.quickLinks : {};
+	const weather = isRecord(raw.weather) ? raw.weather : {};
+	const weatherLatitude =
+		typeof weather.latitude === "number" &&
+		Number.isFinite(weather.latitude) &&
+		weather.latitude >= -90 &&
+		weather.latitude <= 90
+			? weather.latitude
+			: null;
+	const weatherLongitude =
+		typeof weather.longitude === "number" &&
+		Number.isFinite(weather.longitude) &&
+		weather.longitude >= -180 &&
+		weather.longitude <= 180
+			? weather.longitude
+			: null;
 	return {
 		tileSize:
 			raw.tileSize === "small" ||
@@ -366,6 +381,25 @@ function normalizeSettings(
 				defaults.quickLinks.items.length > 0
 					? defaults.quickLinks.items
 					: DEFAULT_QUICK_LINKS,
+			),
+		},
+		weather: {
+			enabled: normalizeBoolean(weather.enabled, defaults.weather.enabled),
+			display:
+				weather.display === "toolbar" || weather.display === "widget"
+					? weather.display
+					: defaults.weather.display,
+			place:
+				weatherLatitude !== null && weatherLongitude !== null
+					? normalizeString(weather.place, defaults.weather.place)
+							.trim()
+							.slice(0, 160)
+					: "",
+			latitude: weatherLatitude,
+			longitude: weatherLongitude,
+			dynamicAtmosphere: normalizeBoolean(
+				weather.dynamicAtmosphere,
+				defaults.weather.dynamicAtmosphere,
 			),
 		},
 		appearanceMode: normalizeAppearanceMode(
@@ -758,10 +792,7 @@ function reportPersistenceError(error: unknown): void {
 		try {
 			listener(error);
 		} catch (listenerError) {
-			console.error(
-				"[ktab] persistence error listener failed",
-				listenerError,
-			);
+			console.error("[ktab] persistence error listener failed", listenerError);
 		}
 	}
 }
@@ -794,10 +825,7 @@ function setPersistHealth(health: PersistHealth): void {
 		try {
 			listener(health);
 		} catch (listenerError) {
-			console.error(
-				"[ktab] persist health listener failed",
-				listenerError,
-			);
+			console.error("[ktab] persist health listener failed", listenerError);
 		}
 	}
 }

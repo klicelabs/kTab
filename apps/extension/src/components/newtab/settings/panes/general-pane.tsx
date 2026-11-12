@@ -19,6 +19,7 @@ import {
 } from "../shared/settings-tokens";
 import { SliderRow } from "../shared/slider-row";
 import { TabSwitcherShortcut } from "../tab-switcher-shortcut";
+import { WeatherSettings } from "./weather-settings";
 
 const TILE_SIZE_OPTIONS = [
 	{ value: "small", label: "Small" },
@@ -374,6 +375,7 @@ export function GeneralPane() {
 
 			{/* The one keyboard behavior the extension owns: the tab switcher
 			    hotkey, remappable here instead of chrome://extensions/shortcuts. */}
+			<WeatherSettings />
 			<TabSwitcherShortcut />
 		</div>
 	);
