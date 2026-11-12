@@ -6,16 +6,17 @@
  * here — do not re-open "perch-db" or redefine these stores anywhere else.
  */
 
-import type { CachedWeather } from "../types";
+import type { CachedWeather, Setup } from "../types";
 
 // "perch-db" is the legacy database name; kept so existing installs retain
 // their thumbnails and backgrounds after the rename to kTab.
 export const DB_NAME = "perch-db";
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 export const STORE_THUMBS = "thumbnails";
 export const STORE_BG = "backgrounds";
 export const STORE_ICONS = "icons";
 export const STORE_WEATHER = "weather";
+export const STORE_BOOKMARKS = "bookmark-tree";
 
 export type ImageStoreName = typeof STORE_THUMBS | typeof STORE_BG;
 export interface ImageWrite {
@@ -44,6 +45,8 @@ export function openIDB(): Promise<IDBDatabase> {
 				db.createObjectStore(STORE_ICONS);
 			if (!db.objectStoreNames.contains(STORE_WEATHER))
 				db.createObjectStore(STORE_WEATHER);
+			if (!db.objectStoreNames.contains(STORE_BOOKMARKS))
+				db.createObjectStore(STORE_BOOKMARKS);
 		};
 		req.onsuccess = () => {
 			const db = req.result;
@@ -247,6 +250,58 @@ export async function clearWeatherCache(): Promise<void> {
 	tx.onerror = () => reject(tx.error);
 	tx.onabort = () =>
 		reject(tx.error ?? new Error("Weather cache clear aborted."));
+	return promise;
+}
+
+export type BookmarkTreeSnapshot = Pick<
+	Setup,
+	"cards" | "folders" | "itemOrder"
+>;
+
+/** Store the bookmark tree separately from the small settings envelope. */
+export async function putBookmarkTree(
+	value: BookmarkTreeSnapshot,
+): Promise<void> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
+	tx.objectStore(STORE_BOOKMARKS).put(value, "current");
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	tx.onabort = () =>
+		reject(tx.error ?? new Error("Bookmark tree write aborted."));
+	return promise;
+}
+
+/** Read the single persisted bookmark tree; callers normalize its records. */
+export async function getBookmarkTree(): Promise<BookmarkTreeSnapshot | null> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_BOOKMARKS, "readonly");
+	const request = tx.objectStore(STORE_BOOKMARKS).get("current");
+	const { promise, resolve, reject } =
+		Promise.withResolvers<BookmarkTreeSnapshot | null>();
+	request.onsuccess = () => {
+		const value = request.result as BookmarkTreeSnapshot | undefined;
+		resolve(
+			value && Array.isArray(value.cards) && Array.isArray(value.folders)
+				? value
+				: null,
+		);
+	};
+	request.onerror = () => reject(request.error);
+	return promise;
+}
+
+/** Remove the tree during a confirmed full reset. */
+export async function clearBookmarkTree(): Promise<void> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_BOOKMARKS, "readwrite");
+	tx.objectStore(STORE_BOOKMARKS).clear();
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	tx.oncomplete = () => resolve();
+	tx.onerror = () => reject(tx.error);
+	tx.onabort = () =>
+		reject(tx.error ?? new Error("Bookmark tree clear aborted."));
 	return promise;
 }
 

@@ -26,16 +26,16 @@ Local-first MV3 extension. Dashboard data stays on-device, with no accounts, bil
 
 ## Storage (3 layers)
 
-1. **`chrome.storage.local`, key `perch-setup`** — source of truth. One JSON envelope `{state, __perchResetGeneration}`. Writes coalesced 200 ms (`_doWrite` chain in `src/lib/storage.ts`); quota preflighted at 95% of 10 MiB; own-write echoes consumed so `onChanged` never replays our saves. Flush on `beforeunload`/`pagehide`/hidden.
-2. **IndexedDB `perch-db` v1** (`src/lib/idb.ts`) — binary bytes the envelope can't hold: `thumbnails` (card screenshots, `thumbId`), `backgrounds` (custom/pexels images). Orphan sweep runs once per session post-hydration.
+1. **`chrome.storage.local`, key `perch-setup`** — source of truth for settings and active view. One compact JSON envelope `{state, __perchResetGeneration}`. Writes coalesced 200 ms (`_doWrite` chain in `src/lib/storage.ts`); quota preflighted at 95% of 10 MiB; own-write echoes consumed so `onChanged` never replays our saves. Flush on `beforeunload`/`pagehide`/hidden.
+2. **IndexedDB `perch-db` v4** (`src/lib/idb.ts`) — large local data: `bookmark-tree` (folders, cards, mixed order), `thumbnails` (card screenshots, `thumbId`), `backgrounds` (custom/pexels images), `icons` (resolved image blobs), and the single current `weather` cache entry. Existing full bookmark envelopes migrate by writing the tree first, then compacting `perch-setup`; reads join both stores before normalization. The app requests persistent browser storage at startup and continues if the browser declines. Orphan thumbnail sweep runs once per session post-hydration.
 3. **Import/export** — `bookmarks-html.ts` (Chromium/Firefox/Vivaldi flavours + fixtures) and `backup.ts` in, envelope JSON out.
 
 Normalization is load-bearing: `normalizeState` repairs folders (orphans→root, cycle-break), cards (dedupe, URL-gated), and backfills `itemOrder`. Corrupt envelopes are quarantined (removed + reported), never absorbed.
 
 ## Seam contract
 
-- `useSetupStore` (zustand + persist) owns folders/cards/settings/itemOrder; every structural mutation keeps `itemOrder` in sync atomically (one coalesced write).
-- `useImageStore` owns bytes (IDB only, never persisted to chrome.storage).
+- `useSetupStore` (zustand + persist) owns folders/cards/settings/itemOrder in memory; every structural mutation keeps `itemOrder` in sync atomically. Settings and active view persist in `chrome.storage.local`; bookmark trees persist in IndexedDB.
+- `useImageStore` owns thumbnail and wallpaper bytes (IDB only, never persisted to chrome.storage). Icon artwork blobs use the same database.
 - Session-only stores (selection, rename, move-dialog, history UI, settings-motion) are never persisted.
 - Cross-tab: `storage.onChanged` → echo-consume → `mergeConcurrentSetup` → history invalidation (`use-cross-tab-sync.ts`, `background.ts:284`).
 - Reset protocol: generation barrier (`perch-reset-generation`); stale envelopes read as empty; reset cancels pending writes first.

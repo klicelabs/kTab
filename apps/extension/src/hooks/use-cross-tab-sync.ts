@@ -5,8 +5,8 @@ import { mergeConcurrentSetup } from "../lib/merge-external-setup";
 import {
 	consumeOwnWriteEcho,
 	getResetGeneration,
-	normalizeState,
 	PERSIST_GENERATION_KEY,
+	readSetupEnvelope,
 } from "../lib/storage";
 import { useHistoryStore } from "../stores/history-store";
 import { useSetupStore } from "../stores/setup-store";
@@ -26,6 +26,7 @@ export function useCrossTabSync() {
 		type OnChangedCb = Parameters<
 			(typeof Browser.storage.onChanged)["addListener"]
 		>[0];
+		let readSequence = 0;
 		const handler: OnChangedCb = (changes, area) => {
 			// "perch-setup" is the legacy persist name; kept for data continuity.
 			if (area !== "local" || !changes["perch-setup"]) return;
@@ -59,20 +60,32 @@ export function useCrossTabSync() {
 						: 0;
 				if (persistedGeneration < getResetGeneration()) return;
 
-				const current = useSetupStore.getState();
-				const incoming = normalizeState(parsed.state as Partial<Setup>);
+				const sequence = ++readSequence;
+				void readSetupEnvelope("perch-setup")
+					.then((incoming) => {
+						if (
+							!incoming ||
+							sequence !== readSequence ||
+							persistedGeneration < getResetGeneration()
+						)
+							return;
 
-				const base = lastCommonSetup.current ?? current;
-				const update = mergeConcurrentSetup(base, current, incoming);
-				if (update) useSetupStore.setState(update);
-				lastCommonSetup.current = update ? { ...current, ...update } : current;
+						const current = useSetupStore.getState();
+						const base = lastCommonSetup.current ?? current;
+						const update = mergeConcurrentSetup(base, current, incoming);
+						if (update) useSetupStore.setState(update);
+						lastCommonSetup.current = update
+							? { ...current, ...update }
+							: current;
 
-				// M4/NPD-3: external state arrived. Invalidate the redo branch and
-				// prune undo entries whose snapshots no longer match live state —
-				// stale cascades must never replay over another tab's writes.
-				useHistoryStore
-					.getState()
-					.invalidateForExternalSync(buildLiveShape(incoming));
+						// M4/NPD-3: external state arrived. Invalidate the redo branch and
+						// prune undo entries whose snapshots no longer match live state —
+						// stale cascades must never replay over another tab's writes.
+						useHistoryStore
+							.getState()
+							.invalidateForExternalSync(buildLiveShape(incoming));
+					})
+					.catch(() => undefined);
 			} catch {
 				// Ignore parse errors
 			}

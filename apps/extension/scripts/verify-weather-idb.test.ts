@@ -1,19 +1,28 @@
-import "fake-indexeddb/auto";
 import { expect, test } from "bun:test";
+import { indexedDB as fakeIndexedDB } from "fake-indexeddb";
 import {
+	clearBookmarkTree,
 	clearWeatherCache,
 	DB_NAME,
 	DB_VERSION,
+	getBookmarkTree,
 	getIconBlob,
 	getWeatherCache,
 	idbGet,
 	openIDB,
+	putBookmarkTree,
 	putWeatherCache,
 	STORE_BG,
+	STORE_BOOKMARKS,
 	STORE_ICONS,
 	STORE_THUMBS,
 	STORE_WEATHER,
 } from "../src/lib/idb";
+
+Object.defineProperty(globalThis, "indexedDB", {
+	configurable: true,
+	value: fakeIndexedDB,
+});
 
 async function deleteDatabase(): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
@@ -68,6 +77,7 @@ test("v2 databases retain existing assets while adding cache-only weather data",
 	expect(database.version).toBe(DB_VERSION);
 	expect([...database.objectStoreNames]).toEqual([
 		STORE_BG,
+		STORE_BOOKMARKS,
 		STORE_ICONS,
 		STORE_THUMBS,
 		STORE_WEATHER,
@@ -85,5 +95,14 @@ test("v2 databases retain existing assets while adding cache-only weather data",
 	expect(await getWeatherCache()).toEqual(cached);
 	await clearWeatherCache();
 	expect(await getWeatherCache()).toBeNull();
+	const bookmarkTree = {
+		folders: [{ id: "home", name: "Home", order: 0, parentId: null }],
+		cards: [],
+		itemOrder: { home: [] },
+	};
+	await putBookmarkTree(bookmarkTree);
+	expect(await getBookmarkTree()).toEqual(bookmarkTree);
+	await clearBookmarkTree();
+	expect(await getBookmarkTree()).toBeNull();
 	database.close();
 });

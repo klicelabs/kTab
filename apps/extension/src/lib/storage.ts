@@ -27,7 +27,13 @@ import {
 import { extApi } from "./extension-api";
 import { writeFirstPaintSnapshot } from "./first-paint-snapshot";
 import { getDescendantIds } from "./folder-tree";
-import { idbDelete, STORE_BG } from "./idb";
+import {
+	type BookmarkTreeSnapshot,
+	getBookmarkTree,
+	idbDelete,
+	putBookmarkTree,
+	STORE_BG,
+} from "./idb";
 import { buildItemOrder, repairItemOrder } from "./item-order";
 import { PEXELS_MAX_QUERY_LENGTH } from "./pexels";
 import { isAbsoluteHttpUrl } from "./url";
@@ -1000,7 +1006,16 @@ export async function readSetupEnvelope(name: string): Promise<Setup | null> {
 			parsed[PERSIST_GENERATION_KEY],
 		);
 		if (persistedGeneration < resetGeneration) return null;
-		return normalizeState(parsed.state as Partial<Setup>);
+		const rawState = parsed.state;
+		const normalized = normalizeState(rawState as Partial<Setup>);
+		await cleanupLegacyCustomWallpaperImages(rawState);
+		return hydrateBookmarkTree(
+			name,
+			parsed,
+			rawState,
+			normalized,
+			resetGeneration,
+		);
 	} catch {
 		// Corrupt envelope: quarantine semantics match the page adapter (D2) —
 		// the caller treats it as "nothing stored" and the next write replaces it.
@@ -1021,8 +1036,100 @@ export async function writeSetupEnvelope(
 ): Promise<void> {
 	if (!extApi() || !extApi().storage?.local) return;
 	if (!_resetGenerationLoaded) await _resetGenerationReady;
-	const value: StorageValue<Setup> = { state: setup };
-	await _doWrite(name, value, expectedGeneration ?? _resetGeneration);
+	const generation = expectedGeneration ?? _resetGeneration;
+	if (generation < _resetGeneration) {
+		throw new Error("Setup changed generation before persistence");
+	}
+	const normalized = normalizeState(setup);
+	if (hasIndexedDb()) {
+		await putBookmarkTree(bookmarkTreeFromSetup(normalized));
+		if (generation < _resetGeneration) {
+			throw new Error("Setup changed generation before persistence");
+		}
+	}
+	const value: StorageValue<Setup> = {
+		state: hasIndexedDb() ? compactBookmarkTree(normalized) : normalized,
+	};
+	await _doWrite(name, value, generation);
+}
+
+function bookmarkTreeFromSetup(setup: Setup): BookmarkTreeSnapshot {
+	return {
+		cards: setup.cards,
+		folders: setup.folders,
+		itemOrder: setup.itemOrder,
+	};
+}
+
+function hasIndexedDb(): boolean {
+	return typeof indexedDB !== "undefined";
+}
+
+/** Large bookmark arrays live in IndexedDB; settings and active view stay small. */
+function compactBookmarkTree(setup: Setup): Setup {
+	return { ...setup, cards: [], folders: [], itemOrder: {} };
+}
+
+function hasBookmarkTreePayload(rawState: unknown): boolean {
+	if (!isRecord(rawState)) return false;
+	return (
+		(Array.isArray(rawState.cards) && rawState.cards.length > 0) ||
+		(Array.isArray(rawState.folders) && rawState.folders.length > 0) ||
+		(isRecord(rawState.itemOrder) && Object.keys(rawState.itemOrder).length > 0)
+	);
+}
+
+/**
+ * Hydrate large collections from IndexedDB and migrate old chrome.storage
+ * envelopes in a write-before-compact order, so interrupted migrations can
+ * always retry from the still-complete legacy value.
+ */
+async function hydrateBookmarkTree(
+	name: string,
+	parsed: StorageValue<Setup> & Record<string, unknown>,
+	rawState: unknown,
+	normalized: Setup,
+	generation: number,
+): Promise<Setup> {
+	if (!hasIndexedDb()) return normalized;
+	let tree: BookmarkTreeSnapshot | null;
+	try {
+		tree = await getBookmarkTree();
+	} catch (error) {
+		reportPersistenceError(error);
+		return normalized;
+	}
+
+	const hadLegacyTree = hasBookmarkTreePayload(rawState);
+	const hadLegacyWallpaper = hasCustomWallpaperMigration(rawState);
+	if (!tree && (hadLegacyTree || hadLegacyWallpaper)) {
+		tree = bookmarkTreeFromSetup(normalized);
+		try {
+			await putBookmarkTree(tree);
+		} catch (error) {
+			reportPersistenceError(error);
+			return normalized;
+		}
+	}
+
+	const hydrated = tree
+		? normalizeState({ ...normalized, ...tree })
+		: normalized;
+	const shouldCompact = hadLegacyTree || hadLegacyWallpaper;
+	if (shouldCompact && tree) {
+		try {
+			await _doWrite(
+				name,
+				{ ...parsed, state: compactBookmarkTree(hydrated) },
+				generation,
+			);
+		} catch (error) {
+			// Keep the already-migrated IDB tree and complete in-memory snapshot;
+			// the old chrome envelope remains a retryable backup.
+			reportPersistenceError(error);
+		}
+	}
+	return hydrated;
 }
 
 /**
@@ -1136,17 +1243,15 @@ export const chromeStorageAdapter: PersistStorage<Setup> = {
 		if (persistedGeneration < resetGeneration) return null;
 		delete parsed[PERSIST_GENERATION_KEY];
 		const rawState = parsed.state;
-		const shouldMigrate = hasCustomWallpaperMigration(rawState);
 		const normalized = normalizeState(rawState as Partial<Setup>);
-		parsed.state = normalized;
 		await cleanupLegacyCustomWallpaperImages(rawState);
-		if (shouldMigrate) {
-			try {
-				await persistCustomWallpaperMigration(name, parsed, normalized);
-			} catch (error) {
-				reportPersistenceError(error);
-			}
-		}
+		parsed.state = await hydrateBookmarkTree(
+			name,
+			parsed,
+			rawState,
+			normalized,
+			resetGeneration,
+		);
 		return parsed;
 	},
 	setItem: async (name: string, value: StorageValue<Setup>): Promise<void> => {
@@ -1161,7 +1266,23 @@ export const chromeStorageAdapter: PersistStorage<Setup> = {
 			return;
 		}
 		if (!_resetGenerationLoaded) await _resetGenerationReady;
-		_pendingSetItem = { name, value, generation: _resetGeneration };
+		const generation = _resetGeneration;
+		if (hasIndexedDb()) {
+			try {
+				await putBookmarkTree(bookmarkTreeFromSetup(value.state));
+			} catch (error) {
+				reportPersistenceError(error);
+				throw error;
+			}
+		}
+		if (generation < _resetGeneration) {
+			throw new Error("Setup changed generation before persistence");
+		}
+		const compacted: StorageValue<Setup> = {
+			...value,
+			state: hasIndexedDb() ? compactBookmarkTree(value.state) : value.state,
+		};
+		_pendingSetItem = { name, value: compacted, generation };
 		if (_setItemTimer) clearTimeout(_setItemTimer);
 		const { promise, resolve, reject } = Promise.withResolvers<void>();
 		// Zustand intentionally does not await storage writes. Keep the rejection

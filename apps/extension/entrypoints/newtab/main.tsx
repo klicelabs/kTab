@@ -4,17 +4,17 @@ import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 
 import "@ktab/ui/globals.css";
-import {
-	readFirstPaintSnapshot,
-} from "../../src/lib/first-paint-snapshot";
+import { readFirstPaintSnapshot } from "../../src/lib/first-paint-snapshot";
+import { requestStoragePersistence } from "../../src/lib/storage-persistence";
+import { installTabSwitcherReceiver } from "../../src/lib/tab-switcher";
 import {
 	applyWallpaperPrehydrate,
 	clearPrehydrateWhenLive,
 } from "../../src/lib/wallpaper-snapshot";
 import { useSetupStore } from "../../src/stores/setup-store";
-import { installTabSwitcherReceiver } from "../../src/lib/tab-switcher";
 
 installTabSwitcherReceiver();
+void requestStoragePersistence();
 
 // Development-only seed hook. The dynamic import inside the DEV branch is
 // dropped from production builds, so `src/dev/*` can never ship or run for

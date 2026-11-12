@@ -15,6 +15,9 @@
 // In-memory chrome.storage.local shim. Functions in storage.ts consult the
 // global `chrome` at call time, so setting this before the dynamic import
 // (and even on a cached module instance) exercises the real protocol.
+import "fake-indexeddb/auto";
+import { DEFAULT_SETUP } from "../src/lib/constants";
+
 const mem = new Map<string, unknown>();
 let quotaUsageOverride: number | null = null;
 let keyUsageOverride: number | null = null;
@@ -44,7 +47,8 @@ const storageArea = {
 		if (keys === null) {
 			if (quotaUsageOverride !== null) return quotaUsageOverride;
 			return [...mem.values()].reduce(
-				(total, value) => total + new TextEncoder().encode(String(value)).byteLength,
+				(total, value) =>
+					total + new TextEncoder().encode(String(value)).byteLength,
 				0,
 			);
 		}
@@ -255,6 +259,10 @@ test("own storage change is recognized before the write promise resolves", async
 		await writeSetupEnvelope("perch-setup", {
 			...sampleSetup(),
 			folders: [{ id: "f1", name: "Early echo", order: 0, parentId: null }],
+			settings: {
+				...DEFAULT_SETUP.settings,
+				colorScheme: "dark",
+			},
 		});
 	} finally {
 		area.storage.local.set = originalSet;

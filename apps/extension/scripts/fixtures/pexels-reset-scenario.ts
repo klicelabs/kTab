@@ -52,6 +52,9 @@ Object.defineProperty(globalThis, "chrome", {
 mock.module("../../src/lib/idb", () => ({
 	STORE_BG: "backgrounds",
 	STORE_THUMBS: "thumbnails",
+	getBookmarkTree: async () => null,
+	putBookmarkTree: async () => undefined,
+	clearBookmarkTree: async () => undefined,
 	idbDelete: async (_store: string, id: string) => images.delete(id),
 	idbGet: async (_store: string, id: string) => images.get(id) ?? null,
 	idbGetAllKeys: async () => [...images.keys()],

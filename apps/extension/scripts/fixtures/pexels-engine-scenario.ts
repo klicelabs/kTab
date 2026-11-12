@@ -47,6 +47,9 @@ mock.module("../../src/lib/storage", () => ({
 }));
 mock.module("../../src/lib/idb", () => ({
 	STORE_BG: "backgrounds",
+	getBookmarkTree: async () => null,
+	putBookmarkTree: async () => undefined,
+	clearBookmarkTree: async () => undefined,
 	idbGet: async (_store: string, id: string) => images.get(id) ?? null,
 	idbDelete: async (_store: string, id: string) => images.delete(id),
 	idbGetAllKeys: async () => [...images.keys()],

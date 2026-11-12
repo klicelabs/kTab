@@ -14,6 +14,7 @@ import {
 import { getSubtreeIds, wouldCreateCycle } from "../lib/folder-tree";
 import type { HistoryEntry, HistorySnapshot } from "../lib/history";
 import { nextHistoryEntryId, sameKeys } from "../lib/history-capture";
+import { clearBookmarkTree } from "../lib/idb";
 import {
 	containerKeyOf,
 	type ItemOrder,
@@ -1242,6 +1243,9 @@ export const useSetupStore = create<SetupStore>()(
 					// "perch-setup" is the legacy persist name; kept for data continuity.
 					await resetWallpaperCache(async () => {
 						await chrome.storage.local.remove("perch-setup");
+						if (typeof indexedDB !== "undefined") {
+							await clearBookmarkTree();
+						}
 						await useImageStore.getState().clearAll();
 						set({ ...normalizeState(null) });
 						await flushPersist();
