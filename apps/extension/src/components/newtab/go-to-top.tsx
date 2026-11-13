@@ -121,7 +121,14 @@ export function GoToTopButton({ scrollRef, folderId }: GoToTopButtonProps) {
 			// mounted one is the entering grid.
 			const grids = scrollEl.querySelectorAll<HTMLElement>(".dial-grid");
 			const grid = grids[grids.length - 1];
-			const next = grid ? secondRowCells(grid) : [];
+			const next =
+				grid?.dataset.virtualized === "true"
+					? [
+							grid.querySelector<HTMLElement>("[data-go-to-top-sentinel]"),
+						].filter((cell): cell is HTMLElement => cell !== null)
+					: grid
+						? secondRowCells(grid)
+						: [];
 			for (const target of [...above.keys()]) {
 				if (!next.includes(target as HTMLElement)) {
 					io.unobserve(target);

@@ -1,10 +1,23 @@
 import { REORDER_TWEEN } from "@ktab/ui/lib/ease";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useCallback, useEffect, useMemo } from "react";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
+import {
+	type CSSProperties,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { toast } from "sonner";
 import { useGridDnd } from "../../hooks/use-grid-dnd";
 import { useMarqueeSelection } from "../../hooks/use-marquee-selection";
-import { CARD_ASPECT_RATIO } from "../../lib/constants";
+import {
+	CARD_ASPECT_RATIO,
+	GRID_GAP_PX,
+	TILE_SIZE_DIMENSIONS,
+} from "../../lib/constants";
 import { showGroupDragGhost } from "../../lib/drag-ghost";
 import {
 	planGroupFolderDrop,
@@ -42,6 +55,49 @@ import {
 } from "./folders/folder-preview-card";
 
 const REDUCED_GRID_TRANSITION = { duration: 0.08 } as const;
+const VIRTUALIZE_AFTER = 80;
+const VIRTUAL_OVERSCAN_ROWS = 3;
+
+interface CardGridMetrics {
+	width: number;
+	tileWidth: number;
+	columnGap: number;
+	rowGap: number;
+	columns: number;
+	scrollMargin: number;
+}
+
+function initialGridMetrics(
+	gridMaxWidth: number,
+	cellWidth: number,
+	columnGap: number,
+	rowGap: number,
+	maxColumns: number,
+	safePadding: number,
+): CardGridMetrics {
+	const viewportWidth =
+		typeof window === "undefined" ? gridMaxWidth + 96 : window.innerWidth;
+	const gutter = viewportWidth <= 480 ? 16 : viewportWidth <= 900 ? 20 : 24;
+	const width = Math.max(
+		cellWidth,
+		Math.min(gridMaxWidth, viewportWidth - gutter * 2) - safePadding * 2,
+	);
+	const columns = Math.max(
+		1,
+		Math.min(
+			maxColumns,
+			Math.floor((width + columnGap) / (cellWidth + columnGap)),
+		),
+	);
+	return {
+		width,
+		tileWidth: cellWidth,
+		columnGap,
+		rowGap,
+		columns,
+		scrollMargin: 0,
+	};
+}
 
 interface DialGridProps {
 	/** Item-order container being rendered (the active folder id). */
@@ -181,10 +237,132 @@ export function DialGrid({
 
 	const cardHeightRatio =
 		CARD_ASPECT_RATIO[cardAspect] ?? CARD_ASPECT_RATIO.vertical;
+	const initialCellWidth =
+		dialLayout === "icon"
+			? iconGrid.cellWidth
+			: (TILE_SIZE_DIMENSIONS[tileSize]?.width ?? 160);
+	const initialColumnGap =
+		dialLayout === "icon"
+			? iconGrid.columnGap
+			: typeof window !== "undefined" && window.innerWidth <= 480
+				? 12
+				: typeof window !== "undefined" && window.innerWidth <= 900
+					? 16
+					: GRID_GAP_PX;
+	const initialRowGap =
+		dialLayout === "icon" ? iconGrid.rowGap : initialColumnGap;
+	const initialSafePadding = dialLayout === "icon" ? iconGrid.safePadding : 12;
 	const cellAspectStyle =
 		dialLayout === "card"
 			? { ["--card-height-ratio" as string]: String(cardHeightRatio) }
 			: {};
+	const fallbackMetrics = useMemo(
+		() =>
+			initialGridMetrics(
+				gridMaxWidth,
+				initialCellWidth,
+				initialColumnGap,
+				initialRowGap,
+				maxColumns,
+				initialSafePadding,
+			),
+		[
+			gridMaxWidth,
+			initialCellWidth,
+			initialColumnGap,
+			initialRowGap,
+			initialSafePadding,
+			maxColumns,
+		],
+	);
+	const gridRef = useRef<HTMLDivElement>(null);
+	const [gridMetrics, setGridMetrics] = useState(fallbackMetrics);
+	const [focusedRow, setFocusedRow] = useState<number | null>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: folderId swaps the keyed grid DOM node; remeasure the new node after navigation.
+	useEffect(() => {
+		const grid = gridRef.current;
+		if (!grid) return;
+
+		const measure = () => {
+			const rect = grid.getBoundingClientRect();
+			if (rect.width <= 0) return;
+			const styles = getComputedStyle(grid);
+			const tileWidth =
+				dialLayout === "icon"
+					? iconGrid.cellWidth
+					: Number.parseFloat(styles.getPropertyValue("--tile-w")) ||
+						TILE_SIZE_DIMENSIONS[tileSize]?.width ||
+						160;
+			const responsiveGap =
+				dialLayout === "icon"
+					? iconGrid.columnGap
+					: Number.parseFloat(styles.getPropertyValue("--grid-gap")) ||
+						GRID_GAP_PX;
+			const columnGap =
+				(dialLayout === "card"
+					? Number.parseFloat(styles.columnGap)
+					: Number.NaN) || responsiveGap;
+			const rowGap =
+				(dialLayout === "card"
+					? Number.parseFloat(styles.rowGap)
+					: Number.NaN) ||
+				(dialLayout === "icon" ? iconGrid.rowGap : responsiveGap);
+			const columns = Math.max(
+				1,
+				Math.min(
+					maxColumns,
+					Math.floor((rect.width + columnGap) / (tileWidth + columnGap)),
+				),
+			);
+			const scrollElement = grid.closest<HTMLElement>(
+				"[data-speed-dial-scroll]",
+			);
+			const scrollMargin = scrollElement
+				? rect.top -
+					scrollElement.getBoundingClientRect().top +
+					scrollElement.scrollTop
+				: rect.top + window.scrollY;
+			const next: CardGridMetrics = {
+				width: rect.width,
+				tileWidth,
+				columnGap,
+				rowGap,
+				columns,
+				scrollMargin: Math.max(0, scrollMargin),
+			};
+			setGridMetrics((current) =>
+				current.width === next.width &&
+				current.tileWidth === next.tileWidth &&
+				current.columnGap === next.columnGap &&
+				current.rowGap === next.rowGap &&
+				current.columns === next.columns &&
+				current.scrollMargin === next.scrollMargin
+					? current
+					: next,
+			);
+		};
+
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(grid);
+		window.addEventListener("resize", measure);
+		return () => {
+			observer.disconnect();
+			window.removeEventListener("resize", measure);
+		};
+	}, [
+		dialLayout,
+		folderId,
+		iconGrid.cellWidth,
+		iconGrid.columnGap,
+		iconGrid.rowGap,
+		maxColumns,
+		tileSize,
+	]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Folder changes reset the virtual keyboard focus row.
+	useEffect(() => setFocusedRow(null), [folderId]);
 
 	const isInContainer = useCallback(
 		(ref: ItemRef) =>
@@ -650,6 +828,81 @@ export function DialGrid({
 		folderId,
 		items: orderedItems,
 	});
+	const virtualized =
+		orderedRefs.length >= VIRTUALIZE_AFTER &&
+		(dialLayout === "card" || iconGrid.folderSpan === 1) &&
+		!dnd.drag &&
+		!marquee.marqueeActive;
+	const virtualCellWidth = gridMetrics.tileWidth;
+	const virtualCellHeight =
+		dialLayout === "icon"
+			? iconGrid.cellHeight
+			: gridMetrics.tileWidth * cardHeightRatio;
+	const virtualRowSize = virtualCellHeight + gridMetrics.rowGap;
+	const virtualRowCount = Math.ceil(orderedRefs.length / gridMetrics.columns);
+	const rangeExtractor = useCallback(
+		(range: Parameters<typeof defaultRangeExtractor>[0]) => {
+			const indexes = defaultRangeExtractor(range);
+			const retainedRows =
+				focusedRow === null
+					? []
+					: [focusedRow, focusedRow + 1].filter(
+							(row) => row >= 0 && row < virtualRowCount,
+						);
+			if (retainedRows.length === 0) return indexes;
+			return [...new Set([...indexes, ...retainedRows])].sort((a, b) => a - b);
+		},
+		[focusedRow, virtualRowCount],
+	);
+	const virtualizer = useVirtualizer({
+		count: virtualRowCount,
+		getScrollElement: () =>
+			gridRef.current?.closest<HTMLElement>("[data-speed-dial-scroll]") ?? null,
+		estimateSize: () => virtualRowSize,
+		overscan: VIRTUAL_OVERSCAN_ROWS,
+		enabled: virtualized,
+		scrollMargin: gridMetrics.scrollMargin,
+		initialRect: { width: gridMetrics.width, height: 720 },
+		rangeExtractor,
+	});
+	const virtualRows = virtualized ? virtualizer.getVirtualItems() : [];
+	const renderedIndexes = virtualized
+		? virtualRows.flatMap((row) => {
+				const start = row.index * gridMetrics.columns;
+				return Array.from(
+					{ length: Math.min(gridMetrics.columns, orderedRefs.length - start) },
+					(_, offset) => start + offset,
+				);
+			})
+		: orderedRefs.map((_, index) => index);
+	const virtualGridHeight = Math.max(
+		0,
+		virtualRowCount * virtualRowSize - gridMetrics.rowGap,
+	);
+	const virtualCellStyle = (index: number): CSSProperties | undefined => {
+		if (!virtualized) return undefined;
+		const trackWidth =
+			gridMetrics.columns * virtualCellWidth +
+			(gridMetrics.columns - 1) * gridMetrics.columnGap;
+		const column = index % gridMetrics.columns;
+		const row = Math.floor(index / gridMetrics.columns);
+		return {
+			position: "absolute",
+			left:
+				Math.max(0, (gridMetrics.width - trackWidth) / 2) +
+				column * (virtualCellWidth + gridMetrics.columnGap),
+			top: row * virtualRowSize,
+			width: virtualCellWidth,
+			height: virtualCellHeight,
+		};
+	};
+	const handleVirtualFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+		if (!virtualized || !(event.target instanceof Element)) return;
+		const row =
+			event.target.closest<HTMLElement>("[data-virtual-row]")?.dataset
+				.virtualRow;
+		if (row !== undefined) setFocusedRow(Number(row));
+	};
 
 	function handleSelect(e: React.MouseEvent, id: string) {
 		if (e.shiftKey) selectRange(id, orderedItems);
@@ -742,20 +995,30 @@ export function DialGrid({
 						variants={PAGE_VARIANTS}
 						custom={motionContext}
 						className="dial-grid"
+						ref={gridRef}
+						onFocusCapture={handleVirtualFocus}
 						data-tile={tileSize}
 						data-layout={dialLayout}
+						data-virtualized={virtualized ? "true" : undefined}
 						data-nav-direction={navigation.direction}
 						data-nav-kind={navigation.kind}
 						style={{
-							display: orderedRefs.length === 0 ? undefined : "grid",
-							gridTemplateColumns:
+							display:
 								orderedRefs.length === 0
+									? undefined
+									: virtualized
+										? "block"
+										: "grid",
+							position: virtualized ? "relative" : undefined,
+							height: virtualized ? virtualGridHeight : undefined,
+							gridTemplateColumns:
+								orderedRefs.length === 0 || virtualized
 									? undefined
 									: dialLayout === "icon"
 										? "repeat(auto-fill, var(--icon-cell-w, 104px))"
 										: "repeat(auto-fill, var(--tile-w, 148px))",
 							gap:
-								orderedRefs.length === 0
+								orderedRefs.length === 0 || virtualized
 									? undefined
 									: dialLayout === "icon"
 										? "var(--icon-row-gap) var(--icon-column-gap)"
@@ -782,9 +1045,25 @@ export function DialGrid({
 						    per cell. First child of the grid so the grid-owned icon
 						    vars resolve for its radii and cells paint above it. */}
 						<DialHoverVeil resetKey={folderId} />
+						{virtualized ? (
+							<div
+								aria-hidden="true"
+								data-go-to-top-sentinel
+								style={{
+									position: "absolute",
+									top: 2 * virtualCellHeight + gridMetrics.rowGap,
+									left: 0,
+									width: 1,
+									height: 1,
+									pointerEvents: "none",
+								}}
+							/>
+						) : null}
 						{orderedRefs.length === 0
 							? emptyState
-							: orderedRefs.map((ref) => {
+							: renderedIndexes.map((index) => {
+									const ref = orderedRefs[index];
+									if (!ref) return null;
 									if (ref.kind === "folder") {
 										const folder = folderById.get(ref.id);
 										if (!folder) return null;
@@ -807,6 +1086,12 @@ export function DialGrid({
 													dragGroupIds?.has(folder.id) ? "true" : undefined
 												}
 												data-marquee-id={folder.id}
+												data-virtual-row={
+													virtualized
+														? Math.floor(index / gridMetrics.columns)
+														: undefined
+												}
+												style={virtualCellStyle(index)}
 												className={cn(
 													"dial-cell",
 													dialLayout === "icon" && "dial-icon-folder-cell",
@@ -872,6 +1157,12 @@ export function DialGrid({
 											transition={reorderTransition}
 											className="dial-cell"
 											data-marquee-id={card.id}
+											data-virtual-row={
+												virtualized
+													? Math.floor(index / gridMetrics.columns)
+													: undefined
+											}
+											style={virtualCellStyle(index)}
 										>
 											<DialCard
 												card={card}

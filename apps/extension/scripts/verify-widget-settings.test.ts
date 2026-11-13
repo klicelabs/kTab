@@ -99,7 +99,8 @@ test("weather is off by default and rejects invalid saved locations", () => {
 	const defaults = normalizeState(null);
 	expect(defaults.settings.weather).toEqual({
 		enabled: false,
-		display: "widget",
+		display: "expanded",
+		appearance: "flat",
 		place: "",
 		latitude: null,
 		longitude: null,
@@ -119,7 +120,8 @@ test("weather is off by default and rejects invalid saved locations", () => {
 	const normalized = normalizeState(state);
 	expect(normalized.settings.weather).toEqual({
 		enabled: true,
-		display: "widget",
+		display: "compact",
+		appearance: "flat",
 		place: "",
 		latitude: null,
 		longitude: -42.5,
@@ -141,9 +143,47 @@ test("keeps a valid weather display and manual city coordinates", () => {
 	expect(normalizeState(state).settings.weather).toEqual({
 		enabled: true,
 		display: "toolbar",
+		appearance: "flat",
 		place: "Saquarema, Brazil",
 		latitude: -22.92,
 		longitude: -42.51,
 		dynamicAtmosphere: true,
+	});
+});
+
+test("migrates legacy weather cards and normalizes each widget appearance locally", () => {
+	const state = structuredClone(DEFAULT_SETUP);
+	const settings = state.settings as unknown as Record<string, unknown>;
+	settings.weather = { ...DEFAULT_SETUP.settings.weather, display: "widget" };
+	settings.widgets = {
+		music: { enabled: true, appearance: "glass" },
+		market: {
+			enabled: true,
+			appearance: "broken",
+			tickers: ["^bvsp", "DIS", "AAPL", "TSLA"],
+		},
+		github: {
+			enabled: true,
+			appearance: "flat",
+			username: " octocat! ",
+			token: " secret ",
+		},
+	};
+
+	const normalized = normalizeState(state);
+	expect(normalized.settings.weather.display).toBe("expanded");
+	expect(normalized.settings.widgets).toEqual({
+		music: { enabled: true, appearance: "glass" },
+		market: {
+			enabled: true,
+			appearance: "flat",
+			tickers: ["^BVSP", "DIS", "AAPL"],
+		},
+		github: {
+			enabled: true,
+			appearance: "flat",
+			username: "octocat",
+			token: "secret",
+		},
 	});
 });

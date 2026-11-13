@@ -256,6 +256,21 @@ function normalizeSettings(
 	const search = isRecord(raw.search) ? raw.search : {};
 	const quickLinks = isRecord(raw.quickLinks) ? raw.quickLinks : {};
 	const weather = isRecord(raw.weather) ? raw.weather : {};
+	const widgets = isRecord(raw.widgets) ? raw.widgets : {};
+	const music = isRecord(widgets.music) ? widgets.music : {};
+	const market = isRecord(widgets.market) ? widgets.market : {};
+	const github = isRecord(widgets.github) ? widgets.github : {};
+	const normalizeWidgetAppearance = (
+		value: unknown,
+		fallback: "glass" | "flat",
+	) => (value === "glass" || value === "flat" ? value : fallback);
+	const marketTickers = Array.isArray(market.tickers)
+		? market.tickers
+				.filter((ticker): ticker is string => typeof ticker === "string")
+				.map((ticker) => ticker.trim().toUpperCase())
+				.filter((ticker) => /^[A-Z0-9.^=_-]{1,16}$/.test(ticker))
+				.slice(0, 3)
+		: defaults.widgets.market.tickers;
 	const weatherLatitude =
 		typeof weather.latitude === "number" &&
 		Number.isFinite(weather.latitude) &&
@@ -392,9 +407,17 @@ function normalizeSettings(
 		weather: {
 			enabled: normalizeBoolean(weather.enabled, defaults.weather.enabled),
 			display:
-				weather.display === "toolbar" || weather.display === "widget"
+				weather.display === "toolbar" ||
+				weather.display === "compact" ||
+				weather.display === "expanded"
 					? weather.display
-					: defaults.weather.display,
+					: weather.display === "widget"
+						? "expanded"
+						: defaults.weather.display,
+			appearance: normalizeWidgetAppearance(
+				weather.appearance,
+				defaults.weather.appearance,
+			),
 			place:
 				weatherLatitude !== null && weatherLongitude !== null
 					? normalizeString(weather.place, defaults.weather.place)
@@ -407,6 +430,44 @@ function normalizeSettings(
 				weather.dynamicAtmosphere,
 				defaults.weather.dynamicAtmosphere,
 			),
+		},
+		widgets: {
+			music: {
+				enabled: normalizeBoolean(
+					music.enabled,
+					defaults.widgets.music.enabled,
+				),
+				appearance: normalizeWidgetAppearance(
+					music.appearance,
+					defaults.widgets.music.appearance,
+				),
+			},
+			market: {
+				enabled: normalizeBoolean(
+					market.enabled,
+					defaults.widgets.market.enabled,
+				),
+				appearance: normalizeWidgetAppearance(
+					market.appearance,
+					defaults.widgets.market.appearance,
+				),
+				tickers: marketTickers,
+			},
+			github: {
+				enabled: normalizeBoolean(
+					github.enabled,
+					defaults.widgets.github.enabled,
+				),
+				appearance: normalizeWidgetAppearance(
+					github.appearance,
+					defaults.widgets.github.appearance,
+				),
+				username: normalizeString(github.username, "")
+					.trim()
+					.replace(/[^a-zA-Z0-9-]/g, "")
+					.slice(0, 39),
+				token: normalizeString(github.token, "").trim().slice(0, 512),
+			},
 		},
 		appearanceMode: normalizeAppearanceMode(
 			raw.appearanceMode,

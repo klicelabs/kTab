@@ -23,6 +23,7 @@
 		"lucide-react": "catalog:",
 		"motion": "^13.2.0",
 		"next-themes": "catalog:",
+		"recharts": "^3.8.0",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"shadcn": "^4.12.0",

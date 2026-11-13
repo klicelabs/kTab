@@ -156,17 +156,60 @@ export interface QuickLinksSettings {
 
 export interface WeatherSettings {
 	enabled: boolean;
-	display: "toolbar" | "widget";
+	/** `widget` is accepted only as a legacy stored value and normalizes to expanded. */
+	display: "toolbar" | "widget" | "compact" | "expanded";
+	appearance: WidgetAppearance;
 	place: string;
 	latitude: number | null;
 	longitude: number | null;
 	dynamicAtmosphere: boolean;
 }
 
+export type WidgetAppearance = "glass" | "flat";
+
+export interface MusicWidgetSettings {
+	enabled: boolean;
+	appearance: WidgetAppearance;
+}
+
+export interface MarketWidgetSettings {
+	enabled: boolean;
+	appearance: WidgetAppearance;
+	tickers: string[];
+}
+
+export interface GitHubWidgetSettings {
+	enabled: boolean;
+	appearance: WidgetAppearance;
+	username: string;
+	token: string;
+}
+
+export interface WidgetsSettings {
+	music: MusicWidgetSettings;
+	market: MarketWidgetSettings;
+	github: GitHubWidgetSettings;
+}
+
+export interface WeatherHour {
+	time: string;
+	temperatureC: number | null;
+	weatherCode: number;
+	isDay: boolean;
+}
+
 export interface WeatherReading {
 	temperatureC: number;
 	weatherCode: number;
 	isDay: boolean;
+	currentTime?: string | null;
+	timezone?: string | null;
+	sunrise?: string | null;
+	sunset?: string | null;
+	highC?: number | null;
+	lowC?: number | null;
+	windSpeedKmh?: number | null;
+	hourly?: WeatherHour[];
 }
 
 export interface CachedWeather {
@@ -207,6 +250,7 @@ export interface Settings {
 	search: SearchSettings;
 	quickLinks: QuickLinksSettings;
 	weather: WeatherSettings;
+	widgets: WidgetsSettings;
 	appearanceMode: AppearanceMode;
 	colorScheme: ColorScheme;
 	accentColor: AccentColor;

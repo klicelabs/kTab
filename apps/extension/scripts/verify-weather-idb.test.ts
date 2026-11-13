@@ -8,15 +8,18 @@ import {
 	getBookmarkTree,
 	getIconBlob,
 	getWeatherCache,
+	getWidgetCache,
 	idbGet,
 	openIDB,
 	putBookmarkTree,
 	putWeatherCache,
+	putWidgetCache,
 	STORE_BG,
 	STORE_BOOKMARKS,
 	STORE_ICONS,
 	STORE_THUMBS,
 	STORE_WEATHER,
+	STORE_WIDGETS,
 } from "../src/lib/idb";
 
 Object.defineProperty(globalThis, "indexedDB", {
@@ -69,7 +72,7 @@ async function createVersionTwoDatabase(): Promise<void> {
 	});
 }
 
-test("v2 databases retain existing assets while adding cache-only weather data", async () => {
+test("upgrades retain assets and add weather and third-party widget caches", async () => {
 	await deleteDatabase();
 	await createVersionTwoDatabase();
 
@@ -81,6 +84,7 @@ test("v2 databases retain existing assets while adding cache-only weather data",
 		STORE_ICONS,
 		STORE_THUMBS,
 		STORE_WEATHER,
+		STORE_WIDGETS,
 	]);
 	expect(await idbGet(STORE_THUMBS, "existing-thumb")).toBe("keep");
 	expect(await idbGet(STORE_BG, "existing-background")).toBe("keep");
@@ -95,6 +99,14 @@ test("v2 databases retain existing assets while adding cache-only weather data",
 	expect(await getWeatherCache()).toEqual(cached);
 	await clearWeatherCache();
 	expect(await getWeatherCache()).toBeNull();
+	await putWidgetCache("market:^BVSP", {
+		fetchedAt: 4321,
+		value: [{ symbol: "^BVSP", price: 125_053 }],
+	});
+	expect(await getWidgetCache("market:^BVSP")).toEqual({
+		fetchedAt: 4321,
+		value: [{ symbol: "^BVSP", price: 125_053 }],
+	});
 	const bookmarkTree = {
 		folders: [{ id: "home", name: "Home", order: 0, parentId: null }],
 		cards: [],

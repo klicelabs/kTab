@@ -1,4 +1,4 @@
-import type { WeatherReading } from "../types";
+import type { WeatherHour, WeatherReading } from "../types";
 
 export interface WeatherLocation {
 	name: string;
@@ -160,7 +160,16 @@ export async function fetchCurrentWeather(
 	const url = new URL(FORECAST_URL);
 	url.searchParams.set("latitude", String(latitude));
 	url.searchParams.set("longitude", String(longitude));
-	url.searchParams.set("current", "temperature_2m,weather_code,is_day");
+	url.searchParams.set(
+		"current",
+		"temperature_2m,weather_code,is_day,time,wind_speed_10m",
+	);
+	url.searchParams.set("hourly", "temperature_2m,weather_code,is_day");
+	url.searchParams.set(
+		"daily",
+		"sunrise,sunset,temperature_2m_max,temperature_2m_min",
+	);
+	url.searchParams.set("forecast_days", "2");
 	url.searchParams.set("temperature_unit", "celsius");
 	url.searchParams.set("timezone", "auto");
 
@@ -184,10 +193,81 @@ export async function fetchCurrentWeather(
 			"Weather data was incomplete. Try refreshing the forecast.",
 		);
 	}
+	const hourlyPayload =
+		isRecord(payload) && isRecord(payload.hourly) ? payload.hourly : null;
+	const dailyPayload =
+		isRecord(payload) && isRecord(payload.daily) ? payload.daily : null;
+	const hourlyTimes = Array.isArray(hourlyPayload?.time)
+		? hourlyPayload.time
+		: [];
+	const hourlyTemperatures = Array.isArray(hourlyPayload?.temperature_2m)
+		? hourlyPayload.temperature_2m
+		: [];
+	const hourlyCodes = Array.isArray(hourlyPayload?.weather_code)
+		? hourlyPayload.weather_code
+		: [];
+	const hourlyDay = Array.isArray(hourlyPayload?.is_day)
+		? hourlyPayload.is_day
+		: [];
+	const hourly: WeatherHour[] = [];
+	for (
+		let index = 0;
+		index < hourlyTimes.length && hourly.length < 36;
+		index++
+	) {
+		const time = hourlyTimes[index];
+		const temperature = hourlyTemperatures[index];
+		const code = hourlyCodes[index];
+		const day = hourlyDay[index];
+		if (
+			typeof time !== "string" ||
+			typeof temperature !== "number" ||
+			!Number.isFinite(temperature) ||
+			typeof code !== "number" ||
+			!Number.isInteger(code) ||
+			typeof day !== "number" ||
+			(day !== 0 && day !== 1)
+		) {
+			continue;
+		}
+		hourly.push({
+			time,
+			temperatureC: temperature,
+			weatherCode: code,
+			isDay: day === 1,
+		});
+	}
+	const dailyValue = (key: string): unknown => {
+		const values = dailyPayload?.[key];
+		return Array.isArray(values) ? values[0] : undefined;
+	};
+	const finiteDailyValue = (key: string): number | null => {
+		const value = dailyValue(key);
+		return typeof value === "number" && Number.isFinite(value) ? value : null;
+	};
+	const timeValue = (key: string): string | null => {
+		const value = dailyValue(key);
+		return typeof value === "string" ? value : null;
+	};
 
 	return {
 		temperatureC,
 		weatherCode,
 		isDay: isDay === 1,
+		currentTime: typeof current.time === "string" ? current.time : null,
+		timezone:
+			isRecord(payload) && typeof payload.timezone === "string"
+				? payload.timezone
+				: null,
+		sunrise: timeValue("sunrise"),
+		sunset: timeValue("sunset"),
+		highC: finiteDailyValue("temperature_2m_max"),
+		lowC: finiteDailyValue("temperature_2m_min"),
+		windSpeedKmh:
+			typeof current.wind_speed_10m === "number" &&
+			Number.isFinite(current.wind_speed_10m)
+				? current.wind_speed_10m
+				: null,
+		hourly,
 	};
 }

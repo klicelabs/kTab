@@ -14,6 +14,10 @@ import {
 	useAppearance,
 } from "../../src/components/newtab/appearance-provider";
 import { ClockWidget } from "../../src/components/newtab/clock-widget";
+import {
+	DashboardErrorBoundary,
+	DashboardSectionFallback,
+} from "../../src/components/newtab/dashboard-error-boundary";
 import { DialGrid } from "../../src/components/newtab/dial-grid";
 import { EmptyLanding } from "../../src/components/newtab/empty-landing";
 import type { FolderPreviewItem } from "../../src/components/newtab/folders/folder-preview-card";
@@ -47,6 +51,9 @@ import { ToolbarActions } from "../../src/components/newtab/toolbar/toolbar-acti
 import { WeatherToolbar } from "../../src/components/newtab/weather/weather-toolbar";
 import { WeatherWidget } from "../../src/components/newtab/weather/weather-widget";
 import { WidgetSection } from "../../src/components/newtab/widget-section";
+import { GitHubWidget } from "../../src/components/newtab/widgets/github-widget";
+import { MarketWidget } from "../../src/components/newtab/widgets/market-widget";
+import { MusicWidget } from "../../src/components/newtab/widgets/music-widget";
 import { MoveToDialog } from "../../src/components/shared/move-to-dialog";
 import { useCrossTabSync } from "../../src/hooks/use-cross-tab-sync";
 import { usePersistenceErrorToast } from "../../src/hooks/use-persistence-error-toast";
@@ -250,45 +257,73 @@ const HomeSurface = memo(function HomeSurface({
 						</main>
 
 						<QuickLinks />
-						<WidgetSection>
-							<WeatherWidget />
-						</WidgetSection>
+						<DashboardErrorBoundary
+							fallback={(retry) => (
+								<section
+									aria-label="Widgets"
+									className="speed-dial-widget-section flex flex-wrap items-center justify-center gap-3.5"
+								>
+									<DashboardSectionFallback
+										label="Widgets"
+										retry={retry}
+										className="h-[172px] w-[356px] max-w-full"
+									/>
+								</section>
+							)}
+						>
+							<WidgetSection>
+								<WeatherWidget />
+								<MusicWidget />
+								<MarketWidget />
+								<GitHubWidget />
+							</WidgetSection>
+						</DashboardErrorBoundary>
 
 						<div className="speed-dial-grid-region">
-							<DialGrid
-								folderId={activeFolderId}
-								cards={cards}
-								subfolders={subfolders}
-								allCards={allCards}
-								allFolders={allFolders}
-								itemOrder={itemOrder}
-								cardCounts={cardCounts}
-								previewCards={previewCards}
-								onDelete={onDelete}
-								onDeleteFolder={onDeleteFolder}
-								onOpenFolder={onSelectFolder}
-								onNewSubfolder={onNewSubfolder}
-								onMoveItems={onMoveItems}
-								onLiveReorder={onLiveReorder}
-								onReorderGroup={onReorderGroup}
-								onInsertCardsAt={onInsertCardsAt}
-								onPreviewDrop={onPreviewDrop}
-								onCombineCards={onCombineCards}
-								canNestFolder={canNestFolder}
-								navigation={navigation}
-								emptyState={
-									isEmpty ? (
-										<EmptyLanding
-											folderName={currentFolderName}
-											onAdd={() =>
-												onOpenSettings("bookmarks", {
-													type: "add-link",
-												})
-											}
-										/>
-									) : null
-								}
-							/>
+							<DashboardErrorBoundary
+								fallback={(retry) => (
+									<DashboardSectionFallback
+										label="Bookmarks"
+										retry={retry}
+										className="mx-auto w-full max-w-[1216px]"
+									/>
+								)}
+							>
+								<DialGrid
+									folderId={activeFolderId}
+									cards={cards}
+									subfolders={subfolders}
+									allCards={allCards}
+									allFolders={allFolders}
+									itemOrder={itemOrder}
+									cardCounts={cardCounts}
+									previewCards={previewCards}
+									onDelete={onDelete}
+									onDeleteFolder={onDeleteFolder}
+									onOpenFolder={onSelectFolder}
+									onNewSubfolder={onNewSubfolder}
+									onMoveItems={onMoveItems}
+									onLiveReorder={onLiveReorder}
+									onReorderGroup={onReorderGroup}
+									onInsertCardsAt={onInsertCardsAt}
+									onPreviewDrop={onPreviewDrop}
+									onCombineCards={onCombineCards}
+									canNestFolder={canNestFolder}
+									navigation={navigation}
+									emptyState={
+										isEmpty ? (
+											<EmptyLanding
+												folderName={currentFolderName}
+												onAdd={() =>
+													onOpenSettings("bookmarks", {
+														type: "add-link",
+													})
+												}
+											/>
+										) : null
+									}
+								/>
+							</DashboardErrorBoundary>
 						</div>
 					</div>
 

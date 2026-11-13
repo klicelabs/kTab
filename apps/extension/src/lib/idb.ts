@@ -12,12 +12,13 @@ import { withIndexedDbWriteLock } from "./idb-write-lock";
 // "perch-db" is the legacy database name; kept so existing installs retain
 // their thumbnails and backgrounds after the rename to kTab.
 export const DB_NAME = "perch-db";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 export const STORE_THUMBS = "thumbnails";
 export const STORE_BG = "backgrounds";
 export const STORE_ICONS = "icons";
 export const STORE_WEATHER = "weather";
 export const STORE_BOOKMARKS = "bookmark-tree";
+export const STORE_WIDGETS = "widget-cache";
 
 export type ImageStoreName = typeof STORE_THUMBS | typeof STORE_BG;
 export interface ImageWrite {
@@ -48,6 +49,8 @@ export function openIDB(): Promise<IDBDatabase> {
 				db.createObjectStore(STORE_WEATHER);
 			if (!db.objectStoreNames.contains(STORE_BOOKMARKS))
 				db.createObjectStore(STORE_BOOKMARKS);
+			if (!db.objectStoreNames.contains(STORE_WIDGETS))
+				db.createObjectStore(STORE_WIDGETS);
 		};
 		req.onsuccess = () => {
 			const db = req.result;
@@ -267,6 +270,65 @@ export async function clearWeatherCache(): Promise<void> {
 		tx.onerror = () => reject(tx.error);
 		tx.onabort = () =>
 			reject(tx.error ?? new Error("Weather cache clear aborted."));
+		return promise;
+	});
+}
+
+export interface CachedWidgetData<T = unknown> {
+	fetchedAt: number;
+	value: T;
+}
+
+/** Persist small third-party widget snapshots without blocking page startup. */
+export async function putWidgetCache<T>(
+	key: string,
+	value: CachedWidgetData<T>,
+): Promise<void> {
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_WIDGETS, "readwrite");
+		tx.objectStore(STORE_WIDGETS).put(value, key);
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Widget cache write aborted."));
+		return promise;
+	});
+}
+
+/** Read a widget cache record, rejecting malformed values from older builds. */
+export async function getWidgetCache<T>(
+	key: string,
+): Promise<CachedWidgetData<T> | null> {
+	const db = await openIDB();
+	const tx = db.transaction(STORE_WIDGETS, "readonly");
+	const request = tx.objectStore(STORE_WIDGETS).get(key);
+	const { promise, resolve, reject } =
+		Promise.withResolvers<CachedWidgetData<T> | null>();
+	request.onsuccess = () => {
+		const value = request.result as CachedWidgetData<T> | undefined;
+		resolve(
+			value && Number.isFinite(value.fetchedAt) && "value" in value
+				? value
+				: null,
+		);
+	};
+	request.onerror = () => reject(request.error);
+	return promise;
+}
+
+/** Clear market and GitHub snapshots during a full local data reset. */
+export async function clearWidgetCache(): Promise<void> {
+	return withIndexedDbWriteLock(async () => {
+		const db = await openIDB();
+		const tx = db.transaction(STORE_WIDGETS, "readwrite");
+		tx.objectStore(STORE_WIDGETS).clear();
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => reject(tx.error);
+		tx.onabort = () =>
+			reject(tx.error ?? new Error("Widget cache clear aborted."));
 		return promise;
 	});
 }

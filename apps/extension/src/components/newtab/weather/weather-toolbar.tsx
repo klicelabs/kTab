@@ -1,26 +1,14 @@
+import { Icon } from "@ktab/ui/icons/icon";
 import {
 	describeWeatherCondition,
 	weatherLocationKey,
 } from "../../../lib/weather-conditions";
+import { shortWeatherCity } from "../../../lib/weather-display";
 import { useSetupStore } from "../../../stores/setup-store";
 import { useWeatherRuntimeStore } from "../../../stores/weather-runtime-store";
-import {
-	useWeatherMotionAllowed,
-	WeatherPauseButton,
-	WeatherRefreshButton,
-} from "./weather-actions";
-
-function weatherLocale(): string {
-	return typeof navigator !== "undefined" && navigator.language
-		? navigator.language
-		: "en";
-}
-
-function formatTemperature(value: number, locale: string): string {
-	return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
-		value,
-	);
-}
+import type { WeatherReading, WeatherSettings } from "../../../types";
+import { GlassSurface } from "../toolbar/glass-surface";
+import { WeatherIcon } from "./weather-icon";
 
 export function WeatherToolbar() {
 	const weather = useSetupStore((state) => state.settings.weather);
@@ -28,42 +16,71 @@ export function WeatherToolbar() {
 	const reading = useWeatherRuntimeStore((state) =>
 		state.locationKey === locationKey ? state.reading : null,
 	);
-	const error = useWeatherRuntimeStore((state) =>
-		state.locationKey === locationKey ? state.error : null,
+	const status = useWeatherRuntimeStore((state) =>
+		state.locationKey === locationKey ? state.status : "loading",
 	);
-	const canAnimate = useWeatherMotionAllowed();
-	const locale = weatherLocale();
+	return (
+		<WeatherToolbarView weather={weather} reading={reading} status={status} />
+	);
+}
+
+export function WeatherToolbarView({
+	weather,
+	reading,
+	status,
+}: {
+	weather: WeatherSettings;
+	reading: WeatherReading | null;
+	status: string;
+}) {
+	const locale =
+		typeof navigator !== "undefined" && navigator.language
+			? navigator.language
+			: "en";
 	const condition = reading
 		? describeWeatherCondition(reading.weatherCode, reading.isDay, locale)
 		: null;
-
 	if (!weather.enabled || weather.display !== "toolbar" || !weather.place) {
 		return null;
 	}
 
-	const fullText = reading
-		? `${weather.place} ${formatTemperature(reading.temperatureC, locale)}°C · ${condition?.label ?? "Current conditions"}`
-		: error
-			? "Weather unavailable"
-			: `Loading weather for ${weather.place}`;
-	const showPause =
-		weather.dynamicAtmosphere && condition?.atmosphere && canAnimate;
-
+	const city = shortWeatherCity(weather.place);
+	const temperature = reading
+		? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
+				reading.temperatureC,
+			)
+		: null;
 	return (
-		<div className="pointer-events-auto flex min-w-0 max-w-[min(38vw,18rem)] items-center gap-1.5 text-[11px] text-white/85 leading-[1.35]">
-			<span className="min-w-0 flex-1 text-pretty" title={fullText}>
-				{fullText}
+		<div
+			className="group/weather-toolbar relative isolate inline-flex max-w-[min(38vw,13rem)] items-center justify-center px-1.5 py-1 text-[11px] text-white/90"
+			title={`${city}${temperature ? ` ${temperature}°` : ""}${condition ? ` · ${condition.label}` : ""}`}
+		>
+			<GlassSurface
+				aria-hidden="true"
+				variant="toolbar"
+				shape="section"
+				shadowless
+				className="pointer-events-none absolute inset-[-4px] z-0 opacity-0 transition-opacity duration-150 group-focus-within/weather-toolbar:opacity-100 group-hover/weather-toolbar:opacity-100"
+			/>
+			<span className="relative z-10 inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap">
+				{condition ? (
+					<WeatherIcon icon={condition.icon} size={15} />
+				) : (
+					<Icon
+						name="sun-moon"
+						size={15}
+						strokeWidth={1.6}
+						aria-hidden="true"
+					/>
+				)}
+				<span className="truncate">{city}</span>
+				{temperature ? (
+					<span className="shrink-0 tabular-nums">{temperature}°</span>
+				) : null}
 			</span>
-			<a
-				href="https://open-meteo.com/"
-				target="_blank"
-				rel="noopener noreferrer"
-				className="shrink-0 text-white/65 underline decoration-from-font underline-offset-2 focus-visible:outline-2 focus-visible:outline-current focus-visible:outline-offset-2"
-			>
-				Open-Meteo
-			</a>
-			{error ? <WeatherRefreshButton /> : null}
-			{showPause ? <WeatherPauseButton /> : null}
+			<span className="sr-only" role="status">
+				{status === "error" ? "Weather unavailable." : ""}
+			</span>
 		</div>
 	);
 }

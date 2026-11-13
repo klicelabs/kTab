@@ -318,11 +318,26 @@ export const DEFAULT_SETTINGS: Settings = {
 	search: { ...DEFAULT_SEARCH },
 	weather: {
 		enabled: false,
-		display: "widget",
+		display: "expanded",
+		appearance: "flat",
 		place: "",
 		latitude: null,
 		longitude: null,
 		dynamicAtmosphere: false,
+	},
+	widgets: {
+		music: { enabled: true, appearance: "flat" },
+		market: {
+			enabled: true,
+			appearance: "flat",
+			tickers: ["^BVSP", "DIS", "AAPL"],
+		},
+		github: {
+			enabled: false,
+			appearance: "flat",
+			username: "",
+			token: "",
+		},
 	},
 	appearanceMode: "liquid",
 	colorScheme: "auto",

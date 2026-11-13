@@ -34,6 +34,7 @@ import {
 	type TabSwitcherSession,
 } from "../src/lib/tab-switcher";
 import { hasThumbnailCapturePermission } from "../src/lib/thumbnail-permission";
+import { registerMediaSessionBackground } from "../src/lib/media-session-background";
 import {
 	emptyRefreshState,
 	isRefreshMessage,
@@ -757,6 +758,7 @@ function tabCanBeCaptured(
 }
 
 export default defineBackground(() => {
+	registerMediaSessionBackground();
 	ext.windows.onFocusChanged?.addListener((windowId) => {
 		refreshFocusEventSequence += 1;
 		refreshFocusEventLog.push({

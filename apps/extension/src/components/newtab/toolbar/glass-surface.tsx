@@ -15,11 +15,14 @@ import {
 	glassShape,
 	glassTierVariant,
 } from "../../../lib/glass";
+import type { WidgetAppearance } from "../../../types";
 import { cn } from "../../../lib/utils";
 import { observeBackdropVisibility } from "../../../lib/visible-backdrops";
 import { useAppearance, useGlassAppearance } from "../appearance-provider";
 
 type GlassSurfaceProps = HTMLAttributes<HTMLDivElement> & {
+	/** Let an individual widget follow its saved material preference. */
+	appearanceOverride?: WidgetAppearance;
 	/** Product intent mapped to a glasscn material tier. */
 	variant?: GlassTier;
 	/**
@@ -75,11 +78,19 @@ export function GlassSurface({
 	variant = "hero",
 	shape,
 	shadowless = false,
+	appearanceOverride,
 	style,
 	...props
 }: GlassSurfaceProps) {
-	const { isLiquid, prefersContrastMore, resolvedDark, cornerScale } =
-		useAppearance();
+	const {
+		isLiquid: appIsLiquid,
+		prefersContrastMore,
+		resolvedDark,
+		cornerScale,
+	} = useAppearance();
+	const isLiquid = appearanceOverride
+		? appearanceOverride === "glass"
+		: appIsLiquid;
 	const { glassParams } = useGlassAppearance();
 	// prefers-contrast: more upgrades broad `surface` panels to the dense
 	// `menu` tier so text survives any wallpaper. Hero keeps its lens.

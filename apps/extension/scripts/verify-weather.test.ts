@@ -11,6 +11,12 @@ import {
 } from "../src/lib/weather-idle";
 import type { WeatherLocation } from "../src/services/open-meteo";
 import {
+	weatherAtmosphere,
+	upcomingWeatherHours,
+	nextSunEvent,
+	shortWeatherCity,
+} from "../src/lib/weather-display";
+import {
 	fetchCurrentWeather,
 	formatWeatherPlace,
 	searchWeatherLocations,
@@ -81,26 +87,120 @@ test("weather search skips short queries and formats duplicate place parts once"
 	expect(formatWeatherPlace(location)).toBe("Paris, France");
 });
 
-test("current weather requests Celsius and maps a valid Open-Meteo response", async () => {
+test("current weather requests local hourly and daily forecasts", async () => {
 	let requestUrl: URL | null = null;
 	const fetcher: typeof fetch = async (input) => {
 		requestUrl = new URL(input.toString());
 		return jsonResponse({
-			current: { temperature_2m: 25.6, weather_code: 0, is_day: 1 },
+			timezone: "America/Sao_Paulo",
+			current: {
+				temperature_2m: 25.6,
+				weather_code: 61,
+				is_day: 1,
+				time: "2026-11-12T13:00",
+				wind_speed_10m: 14.4,
+			},
+			hourly: {
+				time: ["2026-11-12T14:00", "2026-11-12T15:00"],
+				temperature_2m: [24.8, 23.2],
+				weather_code: [61, 3],
+				is_day: [1, 1],
+			},
+			daily: {
+				sunrise: ["2026-11-12T05:54"],
+				sunset: ["2026-11-12T18:12"],
+				temperature_2m_max: [29.1],
+				temperature_2m_min: [20.2],
+			},
 		});
 	};
 
 	expect(await fetchCurrentWeather(-22.92, -42.51, { fetcher })).toEqual({
 		temperatureC: 25.6,
-		weatherCode: 0,
+		weatherCode: 61,
 		isDay: true,
+		currentTime: "2026-11-12T13:00",
+		timezone: "America/Sao_Paulo",
+		sunrise: "2026-11-12T05:54",
+		sunset: "2026-11-12T18:12",
+		highC: 29.1,
+		lowC: 20.2,
+		windSpeedKmh: 14.4,
+		hourly: [
+			{
+				time: "2026-11-12T14:00",
+				temperatureC: 24.8,
+				weatherCode: 61,
+				isDay: true,
+			},
+			{
+				time: "2026-11-12T15:00",
+				temperatureC: 23.2,
+				weatherCode: 3,
+				isDay: true,
+			},
+		],
 	});
 	expect(requestUrl?.origin).toBe("https://api.open-meteo.com");
 	expect(requestUrl?.searchParams.get("current")).toBe(
+		"temperature_2m,weather_code,is_day,time,wind_speed_10m",
+	);
+	expect(requestUrl?.searchParams.get("hourly")).toBe(
 		"temperature_2m,weather_code,is_day",
 	);
+	expect(requestUrl?.searchParams.get("daily")).toBe(
+		"sunrise,sunset,temperature_2m_max,temperature_2m_min",
+	);
+	expect(requestUrl?.searchParams.get("forecast_days")).toBe("2");
 	expect(requestUrl?.searchParams.get("temperature_unit")).toBe("celsius");
 	expect(requestUrl?.searchParams.get("timezone")).toBe("auto");
+});
+
+test("uses local forecast times for hour cards, the next sun event and atmosphere", () => {
+	const reading = {
+		temperatureC: 18,
+		weatherCode: 61,
+		isDay: true,
+		timezone: "America/Sao_Paulo",
+		sunrise: "2026-11-12T05:54",
+		sunset: "2026-11-12T18:12",
+		hourly: [
+			{
+				time: "2026-11-12T13:00",
+				temperatureC: 18,
+				weatherCode: 61,
+				isDay: true,
+			},
+			{
+				time: "2026-11-12T14:00",
+				temperatureC: 19,
+				weatherCode: 3,
+				isDay: true,
+			},
+			{
+				time: "2026-11-12T18:00",
+				temperatureC: 16,
+				weatherCode: 3,
+				isDay: true,
+			},
+		],
+	};
+	const now = new Date("2026-11-12T17:00:00-03:00");
+	expect(
+		upcomingWeatherHours(reading, 5, now).map((hour) => hour.time),
+	).toEqual(["2026-11-12T18:00"]);
+	expect(nextSunEvent(reading, now)).toEqual({
+		label: "Sunset",
+		time: "18:12",
+		temperatureC: 16,
+	});
+	expect(weatherAtmosphere(reading, now)).toEqual({
+		time: "sunset",
+		condition: "rain",
+	});
+	expect(shortWeatherCity("Saquarema, Rio de Janeiro, Brasil")).toBe(
+		"Saquarema",
+	);
 });
 
 test("rejects invalid coordinates, HTTP errors and incomplete forecast data", async () => {

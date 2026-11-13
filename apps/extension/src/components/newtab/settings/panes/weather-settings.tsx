@@ -22,8 +22,14 @@ import {
 } from "../shared/settings-tokens";
 
 const WEATHER_DISPLAY_OPTIONS = [
-	{ value: "widget", label: "Widget shelf" },
-	{ value: "toolbar", label: "Toolbar text" },
+	{ value: "compact", label: "Compact card" },
+	{ value: "expanded", label: "Expanded forecast" },
+	{ value: "toolbar", label: "Toolbar" },
+] as const;
+
+const WEATHER_APPEARANCE_OPTIONS = [
+	{ value: "flat", label: "Flat" },
+	{ value: "glass", label: "Liquid Glass" },
 ] as const;
 
 export function WeatherEnabledSwitch({
@@ -157,6 +163,15 @@ export function WeatherSettings() {
 					options={WEATHER_DISPLAY_OPTIONS}
 					onChange={(display) => updateWeather({ display })}
 				/>
+				{weather.display !== "toolbar" ? (
+					<SelectRow
+						label="Appearance"
+						icon="sparkles"
+						value={weather.appearance}
+						options={WEATHER_APPEARANCE_OPTIONS}
+						onChange={(appearance) => updateWeather({ appearance })}
+					/>
+				) : null}
 
 				{weather.place ? (
 					<div className="grid min-w-0 gap-1 px-1.5 py-2.5">
@@ -265,7 +280,7 @@ export function WeatherSettings() {
 
 				<p className="text-pretty px-1.5 py-2 text-[12px] text-neutral-500 leading-[1.45] dark:text-neutral-400">
 					Weather sends the city name and chosen coordinates to Open-Meteo. It
-					never uses device location. Data by{" "}
+					never uses device location. Forecast data is provided under{" "}
 					<a
 						href="https://open-meteo.com/"
 						target="_blank"
