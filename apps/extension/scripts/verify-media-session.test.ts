@@ -3,6 +3,8 @@ import {
 	controlMediaSession,
 	enumerateMediaSessionOutputs,
 	queryMediaSessions,
+	readMediaSessionArtwork,
+	requestMediaSessionOutputLabels,
 	setMediaSessionOutput,
 } from "../src/lib/media-session";
 
@@ -73,7 +75,7 @@ test("reads audible tab title and favicon without messaging or injecting", async
 					{
 						id: 4,
 						title: "People Are Strange - YouTube",
-						url: "https://www.youtube.com/watch?v=example",
+						url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 						favIconUrl: "https://www.youtube.com/s/desktop/abcdef/favicon.ico",
 						audible: true,
 						lastAccessed: 20,
@@ -102,7 +104,8 @@ test("reads audible tab title and favicon without messaging or injecting", async
 		tabId: 4,
 		title: "People Are Strange - YouTube",
 		artist: "youtube.com",
-		artwork: "https://www.youtube.com/s/desktop/abcdef/favicon.ico",
+		artwork: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+		artworkSource: "youtube",
 		playing: true,
 		currentTime: 0,
 		duration: 0,
@@ -126,6 +129,42 @@ test("retains a selected paused tab using the passive tabs API", async () => {
 	expect(await queryMediaSessions(12)).toMatchObject([
 		{ tabId: 12, title: "A paused video", playing: false },
 	]);
+});
+
+test("reads non-YouTube artwork once on demand in the ISOLATED world", async () => {
+	const calls: { tabId: number; world: string }[] = [];
+	installPage({ paused: false, ended: false, currentSrc: "", duration: 0 });
+	Object.defineProperty(globalThis, "navigator", {
+		configurable: true,
+		value: {
+			mediaSession: {
+				metadata: {
+					artwork: [
+						{ src: "https://cdn.example/cover-small.jpg", sizes: "64x64" },
+						{ src: "https://cdn.example/cover-large.jpg", sizes: "512x512" },
+					],
+				},
+			},
+		},
+	});
+	installBrowserApi({
+		scripting: {
+			executeScript: async (details: {
+				target: { tabId: number };
+				world: string;
+				func: (...args: never[]) => unknown;
+				args?: unknown[];
+			}) => {
+				calls.push({ tabId: details.target.tabId, world: details.world });
+				return [{ result: details.func(...((details.args ?? []) as never[])) }];
+			},
+		},
+	});
+
+	expect(await readMediaSessionArtwork(23)).toBe(
+		"https://cdn.example/cover-large.jpg",
+	);
+	expect(calls).toEqual([{ tabId: 23, world: "ISOLATED" }]);
 });
 
 test("executes controls only for the requested tab and never routes output", async () => {
@@ -220,5 +259,57 @@ test("lists outputs on picker open and calls setSinkId only for selection", asyn
 	expect(calls.map(({ tabId, world }) => ({ tabId, world }))).toEqual([
 		{ tabId: 15, world: "MAIN" },
 		{ tabId: 15, world: "MAIN" },
+	]);
+});
+
+test("requests output labels only on demand and stops the permission stream", async () => {
+	const calls: { tabId: number; world: string; args: unknown[] }[] = [];
+	let microphoneRequests = 0;
+	let trackStops = 0;
+	installPage({ paused: false, ended: false, currentSrc: "", duration: 0 });
+	Object.defineProperty(globalThis, "navigator", {
+		configurable: true,
+		value: {
+			mediaDevices: {
+				enumerateDevices: async () => [
+					{ kind: "audiooutput", deviceId: "speaker", label: "Desk speakers" },
+				],
+				getUserMedia: async (constraints: { audio: boolean }) => {
+					microphoneRequests += 1;
+					expect(constraints).toEqual({ audio: true });
+					return { getTracks: () => [{ stop: () => trackStops++ }] };
+				},
+			},
+		},
+	});
+	installBrowserApi({
+		scripting: {
+			executeScript: async (details: {
+				target: { tabId: number };
+				world: string;
+				func: (...args: never[]) => unknown;
+				args: unknown[];
+			}) => {
+				calls.push({
+					tabId: details.target.tabId,
+					world: details.world,
+					args: details.args,
+				});
+				const result = await details.func(...(details.args as never[]));
+				return [{ result }];
+			},
+		},
+	});
+
+	expect(await enumerateMediaSessionOutputs(21)).toMatchObject({ ok: true });
+	expect(microphoneRequests).toBe(0);
+	expect(await requestMediaSessionOutputLabels(21)).toEqual({ ok: true });
+	expect(microphoneRequests).toBe(1);
+	expect(trackStops).toBe(1);
+	expect(
+		calls.map(({ tabId, world, args }) => ({ tabId, world, args })),
+	).toEqual([
+		{ tabId: 21, world: "MAIN", args: [{ type: "list-outputs" }] },
+		{ tabId: 21, world: "MAIN", args: [{ type: "request-output-labels" }] },
 	]);
 });

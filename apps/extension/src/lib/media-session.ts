@@ -7,6 +7,7 @@ export interface MediaSessionSnapshot {
 	artist: string;
 	album: string;
 	artwork: string | null;
+	artworkSource?: "youtube" | "favicon" | "media-session";
 	playing: boolean;
 	currentTime: number;
 	duration: number;
@@ -18,7 +19,12 @@ export type MediaControlAction = "play" | "pause" | "next" | "previous";
 
 export interface MediaOutputResult {
 	ok: boolean;
-	reason?: "unsupported" | "no-media" | "blocked" | "failed";
+	reason?:
+		| "unsupported"
+		| "no-media"
+		| "blocked"
+		| "permission-denied"
+		| "failed";
 }
 
 export interface MediaAudioOutputDevice {
@@ -29,6 +35,7 @@ export interface MediaAudioOutputDevice {
 type MediaPageRequest =
 	| { type: "control"; action: MediaControlAction }
 	| { type: "list-outputs" }
+	| { type: "request-output-labels" }
 	| { type: "set-output"; deviceId: string };
 
 /**
@@ -65,6 +72,37 @@ export async function mediaPageRequest(
 			return { ok: true, devices };
 		} catch {
 			return { ok: false, devices: [], reason: "failed" };
+		}
+	}
+
+	if (request.type === "request-output-labels") {
+		const mediaDevices = navigator.mediaDevices;
+		if (!mediaDevices || typeof mediaDevices.getUserMedia !== "function") {
+			return { ok: false, reason: "unsupported" };
+		}
+		let stream: MediaStream | null = null;
+		try {
+			stream = await mediaDevices.getUserMedia({ audio: true });
+			return { ok: true };
+		} catch (error) {
+			const name =
+				typeof error === "object" &&
+				error !== null &&
+				"name" in error &&
+				typeof error.name === "string"
+					? error.name
+					: "";
+			return {
+				ok: false,
+				reason:
+					name === "NotAllowedError" || name === "PermissionDeniedError"
+						? "permission-denied"
+						: "failed",
+			};
+		} finally {
+			for (const track of stream?.getTracks() ?? []) {
+				track.stop();
+			}
 		}
 	}
 
@@ -180,19 +218,72 @@ function safeArtwork(value: string | undefined): string | null {
 	}
 }
 
+function youtubeArtwork(url: string | undefined): string | null {
+	if (!url) return null;
+	try {
+		const parsed = new URL(url);
+		const hostname = parsed.hostname.toLowerCase();
+		let videoId: string | null = null;
+		if (hostname === "youtu.be") {
+			videoId = parsed.pathname.split("/").filter(Boolean)[0] ?? null;
+		} else if (
+			hostname === "youtube.com" ||
+			hostname.endsWith(".youtube.com") ||
+			hostname === "youtube-nocookie.com" ||
+			hostname.endsWith(".youtube-nocookie.com")
+		) {
+			videoId = parsed.searchParams.get("v");
+			if (!videoId) {
+				videoId =
+					parsed.pathname.match(/^\/(?:embed|live|shorts)\/([^/]+)/)?.[1] ??
+					null;
+			}
+		}
+		return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId)
+			? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+			: null;
+	} catch {
+		return null;
+	}
+}
+
+/** One-shot read called only from the music artwork affordance. */
+export function readPageMediaArtwork(): string | null {
+	const artwork = navigator.mediaSession?.metadata?.artwork;
+	if (!artwork?.length) return null;
+	const sources = Array.from(artwork)
+		.map((item) => ({
+			src: item.src,
+			area: (item.sizes?.split(/\s+/) ?? [])
+				.map((size) => {
+					const [width, height] = size.split("x").map(Number);
+					return Number.isFinite(width) && Number.isFinite(height)
+						? width * height
+						: 0;
+				})
+				.reduce((largest, current) => Math.max(largest, current), 0),
+		}))
+		.filter((item) => typeof item.src === "string" && item.src.length <= 2048)
+		.sort((left, right) => right.area - left.area);
+	return sources[0]?.src ?? null;
+}
+
 function snapshotFromTab(
 	tab: MediaTab,
 	playing: boolean,
 ): MediaSessionSnapshot | null {
 	if (typeof tab.id !== "number") return null;
 	const host = hostForTab(tab.url);
+	const youtubeCover = youtubeArtwork(tab.url);
+	const favicon = safeArtwork(tab.favIconUrl);
 	return {
 		tabId: tab.id,
 		updatedAt: Date.now(),
 		title: tab.title?.trim() || host || "Media playing",
 		artist: host || "Browser tab",
 		album: "",
-		artwork: safeArtwork(tab.favIconUrl),
+		artwork: youtubeCover ?? favicon,
+		artworkSource: youtubeCover ? "youtube" : favicon ? "favicon" : undefined,
 		playing,
 		currentTime: 0,
 		duration: 0,
@@ -212,6 +303,19 @@ async function executeMediaPage(
 			world: "MAIN",
 			func: mediaPageRequest,
 			args: [request],
+		});
+		return results[0]?.result ?? null;
+	} catch {
+		return null;
+	}
+}
+
+async function executeIsolatedArtworkRead(tabId: number): Promise<unknown> {
+	try {
+		const results = await ext.scripting.executeScript({
+			target: { tabId },
+			world: "ISOLATED",
+			func: readPageMediaArtwork,
 		});
 		return results[0]?.result ?? null;
 	} catch {
@@ -251,6 +355,14 @@ export async function controlMediaSession(
 	return (await executeMediaPage(tabId, { type: "control", action })) === true;
 }
 
+/** Read a page MediaSession artwork URL once after an explicit user click. */
+export async function readMediaSessionArtwork(
+	tabId: number,
+): Promise<string | null> {
+	const result = await executeIsolatedArtworkRead(tabId);
+	return typeof result === "string" ? safeArtwork(result) : null;
+}
+
 /** Inject once, and only after the user chooses a device in the output picker. */
 export async function setMediaSessionOutput(
 	tabId: number,
@@ -259,6 +371,16 @@ export async function setMediaSessionOutput(
 	const result: unknown = await executeMediaPage(tabId, {
 		type: "set-output",
 		deviceId,
+	});
+	return isMediaOutputResult(result) ? result : { ok: false, reason: "failed" };
+}
+
+/** Request microphone permission on the media site's origin to reveal device labels. */
+export async function requestMediaSessionOutputLabels(
+	tabId: number,
+): Promise<MediaOutputResult> {
+	const result: unknown = await executeMediaPage(tabId, {
+		type: "request-output-labels",
 	});
 	return isMediaOutputResult(result) ? result : { ok: false, reason: "failed" };
 }

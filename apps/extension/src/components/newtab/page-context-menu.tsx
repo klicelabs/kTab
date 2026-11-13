@@ -6,9 +6,10 @@ import {
 	ContextMenuTrigger,
 } from "@ktab/ui/components/motion/context-menu";
 import { Icon } from "@ktab/ui/icons/icon";
-import { type MouseEvent, type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { isInsideSettingsScope } from "../../lib/context-scope";
 import { glassDropdownItem, glassMenu } from "../../lib/glass";
+import { isPageBackgroundContextMenuTarget } from "../../lib/page-context-menu";
 import { REFRESH_STRINGS } from "../../lib/thumbnail-refresh";
 import { cn } from "../../lib/utils";
 import { refreshWallpaper } from "../../services/wallpaper";
@@ -94,25 +95,12 @@ export function PageContextMenu({
 		await refreshWallpaper(true);
 	}, [isPexels]);
 
-	function handleContextMenu(event: MouseEvent) {
-		// If clicking an interactive card/tab with its own context menu, skip
-		const target = event.target as HTMLElement | null;
-		if (target?.closest("[data-local-context-menu]")) {
-			event.preventDefault();
-			return;
-		}
-		// Settings is its own surface: never open the global Home menu there.
-		// This covers the panel itself plus settings-owned floating UI, which
-		// portals render outside the panel DOM (see `lib/context-scope`).
-		// The beUI trigger only stands down on defaultPrevented, so — exactly
-		// like the local-menu rule above — prevention here is what keeps the
-		// global menu closed. Everything else (clicks, keys, selection)
-		// passes through untouched.
-		if (isInsideSettingsScope(target)) {
-			event.preventDefault();
-			return;
-		}
-	}
+	const shouldOpenPageMenu = useCallback(
+		(target: EventTarget | null) =>
+			!isInsideSettingsScope(target) &&
+			isPageBackgroundContextMenuTarget(target),
+		[],
+	);
 
 	const itemClassName = glassDropdownItem(isLiquid, resolvedDark, {
 		pillOwned: true,
@@ -126,14 +114,8 @@ export function PageContextMenu({
 
 	return (
 		<ContextMenu open={open} onOpenChange={setOpen}>
-			<ContextMenuTrigger>
-				{/* biome-ignore lint/a11y/noStaticElementInteractions: the page surface is the context-menu trigger and the beUI trigger adds keyboard handling. */}
-				<div
-					className="block min-h-screen w-full"
-					onContextMenu={handleContextMenu}
-				>
-					{children}
-				</div>
+			<ContextMenuTrigger shouldOpenContextMenu={shouldOpenPageMenu}>
+				<div className="block min-h-screen w-full">{children}</div>
 			</ContextMenuTrigger>
 
 			<ContextMenuContent

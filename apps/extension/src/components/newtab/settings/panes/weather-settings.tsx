@@ -35,6 +35,7 @@ const WEATHER_DISPLAY_OPTIONS = [
 const WEATHER_APPEARANCE_OPTIONS = [
 	{ value: "flat", label: "Flat" },
 	{ value: "glass", label: "Liquid Glass" },
+	{ value: "oled", label: "OLED" },
 	{ value: "atmospheric", label: "Atmospheric" },
 ] as const;
 

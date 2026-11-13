@@ -100,7 +100,7 @@ test("weather is off by default and rejects invalid saved locations", () => {
 	expect(defaults.settings.weather).toMatchObject({
 		enabled: false,
 		display: "expanded",
-		appearance: "flat",
+		appearance: "atmospheric",
 		place: "São Paulo, Brazil",
 		latitude: -23.5505,
 		longitude: -46.6333,
@@ -121,7 +121,7 @@ test("weather is off by default and rejects invalid saved locations", () => {
 	expect(normalized.settings.weather).toEqual({
 		enabled: true,
 		display: "compact",
-		appearance: "flat",
+		appearance: "atmospheric",
 		place: "São Paulo, Brazil",
 		latitude: -23.5505,
 		longitude: -46.6333,
@@ -143,7 +143,7 @@ test("keeps a valid weather display and manual city coordinates", () => {
 	expect(normalizeState(state).settings.weather).toEqual({
 		enabled: true,
 		display: "toolbar",
-		appearance: "flat",
+		appearance: "atmospheric",
 		place: "Saquarema, Brazil",
 		latitude: -22.92,
 		longitude: -42.51,
@@ -173,10 +173,11 @@ test("migrates legacy weather cards and normalizes each widget appearance locall
 	const normalized = normalizeState(state);
 	expect(normalized.settings.weather.display).toBe("expanded");
 	expect(normalized.settings.widgets).toEqual({
+		order: ["weather", "music", "market", "github"],
 		music: { enabled: true, appearance: "glass", size: "expanded" },
 		market: {
 			enabled: true,
-			appearance: "flat",
+			appearance: "oled",
 			size: "expanded",
 			tickers: ["^BVSP", "DIS", "AAPL"],
 		},
@@ -242,4 +243,23 @@ test("normalizes widget appearance, size, and contribution palette choices", () 
 		size: "compact",
 		palette: "purple",
 	});
+});
+
+test("defaults each widget to its first-run special appearance and preserves OLED", () => {
+	const defaults = normalizeState(null).settings;
+	expect(defaults.weather.appearance).toBe("atmospheric");
+	expect(defaults.widgets.music.appearance).toBe("album-blur");
+	expect(defaults.widgets.market.appearance).toBe("oled");
+	expect(defaults.widgets.github.appearance).toBe("oled");
+
+	const state = structuredClone(DEFAULT_SETUP);
+	state.settings.weather.appearance = "oled";
+	state.settings.widgets.music.appearance = "oled";
+	state.settings.widgets.market.appearance = "oled";
+	state.settings.widgets.github.appearance = "oled";
+	const normalized = normalizeState(state).settings;
+	expect(normalized.weather.appearance).toBe("oled");
+	expect(normalized.widgets.music.appearance).toBe("oled");
+	expect(normalized.widgets.market.appearance).toBe("oled");
+	expect(normalized.widgets.github.appearance).toBe("oled");
 });

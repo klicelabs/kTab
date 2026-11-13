@@ -13,6 +13,18 @@ export function formatMarketChange(value: number, locale?: string): string {
 	return `${value >= 0 ? "+" : "−"}${formatted}`;
 }
 
+export function formatMarketChangePercent(
+	value: number,
+	locale?: string,
+): string {
+	return new Intl.NumberFormat(locale ?? defaultLocale(), {
+		style: "percent",
+		signDisplay: "always",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	}).format(value / 100);
+}
+
 export function formatCompactCount(value: number, locale?: string): string {
 	const formatted = new Intl.NumberFormat(locale ?? defaultLocale(), {
 		notation: value >= 1000 ? "compact" : "standard",

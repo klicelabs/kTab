@@ -162,7 +162,7 @@ export async function fetchCurrentWeather(
 	url.searchParams.set("longitude", String(longitude));
 	url.searchParams.set(
 		"current",
-		"temperature_2m,weather_code,is_day,time,wind_speed_10m",
+		"temperature_2m,weather_code,is_day,wind_speed_10m",
 	);
 	url.searchParams.set("hourly", "temperature_2m,weather_code,is_day");
 	url.searchParams.set(

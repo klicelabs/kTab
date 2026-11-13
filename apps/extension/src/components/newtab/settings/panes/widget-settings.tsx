@@ -1,7 +1,8 @@
+import { Combobox } from "@base-ui/react/combobox";
 import { Input } from "@ktab/ui/components/input";
 import { Switch } from "@ktab/ui/components/switch";
+import { Icon } from "@ktab/ui/icons/icon";
 import { type FormEvent, useEffect, useId, useState } from "react";
-import { cn } from "../../../../lib/utils";
 import { useSetupStore } from "../../../../stores/setup-store";
 import type { Settings } from "../../../../types";
 import { SectionCard } from "../shared/section-card";
@@ -15,10 +16,12 @@ import {
 	SETTINGS_RADIUS,
 	SETTINGS_SWITCH,
 } from "../shared/settings-tokens";
+import { SettingsTooltip } from "../shared/settings-tooltip";
 
 const COMMON_APPEARANCE_OPTIONS = [
 	{ value: "flat", label: "Flat" },
 	{ value: "glass", label: "Liquid Glass" },
+	{ value: "oled", label: "OLED" },
 ] as const;
 
 const MUSIC_APPEARANCE_OPTIONS = [
@@ -41,36 +44,52 @@ const GITHUB_PALETTE_OPTIONS = [
 
 interface MarketPresetGroup {
 	label: string;
-	items: readonly { symbol: string; name: string }[];
+	items: readonly MarketPreset[];
+}
+
+interface MarketPreset {
+	symbol: string;
+	name: string;
+	category: string;
 }
 
 const MARKET_PRESET_GROUPS: readonly MarketPresetGroup[] = [
 	{
 		label: "US stocks",
 		items: [
-			{ symbol: "AAPL", name: "Apple" },
-			{ symbol: "NVDA", name: "NVIDIA" },
-			{ symbol: "TSLA", name: "Tesla" },
-			{ symbol: "MSFT", name: "Microsoft" },
+			{ symbol: "AAPL", name: "Apple", category: "US stocks" },
+			{ symbol: "NVDA", name: "NVIDIA", category: "US stocks" },
+			{ symbol: "TSLA", name: "Tesla", category: "US stocks" },
+			{ symbol: "MSFT", name: "Microsoft", category: "US stocks" },
 		],
 	},
 	{
 		label: "Brazil",
 		items: [
-			{ symbol: "^BVSP", name: "Ibovespa" },
-			{ symbol: "PETR4.SA", name: "Petrobras PN" },
-			{ symbol: "VALE3.SA", name: "Vale ON" },
+			{ symbol: "^BVSP", name: "Ibovespa", category: "Brazil" },
+			{ symbol: "PETR4.SA", name: "Petrobras PN", category: "Brazil" },
+			{ symbol: "VALE3.SA", name: "Vale ON", category: "Brazil" },
 		],
 	},
 	{
 		label: "Crypto and currencies",
 		items: [
-			{ symbol: "BTC-USD", name: "Bitcoin" },
-			{ symbol: "ETH-USD", name: "Ethereum" },
-			{ symbol: "USDBRL=X", name: "US dollar / Brazilian real" },
+			{ symbol: "BTC-USD", name: "Bitcoin", category: "Crypto and currencies" },
+			{
+				symbol: "ETH-USD",
+				name: "Ethereum",
+				category: "Crypto and currencies",
+			},
+			{
+				symbol: "USDBRL=X",
+				name: "US dollar / Brazilian real",
+				category: "Crypto and currencies",
+			},
 		],
 	},
 ] as const;
+
+const MARKET_PRESETS = MARKET_PRESET_GROUPS.flatMap((group) => group.items);
 
 function marketTickerLabel(ticker: string): string {
 	return (
@@ -151,14 +170,11 @@ export function WidgetSettings() {
 	}
 
 	const normalizedMarketSearch = marketSearch.trim().toLocaleLowerCase();
-	const filteredMarketGroups = MARKET_PRESET_GROUPS.map((group) => ({
-		...group,
-		items: group.items.filter((item) =>
-			`${group.label} ${item.symbol} ${item.name}`
-				.toLocaleLowerCase()
-				.includes(normalizedMarketSearch),
-		),
-	})).filter((group) => group.items.length > 0);
+	const filteredMarketPresets = MARKET_PRESETS.filter((item) =>
+		`${item.category} ${item.symbol} ${item.name}`
+			.toLocaleLowerCase()
+			.includes(normalizedMarketSearch),
+	);
 
 	return (
 		<>
@@ -179,13 +195,20 @@ export function WidgetSettings() {
 					expanded={widgets.music.enabled}
 					label="Music options"
 				>
-					<SelectRow
-						label="Appearance"
-						icon="sparkles"
-						value={widgets.music.appearance}
-						options={MUSIC_APPEARANCE_OPTIONS}
-						onChange={(appearance) => updateMusic({ appearance })}
-					/>
+					{widgets.music.size === "compact" ? (
+						<p className="px-3 py-2 text-[11px] text-muted-foreground leading-relaxed">
+							The compact player uses the album cover as its full-card
+							appearance. Choose Expanded to change its surface style.
+						</p>
+					) : (
+						<SelectRow
+							label="Appearance"
+							icon="sparkles"
+							value={widgets.music.appearance}
+							options={MUSIC_APPEARANCE_OPTIONS}
+							onChange={(appearance) => updateMusic({ appearance })}
+						/>
+					)}
 					<SelectRow
 						label="Size"
 						icon="layout"
@@ -232,68 +255,87 @@ export function WidgetSettings() {
 							htmlFor={marketSearchId}
 							className="font-medium text-[12px] text-neutral-800 dark:text-neutral-200"
 						>
-							Find a popular asset
+							Find an asset
 						</label>
-						<Input
-							id={marketSearchId}
-							type="search"
-							value={marketSearch}
-							placeholder="Search by company or ticker"
-							autoComplete="off"
-							onChange={(event) => setMarketSearch(event.target.value)}
-							className={`h-8 px-2 text-[12px] ${SETTINGS_RADIUS.control} ${SETTINGS_INPUT}`}
-						/>
+						<Combobox.Root
+							items={MARKET_PRESETS}
+							filteredItems={filteredMarketPresets}
+							value={null}
+							inputValue={marketSearch}
+							itemToStringLabel={(item: MarketPreset) =>
+								`${item.symbol} ${item.name} ${item.category}`
+							}
+							onInputValueChange={setMarketSearch}
+							onValueChange={(item) => {
+								if (item) addMarketTicker(item.symbol);
+								setMarketSearch("");
+							}}
+						>
+							<div className="relative">
+								<Combobox.Input
+									id={marketSearchId}
+									placeholder="Search company or ticker"
+									autoComplete="off"
+									aria-label="Search popular market assets"
+									className={`h-9 w-full rounded-md pr-9 pl-3 text-[12px] ${SETTINGS_RADIUS.control} ${SETTINGS_INPUT} ${SETTINGS_FOCUS_RING}`}
+								/>
+								<Combobox.Trigger
+									type="button"
+									aria-label="Show popular assets"
+									className="squircle absolute inset-y-0 right-1 grid size-7 place-items-center rounded-md text-neutral-500 transition-colors duration-150 hover:bg-neutral-900/[0.05] dark:text-neutral-400 dark:hover:bg-white/[0.07]"
+								>
+									<Icon name="chevron-down" size={14} aria-hidden="true" />
+								</Combobox.Trigger>
+							</div>
+							<Combobox.Portal>
+								<Combobox.Positioner
+									side="bottom"
+									align="start"
+									sideOffset={5}
+									className="z-50"
+								>
+									<Combobox.Popup
+										className={`squircle w-(--anchor-width) min-w-64 overflow-hidden rounded-xl border border-neutral-900/10 bg-white p-1 text-neutral-900 shadow-xl transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] data-[ending-style]:translate-y-1 data-[starting-style]:translate-y-1 data-[ending-style]:scale-[0.98] data-[starting-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none dark:border-white/10 dark:bg-[#292929] dark:text-neutral-100 ${SETTINGS_RADIUS.panel}`}
+									>
+										<Combobox.List className="max-h-56 overflow-y-auto">
+											{(item: MarketPreset, index: number) => (
+												<Combobox.Item
+													key={item.symbol}
+													index={index}
+													value={item}
+													disabled={
+														widgets.market.tickers.includes(item.symbol) ||
+														widgets.market.tickers.length >= 3
+													}
+													className="squircle flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-[12px] outline-none transition-colors duration-100 data-highlighted:bg-neutral-900/[0.06] data-disabled:opacity-45 dark:data-highlighted:bg-white/[0.08]"
+												>
+													<span className="grid min-w-0 gap-0.5">
+														<span className="truncate font-medium">
+															{item.name}
+														</span>
+														<span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+															{item.category}
+														</span>
+													</span>
+													<span className="shrink-0 font-semibold tabular-nums">
+														{item.symbol}
+													</span>
+												</Combobox.Item>
+											)}
+										</Combobox.List>
+										<Combobox.Empty className="px-3 py-4 text-center text-[11px] text-neutral-500 dark:text-neutral-400">
+											{widgets.market.tickers.length >= 3
+												? "You already track three assets. Remove one to add another."
+												: "No popular assets match your search."}
+										</Combobox.Empty>
+									</Combobox.Popup>
+								</Combobox.Positioner>
+							</Combobox.Portal>
+						</Combobox.Root>
 						<p className="text-[11px] text-neutral-500 dark:text-neutral-400">
 							{widgets.market.tickers.length} of 3 assets selected. Choose one
 							to add it.
 						</p>
-						<div className="grid gap-2">
-							{filteredMarketGroups.map((group) => (
-								<div key={group.label} className="grid gap-1">
-									<p className="font-medium text-[11px] text-neutral-600 dark:text-neutral-300">
-										{group.label}
-									</p>
-									<div className="flex flex-wrap gap-1.5">
-										{group.items.map((item) => {
-											const selected = widgets.market.tickers.includes(
-												item.symbol,
-											);
-											const full = widgets.market.tickers.length >= 3;
-											return (
-												<button
-													key={item.symbol}
-													type="button"
-													disabled={selected || full}
-													onClick={() => addMarketTicker(item.symbol)}
-													aria-label={
-														selected
-															? `${item.name} (${item.symbol}) already selected`
-															: `Add ${item.name} (${item.symbol})`
-													}
-													className={cn(
-														"inline-flex min-h-7 items-center gap-1.5 rounded-md px-2 text-[11px] text-neutral-800 transition-colors duration-150 hover:bg-neutral-900/[0.06] disabled:opacity-45 dark:text-neutral-100 dark:hover:bg-white/[0.07]",
-														SETTINGS_FOCUS_RING,
-													)}
-													title={
-														selected ? "Already selected" : `Add ${item.name}`
-													}
-												>
-													<span className="font-semibold">{item.symbol}</span>
-													<span className="text-neutral-500 dark:text-neutral-400">
-														{selected ? "Added" : item.name}
-													</span>
-												</button>
-											);
-										})}
-									</div>
-								</div>
-							))}
-							{filteredMarketGroups.length === 0 ? (
-								<p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-									No popular assets match that search.
-								</p>
-							) : null}
-						</div>
 						<form
 							className="flex items-center gap-2"
 							onSubmit={submitCustomTicker}
@@ -326,7 +368,7 @@ export function WidgetSettings() {
 								{widgets.market.tickers.map((ticker) => (
 									<li
 										key={ticker}
-										className="flex min-h-8 items-center justify-between gap-2 rounded-md bg-neutral-900/[0.04] px-2 dark:bg-white/[0.04]"
+										className="squircle flex min-h-8 items-center justify-between gap-2 rounded-md bg-neutral-900/[0.04] px-2 dark:bg-white/[0.04]"
 									>
 										<span className="min-w-0 truncate text-[11px] text-neutral-700 dark:text-neutral-200">
 											<span className="font-semibold">{ticker}</span>
@@ -411,11 +453,16 @@ export function WidgetSettings() {
 							className={`h-9 px-3 text-sm ${SETTINGS_RADIUS.control} ${SETTINGS_INPUT}`}
 						/>
 					</label>
-					<label
-						htmlFor={tokenId}
-						className="grid gap-1 px-1.5 py-1.5 text-[12px] text-neutral-700 dark:text-neutral-300"
-					>
-						Personal access token (optional)
+					<div className="grid gap-1 px-1.5 py-1.5 text-[12px] text-neutral-700 dark:text-neutral-300">
+						<div className="flex items-center gap-1.5">
+							<label htmlFor={tokenId} className="font-medium">
+								Personal access token (optional)
+							</label>
+							<SettingsTooltip
+								label="About the GitHub personal access token"
+								content="A classic token includes private contribution counts and raises the API limit. Create one at GitHub → Settings → Developer settings → Personal access tokens (classic), then grant read:user."
+							/>
+						</div>
 						<Input
 							id={tokenId}
 							aria-label="GitHub personal access token"
@@ -428,7 +475,7 @@ export function WidgetSettings() {
 							onBlur={() => updateGitHub({ token: tokenDraft })}
 							className={`h-9 px-3 text-sm ${SETTINGS_RADIUS.control} ${SETTINGS_INPUT}`}
 						/>
-					</label>
+					</div>
 					<p className="text-pretty px-1.5 py-1 text-[11px] text-neutral-500 leading-[1.45] dark:text-neutral-400">
 						Your token stays in this browser profile and is sent only to GitHub.
 						Without a token, the contribution calendar uses public profile data.

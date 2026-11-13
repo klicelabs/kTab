@@ -38,6 +38,7 @@ import { buildItemOrder, repairItemOrder } from "./item-order";
 import { PEXELS_MAX_QUERY_LENGTH } from "./pexels";
 import { isAbsoluteHttpUrl } from "./url";
 import { writeWallpaperSnapshot } from "./wallpaper-snapshot";
+import { normalizeWidgetOrder } from "./widget-order";
 
 /**
  * Repair folder hierarchy: coerce every folder to include a valid parentId,
@@ -262,14 +263,23 @@ function normalizeSettings(
 	const github = isRecord(widgets.github) ? widgets.github : {};
 	const normalizeWidgetAppearance = (
 		value: unknown,
-		fallback: "glass" | "flat",
-	) => (value === "glass" || value === "flat" ? value : fallback);
+		fallback: "glass" | "flat" | "oled",
+	) =>
+		value === "glass" || value === "flat" || value === "oled"
+			? value
+			: fallback;
 	const normalizeMusicAppearance = (value: unknown) =>
-		value === "glass" || value === "flat" || value === "album-blur"
+		value === "glass" ||
+		value === "flat" ||
+		value === "oled" ||
+		value === "album-blur"
 			? value
 			: defaults.widgets.music.appearance;
 	const normalizeWeatherAppearance = (value: unknown) =>
-		value === "glass" || value === "flat" || value === "atmospheric"
+		value === "glass" ||
+		value === "flat" ||
+		value === "oled" ||
+		value === "atmospheric"
 			? value
 			: defaults.weather.appearance;
 	const normalizeWidgetSize = (
@@ -449,6 +459,7 @@ function normalizeSettings(
 			),
 		},
 		widgets: {
+			order: normalizeWidgetOrder(widgets.order, defaults.widgets.order),
 			music: {
 				enabled: normalizeBoolean(
 					music.enabled,

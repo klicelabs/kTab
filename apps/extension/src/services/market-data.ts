@@ -14,6 +14,18 @@ export interface MarketQuote {
 	points: MarketPoint[];
 }
 
+export type MarketChartPeriod = "1D" | "1W" | "1M" | "1Y";
+
+const MARKET_PERIOD_QUERY: Record<
+	MarketChartPeriod,
+	{ range: string; interval: string }
+> = {
+	"1D": { range: "1d", interval: "5m" },
+	"1W": { range: "5d", interval: "30m" },
+	"1M": { range: "1mo", interval: "1d" },
+	"1Y": { range: "1y", interval: "1d" },
+};
+
 export interface MarketRequestOptions {
 	fetcher?: typeof fetch;
 	signal?: AbortSignal;
@@ -37,7 +49,11 @@ function yahooName(symbol: string, meta: Record<string, unknown>): string {
 	return symbol;
 }
 
-function normalizeYahooChart(value: unknown, symbol: string): MarketQuote {
+function normalizeYahooChart(
+	value: unknown,
+	symbol: string,
+	period: MarketChartPeriod,
+): MarketQuote {
 	if (!isRecord(value) || !isRecord(value.chart)) {
 		throw new Error(`Market data for ${symbol} was incomplete.`);
 	}
@@ -70,11 +86,13 @@ function normalizeYahooChart(value: unknown, symbol: string): MarketQuote {
 	const price = finiteNumber(meta.regularMarketPrice)
 		? meta.regularMarketPrice
 		: lastPoint;
-	const previousClose = finiteNumber(meta.chartPreviousClose)
+	const dayPreviousClose = finiteNumber(meta.chartPreviousClose)
 		? meta.chartPreviousClose
 		: finiteNumber(meta.previousClose)
 			? meta.previousClose
 			: null;
+	const previousClose =
+		period === "1D" ? dayPreviousClose : (points[0]?.close ?? dayPreviousClose);
 	if (!finiteNumber(price) || !finiteNumber(previousClose)) {
 		throw new Error(`Market data for ${symbol} is missing a current price.`);
 	}
@@ -90,17 +108,18 @@ function normalizeYahooChart(value: unknown, symbol: string): MarketQuote {
 		previousClose,
 		change,
 		changePercent: previousClose === 0 ? 0 : (change / previousClose) * 100,
-		points: points.slice(-48),
+		points: period === "1D" ? points.slice(-48) : points,
 	};
 }
 
 async function fetchQuote(
 	symbol: string,
 	options: MarketRequestOptions,
+	period: MarketChartPeriod = "1D",
 ): Promise<MarketQuote> {
 	const url = new URL(`${YAHOO_CHART_URL}${encodeURIComponent(symbol)}`);
-	url.searchParams.set("range", "1d");
-	url.searchParams.set("interval", "5m");
+	url.searchParams.set("range", MARKET_PERIOD_QUERY[period].range);
+	url.searchParams.set("interval", MARKET_PERIOD_QUERY[period].interval);
 	const response = await (options.fetcher ?? fetch)(url, {
 		cache: "no-store",
 		credentials: "omit",
@@ -111,7 +130,24 @@ async function fetchQuote(
 	if (!response.ok) {
 		throw new Error(`Market data request failed (${response.status}).`);
 	}
-	return normalizeYahooChart(await response.json(), symbol);
+	const quote = normalizeYahooChart(await response.json(), symbol, period);
+	if (period !== "1D" && quote.points.length < 2) {
+		throw new Error(`Historical market data for ${symbol} is unavailable.`);
+	}
+	return quote;
+}
+
+/** Fetch one historical chart period after the user opens an asset chart. */
+export async function fetchMarketHistory(
+	symbol: string,
+	period: MarketChartPeriod,
+	options: MarketRequestOptions = {},
+): Promise<MarketQuote> {
+	const normalized = symbol.trim().toUpperCase();
+	if (!/^[A-Z0-9.^=_-]{1,16}$/.test(normalized)) {
+		throw new Error("Enter a valid market ticker before loading its chart.");
+	}
+	return fetchQuote(normalized, options, period);
 }
 
 /** Fetch at most three public quote snapshots in parallel. */

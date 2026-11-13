@@ -2,7 +2,6 @@ import { LiquidGlass } from "@ktab/ui/components/liquid-glass";
 import { Button as MotionButton } from "@ktab/ui/components/motion/button/base";
 import { Icon } from "@ktab/ui/icons/icon";
 import { ktabShape } from "@ktab/ui/lib/shapes";
-import { Fragment } from "react";
 import {
 	glassFocusRing,
 	glassForeground,
@@ -17,6 +16,7 @@ import { faviconUrl } from "../../lib/url";
 import { cn } from "../../lib/utils";
 import { useSetupStore } from "../../stores/setup-store";
 import { useAppearance, useGlassAppearance } from "./appearance-provider";
+import { IconAppTile } from "./icon-app-tile";
 
 interface EmptyLandingProps {
 	/** Target folder, used to name where a quick-add shortcut will land. */
@@ -25,27 +25,9 @@ interface EmptyLandingProps {
 	onAdd: () => void;
 }
 
-/**
- * Four well-known destinations. This state is deliberately quiet: one text
- * line, no favicons, no per-site chrome. Anything richer turns the empty
- * state into a mini dashboard whose secondary actions compete with the one
- * primary action.
- */
 const QUICK_ADD = RECOMMENDED_SITES.slice(0, 4);
 
-/**
- * Empty-folder state. Single hierarchy, top to bottom:
- *
- *   1. one focal mark        (squircle tile + bookmark glyph)
- *   2. one concise headline
- *   3. one short supporting sentence
- *   4. one primary action    ("Add link")
- *   5. quiet secondary line  (quick add)
- *
- * The current folder name is intentionally NOT repeated here — the tabbar
- * already shows it, so a badge would only add noise. The keyboard shortcut
- * for saving a page lives in Settings rather than in the main body.
- */
+/** A welcoming first-link state with a useful action and local shortcuts. */
 export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 	const { isLiquid, resolvedDark } = useAppearance();
 	const { glassParams } = useGlassAppearance();
@@ -71,7 +53,7 @@ export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 			size="md"
 			ripple={!isLiquid}
 			className={cn(
-				"inline-flex h-9 items-center gap-1.5 rounded-full px-4 font-medium text-xs transition-[background-color,border-color,box-shadow] duration-150 ease-out",
+				"squircle inline-flex h-10 items-center gap-2 rounded-xl px-4 font-medium text-[12px] transition-[background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)]",
 				glassFocusRing(isLiquid),
 				isLiquid
 					? cn(
@@ -81,31 +63,42 @@ export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 					: cn(glassMaterial(false, "floating"), "text-flat-ink"),
 			)}
 		>
-			<Icon name="plus" size={13} />
-			Add link
+			<Icon name="plus" size={14} aria-hidden="true" />
+			Add a link
 		</MotionButton>
 	);
 
+	const ghostCardMaterial = isLiquid
+		? resolvedDark
+			? "border-white/15 bg-white/[0.08] text-white/75 backdrop-blur-xl"
+			: "border-black/10 bg-white/50 text-neutral-700 backdrop-blur-xl"
+		: "border-border/70 bg-background/75 text-muted-foreground shadow-sm";
+
 	return (
-		<div className="flex justify-center px-6 pt-6 pb-20">
-			<div
-				className="flex w-full max-w-sm flex-col items-center text-center"
-				style={{ animation: "emptyLandingIn 220ms ease-out both" }}
-			>
-				{/* 1. Focal mark. A real hero-lens tile (same optics + veil as
-				    the toolbar family) over a soft halo, so it reads as one
-				    deliberate object. Decorative: the headline carries meaning. */}
-				<div aria-hidden="true" className="relative mb-6">
+		<div className="flex justify-center px-6 pt-8 pb-20">
+			<div className="group/empty flex w-full max-w-md flex-col items-center text-center">
+				<div aria-hidden="true" className="relative mb-6 h-[104px] w-[176px]">
 					<div
 						className={cn(
-							"absolute -inset-5 rounded-full blur-2xl",
-							isLiquid
-								? resolvedDark
-									? "bg-white/15"
-									: "bg-white/40"
-								: "bg-foreground/[0.05]",
+							"squircle absolute top-4 left-2 flex h-[76px] w-[106px] -rotate-[11deg] flex-col gap-2 overflow-hidden rounded-2xl border p-3 shadow-lg transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/empty:-translate-y-1 motion-safe:group-hover/empty:shadow-xl motion-reduce:transition-none",
+							ghostCardMaterial,
 						)}
-					/>
+					>
+						<span className="h-2 w-12 rounded-full bg-current/20" />
+						<span className="h-1.5 w-16 rounded-full bg-current/15" />
+						<span className="h-1.5 w-10 rounded-full bg-current/15" />
+					</div>
+					<div
+						className={cn(
+							"squircle absolute top-3 right-1 flex h-[76px] w-[106px] rotate-[10deg] flex-col justify-between overflow-hidden rounded-2xl border p-3 shadow-lg transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/empty:translate-y-1 motion-safe:group-hover/empty:shadow-xl motion-reduce:transition-none",
+							ghostCardMaterial,
+						)}
+					>
+						<span className="flex size-7 items-center justify-center rounded-lg bg-current/10">
+							<Icon name="globe" size={15} />
+						</span>
+						<span className="h-1.5 w-14 rounded-full bg-current/15" />
+					</div>
 					{isLiquid ? (
 						<LiquidGlass
 							data-glass-variant="liquid-refract"
@@ -117,51 +110,46 @@ export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 							bezel={optics.bezel}
 							shape="section"
 							className={cn(
-								"relative flex size-[68px] items-center justify-center",
+								"squircle absolute top-5 left-1/2 grid size-[68px] -translate-x-1/2 place-items-center rounded-2xl shadow-xl",
 								glassLensVeil("hero", resolvedDark),
 								glassForeground(),
 							)}
 						>
-							<Icon name="bookmark" size={26} />
+							<Icon name="bookmark" size={25} />
 						</LiquidGlass>
 					) : (
 						<div
 							className={cn(
-								"relative flex size-[68px] items-center justify-center",
+								"squircle absolute top-5 left-1/2 grid size-[68px] -translate-x-1/2 place-items-center rounded-2xl border shadow-xl",
 								ktabShape("section"),
 								glassMaterial(false, "panel"),
 								"text-muted-foreground",
 							)}
 						>
-							<Icon name="bookmark" size={26} />
+							<Icon name="bookmark" size={25} />
 						</div>
 					)}
 				</div>
 
-				{/* 2 + 3. Headline, then one short supporting sentence. Both sit
-				    directly on the wallpaper with no backing surface, so they
-				    reuse the same shadow the clock uses. */}
 				<h2
 					className={cn(
-						"font-semibold text-[17px] tracking-tight",
+						"font-semibold text-[18px] tracking-tight",
 						wallpaperText("primary"),
 					)}
 					style={{ textShadow: HERO_TEXT_SHADOW }}
 				>
-					This folder is empty
+					Nothing here yet
 				</h2>
 				<p
 					className={cn(
-						"mt-2 text-xs leading-relaxed",
+						"mt-2 max-w-sm text-[12px] leading-relaxed",
 						wallpaperText("secondary"),
 					)}
 					style={{ textShadow: HERO_TEXT_SHADOW }}
 				>
-					Save a page here or add your first link.
+					Add a favorite to {folderName}, or choose one below.
 				</p>
 
-				{/* 4. The single primary action. In Glass mode it is a hero lens,
-				    matching the focal icon instead of using the regular surface path. */}
 				{isLiquid ? (
 					<LiquidGlass
 						data-glass-variant="liquid-refract"
@@ -172,44 +160,70 @@ export function EmptyLanding({ folderName, onAdd }: EmptyLandingProps) {
 						brightness={optics.brightness}
 						bezel={optics.bezel}
 						shape="toolbarControl"
-						className={cn("mt-6", glassLensVeil("hero", resolvedDark))}
+						className={cn("mt-5", glassLensVeil("hero", resolvedDark))}
 					>
 						{addLinkButton}
 					</LiquidGlass>
 				) : (
-					<div className="mt-6">{addLinkButton}</div>
+					<div className="mt-5">{addLinkButton}</div>
 				)}
 
-				{/* 5. Optional secondary actions, reduced to a single quiet line so
-				    they never compete with the CTA. `text-shadow` inherits, so
-				    setting it here covers the label, separators and buttons. */}
 				<div
-					className={cn(
-						"mt-8 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[11px]",
-						wallpaperText("muted"),
-					)}
+					className="mt-5 flex items-center justify-center gap-1.5 text-[10px]"
 					style={{ textShadow: HERO_TEXT_SHADOW }}
 				>
-					<span className="opacity-80">Quick add</span>
+					<span className={wallpaperText("muted")}>Keyboard tip</span>
+					<kbd
+						className={cn(
+							"squircle rounded-md border px-1.5 py-0.5 font-medium",
+							wallpaperText("secondary"),
+							isLiquid
+								? "border-white/20 bg-white/10"
+								: "border-border/70 bg-background/70",
+						)}
+					>
+						Tab
+					</kbd>
+					<span className={wallpaperText("muted")}>then</span>
+					<kbd
+						className={cn(
+							"squircle rounded-md border px-1.5 py-0.5 font-medium",
+							wallpaperText("secondary"),
+							isLiquid
+								? "border-white/20 bg-white/10"
+								: "border-border/70 bg-background/70",
+						)}
+					>
+						Enter
+					</kbd>
+					<span className={wallpaperText("muted")}>to add a favorite</span>
+				</div>
+
+				<div className="mt-6 grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
 					{QUICK_ADD.map((site) => (
-						<Fragment key={site.url}>
-							<span aria-hidden="true" className="opacity-40">
-								·
-							</span>
-							<button
-								type="button"
-								onClick={() => handleAddStarter(site)}
-								title={`Add ${site.name} to ${folderName}`}
-								aria-label={`Add ${site.name} to ${folderName}`}
-								className={cn(
-									"rounded-sm px-0.5 transition-colors duration-150 hover:underline hover:underline-offset-2",
-									glassFocusRing(isLiquid),
-									wallpaperText("secondary"),
-								)}
-							>
-								{site.name}
-							</button>
-						</Fragment>
+						<button
+							key={site.url}
+							type="button"
+							onClick={() => handleAddStarter(site)}
+							title={`Add ${site.name} to ${folderName}`}
+							aria-label={`Add ${site.name} to ${folderName}`}
+							className={cn(
+								"squircle flex min-h-12 items-center gap-2 rounded-xl border px-2.5 text-left text-[11px] transition-[background-color,transform,box-shadow] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-md focus-visible:outline-2 focus-visible:outline-[var(--ktab-accent)] focus-visible:outline-offset-2 motion-safe:enabled:active:scale-[0.96] motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none",
+								glassFocusRing(isLiquid),
+								isLiquid
+									? resolvedDark
+										? "border-white/10 bg-white/[0.08] text-white/90 backdrop-blur-xl hover:bg-white/[0.13]"
+										: "border-black/10 bg-white/55 text-neutral-800 backdrop-blur-xl hover:bg-white/75"
+									: "border-border/70 bg-background/75 text-foreground hover:bg-background",
+							)}
+						>
+							<IconAppTile
+								url={site.url}
+								favicon={faviconUrl(site.url)}
+								className="size-7 rounded-lg shadow-sm"
+							/>
+							<span className="truncate">{site.name}</span>
+						</button>
 					))}
 				</div>
 			</div>

@@ -1,6 +1,8 @@
+import { Tooltip } from "@ktab/ui/components/motion/tooltip";
 import { Icon } from "@ktab/ui/icons/icon";
 import { useEffect, useState } from "react";
 import { getWidgetCache, putWidgetCache } from "../../../lib/idb";
+import { subscribeWidgetAction } from "../../../lib/widget-actions";
 import { formatCompactCount } from "../../../lib/widget-format";
 import {
 	fetchGitHubWidgetData,
@@ -9,6 +11,7 @@ import {
 import { useSetupStore } from "../../../stores/setup-store";
 import type {
 	GitHubHeatmapPalette,
+	WidgetAppearance,
 	WidgetSizePreference,
 } from "../../../types";
 import { WidgetSurface } from "./widget-surface";
@@ -68,64 +71,91 @@ function RadarChart({
 			radarPoint(index, metricFraction(value), 38).join(","),
 		)
 		.join(" ");
+	const numberFormat = new Intl.NumberFormat(
+		typeof navigator !== "undefined" ? navigator.language : "en-US",
+	);
 	return (
-		<svg
-			viewBox="0 0 160 142"
-			className="h-full w-full overflow-visible"
-			role="img"
-			aria-label={`GitHub activity radar: commits ${data.commits}, issues ${data.issues}, pull requests ${data.pullRequests}, reviews ${data.reviews}, repositories ${data.repositories}`}
-		>
-			<g
-				fill="none"
-				stroke="currentColor"
-				strokeOpacity=".24"
-				strokeWidth=".65"
+		<div className="relative h-full w-full">
+			<svg
+				viewBox="0 0 160 142"
+				className="h-full w-full overflow-visible"
+				role="img"
+				aria-label={`GitHub activity radar: commits ${data.commits}, issues ${data.issues}, pull requests ${data.pullRequests}, reviews ${data.reviews}, repositories ${data.repositories}`}
 			>
-				{[0.2, 0.4, 0.6, 0.8, 1].map((fraction) => (
-					<polygon key={fraction} points={polygonPoints(fraction, 38)} />
-				))}
-				{AXES.map((axis, index) => {
-					const [x, y] = radarPoint(index, 1, 38);
-					return <line key={axis} x1="80" y1="70" x2={x} y2={y} />;
-				})}
-			</g>
-			<polygon
-				points={points}
-				fill={color}
-				fillOpacity=".22"
-				stroke={color}
-				strokeWidth="1.5"
-			/>
-			{["1", "10", "100", "1K", "10K"].map((label, index) => (
-				<text
-					key={label}
-					x="83"
-					y={68 - (index + 1) * 7.5}
-					fill="currentColor"
-					fillOpacity=".66"
-					fontSize="5.5"
+				<g
+					fill="none"
+					stroke="currentColor"
+					strokeOpacity=".24"
+					strokeWidth=".65"
 				>
-					{label}
-				</text>
-			))}
-			<g fill="currentColor" fontSize="7" fontWeight="600">
-				<text x="80" y="13" textAnchor="middle">
-					Commit
-				</text>
-				<text x="127" y="46" textAnchor="start">
-					Issue
-				</text>
-				<text x="119" y="119" textAnchor="start">
-					PullReq
-				</text>
-				<text x="79" y="139" textAnchor="middle">
-					Review
-				</text>
-				<text x="27" y="46" textAnchor="end">
-					Repo
-				</text>
-			</g>
-		</svg>
+					{[0.2, 0.4, 0.6, 0.8, 1].map((fraction) => (
+						<polygon key={fraction} points={polygonPoints(fraction, 38)} />
+					))}
+					{AXES.map((axis, index) => {
+						const [x, y] = radarPoint(index, 1, 38);
+						return <line key={axis} x1="80" y1="70" x2={x} y2={y} />;
+					})}
+				</g>
+				<polygon
+					points={points}
+					fill={color}
+					fillOpacity=".22"
+					stroke={color}
+					strokeWidth="1.5"
+				/>
+				{["1", "10", "100", "1K", "10K"].map((label, index) => (
+					<text
+						key={label}
+						x="83"
+						y={68 - (index + 1) * 7.5}
+						fill="currentColor"
+						fillOpacity=".66"
+						fontSize="5.5"
+					>
+						{label}
+					</text>
+				))}
+				<g fill="currentColor" fontSize="7" fontWeight="600">
+					<text x="80" y="13" textAnchor="middle">
+						Commit
+					</text>
+					<text x="127" y="46" textAnchor="start">
+						Issue
+					</text>
+					<text x="119" y="119" textAnchor="start">
+						PullReq
+					</text>
+					<text x="79" y="139" textAnchor="middle">
+						Review
+					</text>
+					<text x="27" y="46" textAnchor="end">
+						Repo
+					</text>
+				</g>
+			</svg>
+			{values.map((value, index) => {
+				const [x, y] = radarPoint(index, metricFraction(value), 38);
+				const axis = AXES[index];
+				return (
+					<span
+						key={axis}
+						className="absolute -translate-x-1/2 -translate-y-1/2"
+						style={{ left: `${(x / 160) * 100}%`, top: `${(y / 142) * 100}%` }}
+					>
+						<Tooltip
+							content={`${axis}: ${numberFormat.format(value)}`}
+							delay={100}
+						>
+							<button
+								type="button"
+								aria-label={`${axis}: ${numberFormat.format(value)}`}
+								className="grid size-3 place-items-center rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-[var(--ktab-accent)]"
+							/>
+						</Tooltip>
+					</span>
+				);
+			})}
+		</div>
 	);
 }
 
@@ -149,28 +179,42 @@ function ContributionHeatmap({
 	const rgb = PALETTE_RGB[palette];
 	const maximum = Math.max(1, data.best);
 	return (
-		<div
-			role="img"
-			aria-label="Last 70 days of GitHub contributions"
-			className={
-				compact
-					? "grid h-[74px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[3px]"
-					: "grid h-[132px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[4px]"
-			}
-		>
-			{data.contributions.slice(-70).map((day) => {
-				const intensity = Math.log1p(day.count) / Math.log1p(maximum);
-				const alpha = day.count === 0 ? 0.12 : 0.28 + intensity * 0.68;
-				return (
-					<span
-						key={day.date}
-						title={`${day.count} contributions on ${day.date}`}
-						className="rounded-[2px]"
-						style={{ backgroundColor: `rgba(${rgb.join(",")}, ${alpha})` }}
-					/>
-				);
-			})}
-		</div>
+		<fieldset className="m-0 min-w-0 border-0 p-0">
+			<legend className="sr-only">Last 70 days of GitHub contributions</legend>
+			<div
+				className={
+					compact
+						? "grid h-[74px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[3px]"
+						: "grid h-[132px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[4px]"
+				}
+			>
+				{data.contributions.slice(-70).map((day) => {
+					const intensity = Math.log1p(day.count) / Math.log1p(maximum);
+					const alpha = day.count === 0 ? 0.12 : 0.28 + intensity * 0.68;
+					const date = new Date(`${day.date}T12:00:00`);
+					const dateLabel = new Intl.DateTimeFormat(
+						typeof navigator !== "undefined" ? navigator.language : "en-US",
+						{ month: "short", day: "numeric" },
+					).format(date);
+					const label = `${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${dateLabel}`;
+					return (
+						<Tooltip
+							key={day.date}
+							content={label}
+							delay={90}
+							wrapperClassName="min-h-0 min-w-0"
+						>
+							<button
+								type="button"
+								aria-label={label}
+								className="block size-full rounded-[2px] border-0 p-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ktab-accent)]"
+								style={{ backgroundColor: `rgba(${rgb.join(",")}, ${alpha})` }}
+							/>
+						</Tooltip>
+					);
+				})}
+			</div>
+		</fieldset>
 	);
 }
 
@@ -183,6 +227,13 @@ export function GitHubWidget() {
 	const [refreshCount, setRefreshCount] = useState(0);
 	const username = settings.username.trim();
 	const cacheKey = `github:${username.toLowerCase()}:${settings.token ? "authenticated" : "public"}`;
+
+	useEffect(() => {
+		if (!settings.enabled) return;
+		return subscribeWidgetAction("github", "refresh", () =>
+			setRefreshCount((count) => count + 1),
+		);
+	}, [settings.enabled]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Clicking retry intentionally re-runs the cache lookup and fetch.
 	useEffect(() => {
@@ -247,7 +298,7 @@ export function GitHubWidgetView({
 	status,
 	onRefresh,
 }: {
-	appearance: "flat" | "glass";
+	appearance: WidgetAppearance;
 	size?: WidgetSizePreference;
 	palette?: GitHubHeatmapPalette;
 	username: string;

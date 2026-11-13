@@ -6,16 +6,16 @@ import {
 	weatherLocationKey,
 } from "../src/lib/weather-conditions";
 import {
+	nextSunEvent,
+	shortWeatherCity,
+	upcomingWeatherHours,
+	weatherAtmosphere,
+} from "../src/lib/weather-display";
+import {
 	scheduleWeatherIdleTask,
 	type WeatherIdleScheduler,
 } from "../src/lib/weather-idle";
 import type { WeatherLocation } from "../src/services/open-meteo";
-import {
-	weatherAtmosphere,
-	upcomingWeatherHours,
-	nextSunEvent,
-	shortWeatherCity,
-} from "../src/lib/weather-display";
 import {
 	fetchCurrentWeather,
 	formatWeatherPlace,
@@ -143,7 +143,7 @@ test("current weather requests local hourly and daily forecasts", async () => {
 	});
 	expect(requestUrl?.origin).toBe("https://api.open-meteo.com");
 	expect(requestUrl?.searchParams.get("current")).toBe(
-		"temperature_2m,weather_code,is_day,time,wind_speed_10m",
+		"temperature_2m,weather_code,is_day,wind_speed_10m",
 	);
 	expect(requestUrl?.searchParams.get("hourly")).toBe(
 		"temperature_2m,weather_code,is_day",

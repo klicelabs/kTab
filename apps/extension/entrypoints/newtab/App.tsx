@@ -271,12 +271,15 @@ const HomeSurface = memo(function HomeSurface({
 								</section>
 							)}
 						>
-							<WidgetSection>
-								<WeatherWidget />
-								<MusicWidget />
-								<MarketWidget />
-								<GitHubWidget />
-							</WidgetSection>
+							<WidgetSection
+								items={[
+									{ id: "weather", content: <WeatherWidget /> },
+									{ id: "music", content: <MusicWidget /> },
+									{ id: "market", content: <MarketWidget /> },
+									{ id: "github", content: <GitHubWidget /> },
+								]}
+								onOpenSettings={() => onOpenSettings("general")}
+							/>
 						</DashboardErrorBoundary>
 
 						<div className="speed-dial-grid-region">

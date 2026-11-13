@@ -165,10 +165,11 @@ export interface WeatherSettings {
 	dynamicAtmosphere: boolean;
 }
 
-export type WidgetAppearance = "glass" | "flat";
+export type WidgetAppearance = "glass" | "flat" | "oled";
 export type WeatherAppearance = WidgetAppearance | "atmospheric";
 export type MusicAppearance = WidgetAppearance | "album-blur";
 export type WidgetSizePreference = "compact" | "expanded";
+export type DashboardWidgetId = "weather" | "music" | "market" | "github";
 export type GitHubHeatmapPalette =
 	| "github"
 	| "blue"
@@ -199,6 +200,7 @@ export interface GitHubWidgetSettings {
 }
 
 export interface WidgetsSettings {
+	order: DashboardWidgetId[];
 	music: MusicWidgetSettings;
 	market: MarketWidgetSettings;
 	github: GitHubWidgetSettings;

@@ -2,14 +2,19 @@ import { expect, test } from "bun:test";
 import { parseHTML } from "linkedom";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { EmptyLanding } from "../src/components/newtab/empty-landing";
 import { WidgetSettings } from "../src/components/newtab/settings/panes/widget-settings";
 import { WeatherToolbarView } from "../src/components/newtab/weather/weather-toolbar";
+import { WeatherWidgetView } from "../src/components/newtab/weather/weather-widget";
 import {
 	type GitHubWidgetData,
 	GitHubWidgetView,
 } from "../src/components/newtab/widgets/github-widget";
 import { MarketWidgetView } from "../src/components/newtab/widgets/market-widget";
-import { MusicWidgetView } from "../src/components/newtab/widgets/music-widget";
+import {
+	audioOutputOverflowDistance,
+	MusicWidgetView,
+} from "../src/components/newtab/widgets/music-widget";
 import { DEFAULT_SETUP } from "../src/lib/constants";
 import type { MediaSessionSnapshot } from "../src/lib/media-session";
 import type { MarketQuote } from "../src/services/market-data";
@@ -37,6 +42,19 @@ const marketQuotes: MarketQuote[] = [
 		change: 1.01,
 		changePercent: 0.58,
 		points: [],
+	},
+	{
+		symbol: "AAPL",
+		name: "Apple Inc.",
+		currency: "USD",
+		price: 148.56,
+		previousClose: 146.8,
+		change: 1.76,
+		changePercent: 1.2,
+		points: [
+			{ time: 1, close: 146.8 },
+			{ time: 2, close: 148.56 },
+		],
 	},
 ];
 
@@ -130,15 +148,16 @@ test("GitHub widget renders seven by ten contributions and a five-axis activity 
 	const { document } = parseHTML(markup);
 	expect(markup).toContain('data-widget-appearance="glass"');
 	expect(markup).toContain("10.81k");
-	expect(markup).toContain('aria-label="Last 70 days of GitHub contributions"');
+	expect(markup).toContain("Last 70 days of GitHub contributions");
+	expect(markup).toContain('aria-label="0 contributions on ');
 	expect(
-		document
-			.querySelector('[aria-label="Last 70 days of GitHub contributions"]')
-			?.querySelectorAll("span"),
+		document.querySelector("fieldset")?.querySelectorAll("button"),
 	).toHaveLength(70);
 	expect(markup).toContain(
 		"GitHub activity radar: commits 210, issues 10, pull requests 42, reviews 18, repositories 7",
 	);
+	expect(markup).toContain('aria-label="PullReq: 42"');
+	expect(markup).toContain("0 contributions on ");
 });
 
 test("weather toolbar stays one-line, uses the city prefix and omits provider branding", () => {
@@ -164,6 +183,54 @@ test("weather toolbar stays one-line, uses the city prefix and omits provider br
 	expect(markup).not.toContain("Open-Meteo");
 });
 
+test("compact weather keeps the large icon above temperature, condition and city", () => {
+	const markup = renderToStaticMarkup(
+		createElement(WeatherWidgetView, {
+			weather: {
+				enabled: true,
+				display: "compact",
+				appearance: "flat",
+				place: "Porto Da Roça I",
+				latitude: -22.92,
+				longitude: -42.51,
+				dynamicAtmosphere: false,
+			},
+			reading: { temperatureC: 22, weatherCode: 61, isDay: true },
+			status: "ready",
+			error: null,
+		}),
+	);
+	expect(markup).toContain('data-widget-size="compact"');
+	expect(markup).toContain('data-widget-appearance="flat"');
+	expect(markup).toContain("22°");
+	expect(markup).toContain("Porto Da Roça I");
+	expect(markup).toContain("lucide-map-pin");
+	expect(markup).toContain("size-[58px]");
+});
+
+test("expanded weather uses a stronger forecast hierarchy", () => {
+	const markup = renderToStaticMarkup(
+		createElement(WeatherWidgetView, {
+			weather: {
+				enabled: true,
+				display: "expanded",
+				appearance: "glass",
+				place: "Saquarema, Rio de Janeiro, Brasil",
+				latitude: -22.92,
+				longitude: -42.51,
+				dynamicAtmosphere: false,
+			},
+			reading: { temperatureC: 22, weatherCode: 0, isDay: true },
+			status: "ready",
+			error: null,
+		}),
+	);
+	expect(markup).toContain('data-widget-appearance="glass"');
+	expect(markup).toContain("text-[38px]");
+	expect(markup).toContain('width="19"');
+	expect(markup).not.toContain("weather-condition-texture");
+});
+
 test("market view exposes the selected surface material and list rows", () => {
 	const markup = renderToStaticMarkup(
 		createElement(MarketWidgetView, {
@@ -176,14 +243,18 @@ test("market view exposes the selected surface material and list rows", () => {
 	expect(markup).toContain('data-market-view="list"');
 	expect(markup).toContain("IBOVESPA");
 	expect(markup).toContain("The Walt Disney Company");
+	expect(markup).toContain("intraday trend");
 });
 
 test("widget defaults remain aligned with the requested dashboard shelf", () => {
 	expect(DEFAULT_SETUP.settings.widgets.music).toEqual({
 		enabled: true,
-		appearance: "flat",
+		appearance: "album-blur",
 		size: "expanded",
 	});
+	expect(DEFAULT_SETUP.settings.weather.appearance).toBe("atmospheric");
+	expect(DEFAULT_SETUP.settings.widgets.market.appearance).toBe("oled");
+	expect(DEFAULT_SETUP.settings.widgets.github.appearance).toBe("oled");
 	expect(DEFAULT_SETUP.settings.widgets.market.tickers).toEqual([
 		"^BVSP",
 		"DIS",
@@ -193,7 +264,7 @@ test("widget defaults remain aligned with the requested dashboard shelf", () => 
 	expect(DEFAULT_SETUP.settings.widgets.github.palette).toBe("github");
 });
 
-test("compact music shows artwork, track details, and play control without expanded transport", () => {
+test("compact music always uses full-bleed art with a progressive blurred footer", () => {
 	const session: MediaSessionSnapshot = {
 		tabId: 7,
 		updatedAt: 1,
@@ -209,7 +280,7 @@ test("compact music shows artwork, track details, and play control without expan
 	};
 	const markup = renderToStaticMarkup(
 		createElement(MusicWidgetView, {
-			appearance: "album-blur",
+			appearance: "flat",
 			size: "compact",
 			session,
 			busyAction: null,
@@ -218,13 +289,47 @@ test("compact music shows artwork, track details, and play control without expan
 		}),
 	);
 	expect(markup).toContain('data-widget-size="compact"');
-	expect(markup).toContain('data-widget-appearance="album-blur"');
-	expect(markup).toContain("blur-2xl");
-	expect(markup).toContain("scale-125");
+	expect(markup).toContain('data-widget-appearance="flat"');
+	expect(markup).toContain("object-cover");
+	expect(markup).toContain("h-[48%]");
+	expect(markup).toContain("backdrop-blur-sm");
+	expect(markup).toContain("bg-gradient-to-b");
+	expect(markup).toContain(
+		"mask-image:linear-gradient(to bottom, transparent 0%, black 60%, black 100%)",
+	);
+	expect(markup).toContain(
+		"-webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 60%, black 100%)",
+	);
+	expect(markup).toContain("rounded-full");
+	expect(markup).not.toContain("blur-2xl");
 	expect(markup).toContain("People Are Strange");
+	expect(markup).not.toContain("The Doors");
+	expect(markup).toContain('aria-label="Previous track"');
 	expect(markup).toContain('aria-label="Play"');
+	expect(markup).toContain('aria-label="Next track"');
+	expect(markup).toContain('aria-label="Choose audio output for this tab"');
 	expect(markup).not.toContain('role="progressbar"');
-	expect(markup).not.toContain('aria-label="Choose audio output for this tab"');
+});
+
+test("compact music without artwork has no dark gradient band", () => {
+	const markup = renderToStaticMarkup(
+		createElement(MusicWidgetView, {
+			appearance: "glass",
+			size: "compact",
+			session: null,
+			busyAction: null,
+			onControl: () => undefined,
+		}),
+	);
+	expect(markup).toContain('data-widget-appearance="glass"');
+	expect(markup).toContain("Nothing playing");
+	expect(markup).not.toContain("bg-gradient-to-b");
+	expect(markup).not.toContain("mask-image:");
+});
+
+test("audio device marquee only activates when the full label exceeds its viewport", () => {
+	expect(audioOutputOverflowDistance(120, 140)).toBe(0);
+	expect(audioOutputOverflowDistance(240, 140)).toBe(100);
 });
 
 test("passive media tab data does not pretend to have track progress", () => {
@@ -255,7 +360,7 @@ test("passive media tab data does not pretend to have track progress", () => {
 	expect(markup).not.toContain("−0:00");
 });
 
-test("compact market features one asset and a mini trend line", () => {
+test("compact market lists up to three assets without a loose sparkline", () => {
 	const markup = renderToStaticMarkup(
 		createElement(MarketWidgetView, {
 			quotes: marketQuotes,
@@ -267,9 +372,26 @@ test("compact market features one asset and a mini trend line", () => {
 	expect(markup).toContain('data-widget-size="compact"');
 	expect(markup).toContain('data-market-view="compact"');
 	expect(markup).toContain("^BVSP");
-	expect(markup).toContain("intraday trend");
-	expect(markup).not.toContain("The Walt Disney Company");
+	expect(markup).toContain("The Walt Disney Company");
+	expect(markup).not.toContain("intraday trend");
+	expect(markup.match(/<li/g)).toHaveLength(3);
 	expect(markup).toContain("text-flat-ink");
+});
+
+test("compact market gives its primary asset a clear price and mini chart", () => {
+	const markup = renderToStaticMarkup(
+		createElement(MarketWidgetView, {
+			quotes: marketQuotes.slice(0, 1),
+			status: "ready",
+			appearance: "oled",
+			size: "compact",
+		}),
+	);
+	expect(markup).toContain('data-widget-appearance="oled"');
+	expect(markup.match(/<li/g)).toHaveLength(1);
+	expect(markup).toContain("text-[18px]");
+	expect(markup).toContain("intraday trend");
+	expect(markup).toContain('aria-label="Show chart for ^BVSP, IBOVESPA"');
 });
 
 test("compact GitHub uses the selected palette for the mini heatmap", () => {
@@ -303,17 +425,34 @@ test("compact GitHub uses the selected palette for the mini heatmap", () => {
 	);
 	expect(markup).toContain('data-widget-size="compact"');
 	expect(markup).toContain("Today");
-	expect(markup).toContain('aria-label="Last 70 days of GitHub contributions"');
+	expect(markup).toContain("Last 70 days of GitHub contributions");
+	expect(markup).toContain('aria-label="0 contributions on ');
 	expect(markup).toContain("rgba(56,139,253,");
 	expect(markup).not.toContain("GitHub activity radar");
 });
 
-test("market settings offer searchable one-click presets and custom tickers", () => {
+test("market settings use a searchable asset combobox and keep custom tickers", () => {
 	const markup = renderToStaticMarkup(createElement(WidgetSettings));
-	expect(markup).toContain("Find a popular asset");
-	expect(markup).toContain('aria-label="Add NVIDIA (NVDA)"');
-	expect(markup).toContain('aria-label="Add Petrobras PN (PETR4.SA)"');
-	expect(markup).toContain('aria-label="Add Bitcoin (BTC-USD)"');
+	expect(markup).toContain("Find an asset");
+	expect(markup).toContain('aria-label="Search popular market assets"');
+	expect(markup).toContain("Search company or ticker");
 	expect(markup).toContain("Or enter a ticker, such as IBM");
 	expect(markup).toContain("Size");
+	expect(markup).toContain("OLED");
+});
+
+test("empty folder suggestions use the shared app-icon engine", () => {
+	const markup = renderToStaticMarkup(
+		createElement(EmptyLanding, {
+			folderName: "Favorites",
+			onAdd: () => undefined,
+		}),
+	);
+	const { document } = parseHTML(markup);
+	expect(document.querySelectorAll(".icon-app-tile")).toHaveLength(4);
+	expect(markup).toContain("Nothing here yet");
+	expect(markup).toContain("Add a favorite to Favorites, or choose one below.");
+	for (const name of ["Google", "YouTube", "GitHub", "ChatGPT"]) {
+		expect(markup).toContain(`Add ${name} to`);
+	}
 });

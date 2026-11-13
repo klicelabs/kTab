@@ -320,21 +320,22 @@ export const DEFAULT_SETTINGS: Settings = {
 	weather: {
 		enabled: false,
 		display: "expanded",
-		appearance: "flat",
+		appearance: "atmospheric",
 		...FALLBACK_WEATHER_LOCATION,
 		dynamicAtmosphere: false,
 	},
 	widgets: {
-		music: { enabled: true, appearance: "flat", size: "expanded" },
+		order: ["weather", "music", "market", "github"],
+		music: { enabled: true, appearance: "album-blur", size: "expanded" },
 		market: {
 			enabled: true,
-			appearance: "flat",
+			appearance: "oled",
 			size: "expanded",
 			tickers: ["^BVSP", "DIS", "AAPL"],
 		},
 		github: {
 			enabled: false,
-			appearance: "flat",
+			appearance: "oled",
 			size: "expanded",
 			palette: "github",
 			username: "",

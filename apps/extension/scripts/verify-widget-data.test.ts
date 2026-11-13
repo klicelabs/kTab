@@ -1,9 +1,13 @@
 import { expect, test } from "bun:test";
+import { formatMarketChangePercent } from "../src/lib/widget-format";
 import {
 	fetchGitHubWidgetData,
 	type GitHubWidgetRequestOptions,
 } from "../src/services/github-widget-data";
-import { fetchMarketQuotes } from "../src/services/market-data";
+import {
+	fetchMarketHistory,
+	fetchMarketQuotes,
+} from "../src/services/market-data";
 
 function jsonResponse(value: unknown, status = 200): Response {
 	return new Response(JSON.stringify(value), {
@@ -64,6 +68,44 @@ test("market requests are capped, normalized, and keep working quotes when one t
 		{ time: 1_762_900_000, close: 124_900 },
 		{ time: 1_762_900_600, close: 125_053.4 },
 	]);
+});
+
+test("market chart periods request matching history and calculate range change", async () => {
+	const expected = {
+		"1D": ["1d", "5m"],
+		"1W": ["5d", "30m"],
+		"1M": ["1mo", "1d"],
+		"1Y": ["1y", "1d"],
+	} as const;
+	for (const [period, [range, interval]] of Object.entries(expected)) {
+		let requestUrl: URL | null = null;
+		const quote = await fetchMarketHistory(
+			"^bvsp",
+			period as keyof typeof expected,
+			{
+				fetcher: async (input) => {
+					requestUrl = new URL(input.toString());
+					return jsonResponse(yahooResponse("^BVSP"));
+				},
+			},
+		);
+		expect(requestUrl?.searchParams.get("range")).toBe(range);
+		expect(requestUrl?.searchParams.get("interval")).toBe(interval);
+		expect(quote.symbol).toBe("^BVSP");
+		if (period === "1D") {
+			expect(quote.previousClose).toBe(126_147.4);
+		} else {
+			expect(quote.previousClose).toBe(124_900);
+			expect(quote.change).toBeCloseTo(153.4);
+			expect(quote.changePercent).toBeCloseTo((153.4 / 124_900) * 100);
+		}
+	}
+});
+
+test("market percentage copy includes the sign and percent unit", () => {
+	expect(formatMarketChangePercent(1.2, "en-US")).toBe("+1.20%");
+	expect(formatMarketChangePercent(-0.86, "en-US")).toContain("0.86%");
+	expect(formatMarketChangePercent(-0.86, "en-US").startsWith("-")).toBe(true);
 });
 
 test("public GitHub mode uses profile contributions and recent public activity", async () => {

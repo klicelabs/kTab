@@ -2,15 +2,8 @@
 
 // beui.dev/components/motion/context-menu
 
-import {
-	EASE_OUT,
-	SPRING_LAYOUT,
-	SPRING_PANEL,
-} from "@ktab/ui/lib/ease";
-import {
-	holdSelection,
-	TOUCH_GESTURE_CONTENT_CLASS,
-} from "@ktab/ui/lib/touch";
+import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@ktab/ui/lib/ease";
+import { holdSelection, TOUCH_GESTURE_CONTENT_CLASS } from "@ktab/ui/lib/touch";
 import { cn } from "@ktab/ui/lib/utils";
 import { Check } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -209,11 +202,13 @@ export interface ContextMenuTriggerProps
 	extends Omit<TriggerElementProps, "children"> {
 	children: ReactElement<TriggerElementProps>;
 	disabled?: boolean;
+	shouldOpenContextMenu?: (target: EventTarget | null) => boolean;
 }
 
 export function ContextMenuTrigger({
 	children,
 	disabled = false,
+	shouldOpenContextMenu,
 	className,
 	onClick,
 	...triggerProps
@@ -255,7 +250,13 @@ export function ContextMenuTrigger({
 		// button and is left to `onContextMenu`.
 		const pressToOpen =
 			event.pointerType === "touch" || event.pointerType === "pen";
-		if (event.defaultPrevented || disabled || !pressToOpen) return;
+		if (
+			event.defaultPrevented ||
+			disabled ||
+			!pressToOpen ||
+			(shouldOpenContextMenu && !shouldOpenContextMenu(event.target))
+		)
+			return;
 
 		// `pointer-coarse:select-none` misses this press on a laptop whose mouse
 		// is the primary pointer and whose touchscreen is not, and the platform's
@@ -288,7 +289,12 @@ export function ContextMenuTrigger({
 
 	const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
 		childProps.onKeyDown?.(event);
-		if (event.defaultPrevented || disabled) return;
+		if (
+			event.defaultPrevented ||
+			disabled ||
+			(shouldOpenContextMenu && !shouldOpenContextMenu(event.target))
+		)
+			return;
 		if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10"))
 			return;
 
@@ -325,7 +331,12 @@ export function ContextMenuTrigger({
 		},
 		onContextMenu: (event: ReactMouseEvent<HTMLElement>) => {
 			childProps.onContextMenu?.(event);
-			if (event.defaultPrevented || disabled) return;
+			if (
+				event.defaultPrevented ||
+				disabled ||
+				(shouldOpenContextMenu && !shouldOpenContextMenu(event.target))
+			)
+				return;
 			event.preventDefault();
 			endPress();
 			context.openAt({ x: event.clientX, y: event.clientY }, "pointer");
@@ -621,36 +632,36 @@ function ContextMenuItemBase({
 				onSelect?.();
 				if (closeOnSelect) context.setOpen(false);
 			}}
-		className={cn(
-			"relative isolate flex w-full select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-normal outline-none",
-			// No focus ring: the active pill below IS the single focus/selection
-			// indicator (never ring + accent wash stacked). Keyboard focus
-			// always lands on the active item, so nothing is lost.
-			"disabled:pointer-events-none disabled:opacity-40",
-			inset && "pl-8",
-			tone === "destructive"
-				? "text-destructive"
-				: "text-[var(--ktab-glass-foreground-primary)]",
-			className,
-			// Active (hover / keyboard) row: accent highlight, macOS-style.
-			// Placed after the caller's surface classes so the highlight wins.
-			active &&
-				tone !== "destructive" &&
-				"text-[var(--ktab-accent-foreground)]",
-		)}
-	>
-		{active ? (
-			<motion.span
-				layoutId={`${context.menuId}-active`}
-				className={cn(
-					"absolute inset-0 -z-10 rounded-lg",
-					tone === "destructive"
-						? "bg-destructive/10"
-						: "bg-[var(--ktab-accent)]",
-				)}
-				transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
-			/>
-		) : null}
+			className={cn(
+				"relative isolate flex w-full select-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-left font-normal text-[13px] outline-none",
+				// No focus ring: the active pill below IS the single focus/selection
+				// indicator (never ring + accent wash stacked). Keyboard focus
+				// always lands on the active item, so nothing is lost.
+				"disabled:pointer-events-none disabled:opacity-40",
+				inset && "pl-8",
+				tone === "destructive"
+					? "text-destructive"
+					: "text-[var(--ktab-glass-foreground-primary)]",
+				className,
+				// Active (hover / keyboard) row: accent highlight, macOS-style.
+				// Placed after the caller's surface classes so the highlight wins.
+				active &&
+					tone !== "destructive" &&
+					"text-[var(--ktab-accent-foreground)]",
+			)}
+		>
+			{active ? (
+				<motion.span
+					layoutId={`${context.menuId}-active`}
+					className={cn(
+						"absolute inset-0 -z-10 rounded-lg",
+						tone === "destructive"
+							? "bg-destructive/10"
+							: "bg-[var(--ktab-accent)]",
+					)}
+					transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
+				/>
+			) : null}
 			{children}
 		</button>
 	);
@@ -789,7 +800,7 @@ export function ContextMenuLabel({
 			className={cn(
 				// Section label, not a heading: regular 12px secondary type with
 				// breathing room — never uppercase, never bold.
-				"px-2.5 pt-2 pb-1 text-[12px] font-normal text-muted-foreground",
+				"px-2.5 pt-2 pb-1 font-normal text-[12px] text-muted-foreground",
 				inset && "pl-8",
 				className,
 			)}
@@ -830,7 +841,7 @@ export function ContextMenuShortcut({
 		<span
 			aria-hidden="true"
 			className={cn(
-				"ml-auto pl-4 text-[11px] font-normal tracking-wide opacity-70",
+				"ml-auto pl-4 font-normal text-[11px] tracking-wide opacity-70",
 				className,
 			)}
 		>
