@@ -9,6 +9,7 @@ import type {
 	ThumbnailCaptureSettings,
 	WallpaperFrequency,
 } from "../types";
+import { FALLBACK_WEATHER_LOCATION } from "./weather-location";
 export const MAX_BACKGROUND_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export interface GradientDef {
@@ -320,21 +321,22 @@ export const DEFAULT_SETTINGS: Settings = {
 		enabled: false,
 		display: "expanded",
 		appearance: "flat",
-		place: "",
-		latitude: null,
-		longitude: null,
+		...FALLBACK_WEATHER_LOCATION,
 		dynamicAtmosphere: false,
 	},
 	widgets: {
-		music: { enabled: true, appearance: "flat" },
+		music: { enabled: true, appearance: "flat", size: "expanded" },
 		market: {
 			enabled: true,
 			appearance: "flat",
+			size: "expanded",
 			tickers: ["^BVSP", "DIS", "AAPL"],
 		},
 		github: {
 			enabled: false,
 			appearance: "flat",
+			size: "expanded",
+			palette: "github",
 			username: "",
 			token: "",
 		},

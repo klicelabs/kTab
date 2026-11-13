@@ -1,17 +1,19 @@
 import { expect, test } from "bun:test";
+import { parseHTML } from "linkedom";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { WidgetSettings } from "../src/components/newtab/settings/panes/widget-settings";
+import { WeatherToolbarView } from "../src/components/newtab/weather/weather-toolbar";
 import {
-	GitHubWidgetView,
 	type GitHubWidgetData,
+	GitHubWidgetView,
 } from "../src/components/newtab/widgets/github-widget";
 import { MarketWidgetView } from "../src/components/newtab/widgets/market-widget";
 import { MusicWidgetView } from "../src/components/newtab/widgets/music-widget";
-import { WeatherToolbarView } from "../src/components/newtab/weather/weather-toolbar";
 import { DEFAULT_SETUP } from "../src/lib/constants";
-import type { MarketQuote } from "../src/services/market-data";
 import type { MediaSessionSnapshot } from "../src/lib/media-session";
-import { parseHTML } from "linkedom";
+import type { MarketQuote } from "../src/services/market-data";
+
 const marketQuotes: MarketQuote[] = [
 	{
 		symbol: "^BVSP",
@@ -56,11 +58,11 @@ test("renders music and GitHub widgets with independent Flat or Glass settings",
 		}),
 	);
 	expect(music).toContain('data-widget="music"');
-	expect(music).toContain('data-widget-size="wide"');
+	expect(music).toContain('data-widget-size="expanded"');
 	expect(music).toContain('data-widget-appearance="glass"');
 	expect(music).toContain("Nothing playing");
 	expect(github).toContain('data-widget="github"');
-	expect(github).toContain('data-widget-size="wide"');
+	expect(github).toContain('data-widget-size="expanded"');
 	expect(github).toContain('data-widget-appearance="flat"');
 	expect(github).toContain("Add a username in Settings");
 });
@@ -180,6 +182,7 @@ test("widget defaults remain aligned with the requested dashboard shelf", () => 
 	expect(DEFAULT_SETUP.settings.widgets.music).toEqual({
 		enabled: true,
 		appearance: "flat",
+		size: "expanded",
 	});
 	expect(DEFAULT_SETUP.settings.widgets.market.tickers).toEqual([
 		"^BVSP",
@@ -187,4 +190,102 @@ test("widget defaults remain aligned with the requested dashboard shelf", () => 
 		"AAPL",
 	]);
 	expect(DEFAULT_SETUP.settings.widgets.github.enabled).toBe(false);
+	expect(DEFAULT_SETUP.settings.widgets.github.palette).toBe("github");
+});
+
+test("compact music shows artwork, track details, and play control without expanded transport", () => {
+	const session: MediaSessionSnapshot = {
+		tabId: 7,
+		updatedAt: 1,
+		title: "People Are Strange",
+		artist: "The Doors",
+		album: "Strange Days",
+		artwork: "https://example.com/cover.jpg",
+		playing: false,
+		currentTime: 19,
+		duration: 133,
+		canNext: true,
+		canPrevious: true,
+	};
+	const markup = renderToStaticMarkup(
+		createElement(MusicWidgetView, {
+			appearance: "album-blur",
+			size: "compact",
+			session,
+			busyAction: null,
+			onControl: () => undefined,
+			onSetOutput: async () => ({ ok: true }),
+		}),
+	);
+	expect(markup).toContain('data-widget-size="compact"');
+	expect(markup).toContain('data-widget-appearance="album-blur"');
+	expect(markup).toContain("blur-2xl");
+	expect(markup).toContain("scale-125");
+	expect(markup).toContain("People Are Strange");
+	expect(markup).toContain('aria-label="Play"');
+	expect(markup).not.toContain('role="progressbar"');
+	expect(markup).not.toContain('aria-label="Choose audio output for this tab"');
+});
+
+test("compact market features one asset and a mini trend line", () => {
+	const markup = renderToStaticMarkup(
+		createElement(MarketWidgetView, {
+			quotes: marketQuotes,
+			status: "ready",
+			appearance: "flat",
+			size: "compact",
+		}),
+	);
+	expect(markup).toContain('data-widget-size="compact"');
+	expect(markup).toContain('data-market-view="compact"');
+	expect(markup).toContain("^BVSP");
+	expect(markup).toContain("intraday trend");
+	expect(markup).not.toContain("The Walt Disney Company");
+	expect(markup).toContain("text-flat-ink");
+});
+
+test("compact GitHub uses the selected palette for the mini heatmap", () => {
+	const data: GitHubWidgetData = {
+		username: "octocat",
+		today: 15,
+		best: 210,
+		total: 10_810,
+		contributions: Array.from({ length: 70 }, (_, index) => ({
+			date: `2026-11-${String((index % 28) + 1).padStart(2, "0")}`,
+			count: index % 5,
+		})),
+		radars: {
+			commits: 210,
+			issues: 10,
+			pullRequests: 42,
+			reviews: 18,
+			repositories: 7,
+		},
+		dataScope: "public",
+	};
+	const markup = renderToStaticMarkup(
+		createElement(GitHubWidgetView, {
+			appearance: "flat",
+			size: "compact",
+			palette: "blue",
+			username: "octocat",
+			data,
+			status: "ready",
+		}),
+	);
+	expect(markup).toContain('data-widget-size="compact"');
+	expect(markup).toContain("Today");
+	expect(markup).toContain('aria-label="Last 70 days of GitHub contributions"');
+	expect(markup).toContain("rgba(56,139,253,");
+	expect(markup).not.toContain("GitHub activity radar");
+});
+
+test("market settings offer searchable one-click presets and custom tickers", () => {
+	const markup = renderToStaticMarkup(createElement(WidgetSettings));
+	expect(markup).toContain("Find a popular asset");
+	expect(markup).toContain('aria-label="Add NVIDIA (NVDA)"');
+	expect(markup).toContain('aria-label="Add Petrobras PN (PETR4.SA)"');
+	expect(markup).toContain('aria-label="Add Bitcoin (BTC-USD)"');
+	expect(markup).toContain("Or enter a ticker, such as IBM");
+	expect(markup).toContain("Size");
 });

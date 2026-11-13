@@ -158,7 +158,7 @@ export interface WeatherSettings {
 	enabled: boolean;
 	/** `widget` is accepted only as a legacy stored value and normalizes to expanded. */
 	display: "toolbar" | "widget" | "compact" | "expanded";
-	appearance: WidgetAppearance;
+	appearance: WeatherAppearance;
 	place: string;
 	latitude: number | null;
 	longitude: number | null;
@@ -166,21 +166,34 @@ export interface WeatherSettings {
 }
 
 export type WidgetAppearance = "glass" | "flat";
+export type WeatherAppearance = WidgetAppearance | "atmospheric";
+export type MusicAppearance = WidgetAppearance | "album-blur";
+export type WidgetSizePreference = "compact" | "expanded";
+export type GitHubHeatmapPalette =
+	| "github"
+	| "blue"
+	| "purple"
+	| "orange"
+	| "monochrome";
 
 export interface MusicWidgetSettings {
 	enabled: boolean;
-	appearance: WidgetAppearance;
+	appearance: MusicAppearance;
+	size: WidgetSizePreference;
 }
 
 export interface MarketWidgetSettings {
 	enabled: boolean;
 	appearance: WidgetAppearance;
+	size: WidgetSizePreference;
 	tickers: string[];
 }
 
 export interface GitHubWidgetSettings {
 	enabled: boolean;
 	appearance: WidgetAppearance;
+	size: WidgetSizePreference;
+	palette: GitHubHeatmapPalette;
 	username: string;
 	token: string;
 }

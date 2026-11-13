@@ -55,13 +55,13 @@ test("renders the expanded forecast card without provider branding", () => {
 	expect(markup).toContain("Saquarema");
 	expect(markup).toContain("26°");
 	expect(markup).not.toContain("Open-Meteo");
-	expect(markup).toContain('data-widget-size="wide"');
+	expect(markup).toContain('data-widget-size="expanded"');
 	expect(markup).toContain('data-widget-appearance="flat"');
 	expect(markup).toContain("H:29° L:21°");
 	expect(markup).toContain('alt=""');
 });
 
-test("renders compact weather as a square card with the selected material", () => {
+test("renders compact weather with the selected material", () => {
 	const markup = renderToStaticMarkup(
 		<WeatherWidgetView
 			weather={{
@@ -78,7 +78,7 @@ test("renders compact weather as a square card with the selected material", () =
 			error={null}
 		/>,
 	);
-	expect(markup).toContain('data-widget-size="square"');
+	expect(markup).toContain('data-widget-size="compact"');
 	expect(markup).toContain('data-widget-appearance="glass"');
 	expect(markup).toContain("Cupertino");
 	expect(markup).toContain("14°");
@@ -94,4 +94,51 @@ test("renders weather artwork at stable dimensions without exposing decorative a
 
 test("defaults weather to the expanded card mode", () => {
 	expect(DEFAULT_SETUP.settings.weather.display).toBe("expanded");
+});
+
+test("renders a loading card with the fallback city when no location is saved", () => {
+	const markup = renderToStaticMarkup(
+		<WeatherWidgetView
+			weather={{
+				enabled: true,
+				display: "expanded",
+				appearance: "flat",
+				place: "",
+				latitude: null,
+				longitude: null,
+				dynamicAtmosphere: false,
+			}}
+			reading={null}
+			status="idle"
+			error={null}
+		/>,
+	);
+
+	expect(markup).toContain("São Paulo");
+	expect(markup).toContain("Loading forecast…");
+	expect(markup).toContain('data-widget-size="expanded"');
+});
+
+test("offers an accessible retry action when the expanded forecast fails", () => {
+	const markup = renderToStaticMarkup(
+		<WeatherWidgetView
+			weather={{
+				enabled: true,
+				display: "expanded",
+				appearance: "flat",
+				place: "São Paulo",
+				latitude: -23.5505,
+				longitude: -46.6333,
+				dynamicAtmosphere: false,
+			}}
+			reading={null}
+			status="error"
+			error="Network unavailable"
+		/>,
+	);
+
+	expect(markup).toContain("Forecast unavailable");
+	expect(markup).toContain(
+		'aria-label="Refresh weather for São Paulo, Brazil"',
+	);
 });

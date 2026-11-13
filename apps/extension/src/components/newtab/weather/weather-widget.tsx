@@ -1,6 +1,5 @@
 import { Icon } from "@ktab/ui/icons/icon";
 import { useEffect, useState } from "react";
-import { glassForeground } from "../../../lib/glass";
 import {
 	describeWeatherCondition,
 	weatherLocationKey,
@@ -11,17 +10,17 @@ import {
 	upcomingWeatherHours,
 	weatherAtmosphere,
 } from "../../../lib/weather-display";
+import { resolveWeatherLocation } from "../../../lib/weather-location";
 import { useSetupStore } from "../../../stores/setup-store";
 import { useWeatherRuntimeStore } from "../../../stores/weather-runtime-store";
 import type { WeatherReading, WeatherSettings } from "../../../types";
-import { useAppearance } from "../appearance-provider";
+import { WidgetSurface } from "../widgets/widget-surface";
 import {
 	useWeatherMotionAllowed,
 	WeatherPauseButton,
 	WeatherRefreshButton,
 } from "./weather-actions";
 import { WeatherIcon } from "./weather-icon";
-import { WidgetSurface } from "../widgets/widget-surface";
 
 function weatherLocale(): string {
 	return typeof navigator !== "undefined" && navigator.language
@@ -85,7 +84,6 @@ export function WeatherWidgetView({
 	status: "idle" | "loading" | "ready" | "refreshing" | "error";
 	error: string | null;
 }) {
-	const { isLiquid } = useAppearance();
 	const canAnimate = useWeatherMotionAllowed();
 	const [now, setNow] = useState(() => new Date());
 	useEffect(() => {
@@ -100,11 +98,11 @@ export function WeatherWidgetView({
 		!weather.enabled ||
 		(weather.display !== "compact" &&
 			weather.display !== "expanded" &&
-			weather.display !== "widget") ||
-		!weather.place
+			weather.display !== "widget")
 	) {
 		return null;
 	}
+	const location = resolveWeatherLocation(weather);
 
 	const expanded =
 		weather.display === "expanded" || weather.display === "widget";
@@ -139,16 +137,14 @@ export function WeatherWidgetView({
 			temperature: null,
 		});
 	}
-	const secondaryInk = isLiquid
-		? glassForeground("secondary")
-		: "text-white/65";
+	const secondaryInk = "dashboard-widget-muted";
 	const showPause =
 		weather.dynamicAtmosphere && condition?.atmosphere && canAnimate;
 
 	return (
 		<WidgetSurface
 			name="weather"
-			size={expanded ? "wide" : "square"}
+			size={expanded ? "expanded" : "compact"}
 			appearance={weather.appearance ?? "flat"}
 			data-time={atmosphere.time}
 			data-condition={atmosphere.condition}
@@ -162,7 +158,7 @@ export function WeatherWidgetView({
 					<div className="flex min-h-0 items-start justify-between gap-2 pt-0.5">
 						<div className="flex min-w-0 flex-col">
 							<p className="max-w-[185px] truncate font-semibold text-[13px] leading-[1.1]">
-								{shortWeatherCity(weather.place)}
+								{shortWeatherCity(location.place)}
 							</p>
 							<p className="mt-1 font-light text-[38px] leading-[0.92] tracking-[-0.045em]">
 								{reading
@@ -176,10 +172,13 @@ export function WeatherWidgetView({
 							) : (
 								<Icon name="sun-moon" size={20} aria-hidden="true" />
 							)}
-							<p className="mt-0.5 max-w-full truncate text-[10px] leading-[1.1]">
-								{condition?.label ??
-									(error ? "Forecast unavailable" : "Loading forecast…")}
-							</p>
+							<div className="mt-0.5 flex max-w-full items-center justify-end gap-1">
+								<p className="truncate text-[10px] leading-[1.1]">
+									{condition?.label ??
+										(error ? "Forecast unavailable" : "Loading forecast…")}
+								</p>
+								{error ? <WeatherRefreshButton insideSurface /> : null}
+							</div>
 							<p
 								className={`mt-1 whitespace-nowrap text-[9px] leading-none ${secondaryInk}`}
 							>
@@ -195,7 +194,7 @@ export function WeatherWidgetView({
 								className="flex min-w-0 flex-col items-center gap-1"
 							>
 								<span
-									className="max-w-full truncate text-[8px] text-white/70 leading-none"
+									className="dashboard-widget-muted max-w-full truncate text-[8px] leading-none"
 									title={hour.label}
 								>
 									{hour.label}
@@ -212,7 +211,7 @@ export function WeatherWidgetView({
 				<div className="relative z-10 flex h-full min-h-0 flex-col justify-between pt-0.5">
 					<div className="flex min-w-0 flex-col">
 						<p className="truncate font-semibold text-[13px] leading-[1.1]">
-							{shortWeatherCity(weather.place)}
+							{shortWeatherCity(location.place)}
 						</p>
 						<p className="mt-1 font-light text-[43px] leading-[0.9] tracking-[-0.045em]">
 							{reading

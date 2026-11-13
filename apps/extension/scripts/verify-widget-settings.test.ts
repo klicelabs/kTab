@@ -97,13 +97,13 @@ test("migrates the legacy icon glass flag to the icon surface setting", () => {
 
 test("weather is off by default and rejects invalid saved locations", () => {
 	const defaults = normalizeState(null);
-	expect(defaults.settings.weather).toEqual({
+	expect(defaults.settings.weather).toMatchObject({
 		enabled: false,
 		display: "expanded",
 		appearance: "flat",
-		place: "",
-		latitude: null,
-		longitude: null,
+		place: "São Paulo, Brazil",
+		latitude: -23.5505,
+		longitude: -46.6333,
 		dynamicAtmosphere: false,
 	});
 
@@ -122,9 +122,9 @@ test("weather is off by default and rejects invalid saved locations", () => {
 		enabled: true,
 		display: "compact",
 		appearance: "flat",
-		place: "",
-		latitude: null,
-		longitude: -42.5,
+		place: "São Paulo, Brazil",
+		latitude: -23.5505,
+		longitude: -46.6333,
 		dynamicAtmosphere: true,
 	});
 });
@@ -173,17 +173,73 @@ test("migrates legacy weather cards and normalizes each widget appearance locall
 	const normalized = normalizeState(state);
 	expect(normalized.settings.weather.display).toBe("expanded");
 	expect(normalized.settings.widgets).toEqual({
-		music: { enabled: true, appearance: "glass" },
+		music: { enabled: true, appearance: "glass", size: "expanded" },
 		market: {
 			enabled: true,
 			appearance: "flat",
+			size: "expanded",
 			tickers: ["^BVSP", "DIS", "AAPL"],
 		},
 		github: {
 			enabled: true,
 			appearance: "flat",
+			size: "expanded",
+			palette: "github",
 			username: "octocat",
 			token: "secret",
 		},
+	});
+});
+
+test("repairs a legacy empty weather selection to the fallback city", () => {
+	const legacy = structuredClone(DEFAULT_SETUP);
+	legacy.settings.weather = {
+		...legacy.settings.weather,
+		place: "",
+		latitude: null,
+		longitude: null,
+	};
+	const repaired = normalizeState(legacy).settings.weather;
+	expect(repaired.place).toBe("São Paulo, Brazil");
+	expect(repaired.latitude).toBe(-23.5505);
+	expect(repaired.longitude).toBe(-46.6333);
+
+	legacy.settings.weather = {
+		...legacy.settings.weather,
+		place: "  ",
+		latitude: -22.92,
+		longitude: -42.51,
+	};
+	const repairedBlank = normalizeState(legacy).settings.weather;
+	expect(repairedBlank.place).toBe("São Paulo, Brazil");
+	expect(repairedBlank.latitude).toBe(-23.5505);
+	expect(repairedBlank.longitude).toBe(-46.6333);
+});
+
+test("normalizes widget appearance, size, and contribution palette choices", () => {
+	const state = structuredClone(DEFAULT_SETUP);
+	state.settings.weather.appearance = "atmospheric";
+	state.settings.widgets.music = {
+		...state.settings.widgets.music,
+		appearance: "album-blur",
+		size: "compact",
+	};
+	state.settings.widgets.market.size = "compact";
+	state.settings.widgets.github = {
+		...state.settings.widgets.github,
+		size: "compact",
+		palette: "purple",
+	};
+
+	const normalized = normalizeState(state).settings;
+	expect(normalized.weather.appearance).toBe("atmospheric");
+	expect(normalized.widgets.music).toMatchObject({
+		appearance: "album-blur",
+		size: "compact",
+	});
+	expect(normalized.widgets.market.size).toBe("compact");
+	expect(normalized.widgets.github).toMatchObject({
+		size: "compact",
+		palette: "purple",
 	});
 });

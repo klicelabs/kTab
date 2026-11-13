@@ -4,11 +4,16 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { clearWeatherCache } from "../../../../lib/idb";
 import { cn } from "../../../../lib/utils";
 import {
+	FALLBACK_WEATHER_LOCATION,
+	requestCurrentWeatherLocation,
+} from "../../../../lib/weather-location";
+import {
 	formatWeatherPlace,
 	searchWeatherLocations,
 	type WeatherLocation,
 } from "../../../../services/open-meteo";
 import { useSetupStore } from "../../../../stores/setup-store";
+import { useWeatherRuntimeStore } from "../../../../stores/weather-runtime-store";
 import { SectionCard } from "../shared/section-card";
 import { SelectRow } from "../shared/select-row";
 import { SettingRow } from "../shared/setting-row";
@@ -30,6 +35,7 @@ const WEATHER_DISPLAY_OPTIONS = [
 const WEATHER_APPEARANCE_OPTIONS = [
 	{ value: "flat", label: "Flat" },
 	{ value: "glass", label: "Liquid Glass" },
+	{ value: "atmospheric", label: "Atmospheric" },
 ] as const;
 
 export function WeatherEnabledSwitch({
@@ -73,6 +79,7 @@ export function WeatherSettings() {
 	const [query, setQuery] = useState("");
 	const [locations, setLocations] = useState<WeatherLocation[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
+	const [isLocating, setIsLocating] = useState(false);
 	const [message, setMessage] = useState("");
 	const searchController = useRef<AbortController | null>(null);
 	const queryId = useId();
@@ -143,9 +150,31 @@ export function WeatherSettings() {
 	}
 
 	function clearLocation() {
-		updateWeather({ place: "", latitude: null, longitude: null });
-		setMessage("Weather location cleared.");
+		updateWeather(FALLBACK_WEATHER_LOCATION);
+		setMessage(`Using the default city: ${FALLBACK_WEATHER_LOCATION.place}.`);
 		void clearWeatherCache().catch(() => undefined);
+		useWeatherRuntimeStore.getState().requestRefresh();
+	}
+
+	async function handleCurrentLocation() {
+		setIsLocating(true);
+		setMessage("Waiting for location permission…");
+		const location = await requestCurrentWeatherLocation();
+		updateWeather({
+			place: location.place,
+			latitude: location.latitude,
+			longitude: location.longitude,
+		});
+		setMessage(
+			location.source === "device"
+				? "Using this device’s location."
+				: location.reason === "denied"
+					? `Location permission was denied. Using ${FALLBACK_WEATHER_LOCATION.place}.`
+					: location.reason === "timeout"
+						? `Location took too long. Using ${FALLBACK_WEATHER_LOCATION.place}.`
+						: `Location is unavailable. Using ${FALLBACK_WEATHER_LOCATION.place}.`,
+		);
+		setIsLocating(false);
 	}
 
 	return (
@@ -177,10 +206,10 @@ export function WeatherSettings() {
 					<div className="grid min-w-0 gap-1 px-1.5 py-2.5">
 						<div className="flex min-w-0 items-center gap-2">
 							<span className="min-w-0 flex-1 font-medium text-[13px] text-neutral-900 leading-[1.35] dark:text-neutral-100">
-								Selected city
+								Weather location
 							</span>
 							<SettingsAction onClick={clearLocation}>
-								Clear city
+								Use default city
 							</SettingsAction>
 						</div>
 						<p className="min-w-0 break-words text-[13px] text-neutral-600 leading-[1.4] dark:text-neutral-300">
@@ -262,6 +291,14 @@ export function WeatherSettings() {
 						</ul>
 					) : null}
 				</form>
+				<SettingsAction
+					icon="compass"
+					disabled={isLocating}
+					onClick={() => void handleCurrentLocation()}
+					className="mx-1.5 h-8 px-2 text-[12px]"
+				>
+					{isLocating ? "Checking location…" : "Use current location"}
+				</SettingsAction>
 
 				<SettingRow
 					label="Dynamic atmosphere"
@@ -279,8 +316,10 @@ export function WeatherSettings() {
 				</SettingRow>
 
 				<p className="text-pretty px-1.5 py-2 text-[12px] text-neutral-500 leading-[1.45] dark:text-neutral-400">
-					Weather sends the city name and chosen coordinates to Open-Meteo. It
-					never uses device location. Forecast data is provided under{" "}
+					Weather sends the selected city or coordinates to Open-Meteo. Device
+					location is used only after you choose “Use current location”; if
+					access is denied or takes too long, the widget uses São Paulo.
+					Forecast data is provided under{" "}
 					<a
 						href="https://open-meteo.com/"
 						target="_blank"

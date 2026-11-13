@@ -1,10 +1,18 @@
 import type { ReactNode } from "react";
-import type { WidgetAppearance } from "../../../types";
 import { cn } from "../../../lib/utils";
+import type {
+	MusicAppearance,
+	WeatherAppearance,
+	WidgetAppearance,
+} from "../../../types";
 import { GlassSurface } from "../toolbar/glass-surface";
 
 export type WidgetName = "weather" | "market" | "github" | "music";
-export type WidgetSize = "square" | "wide";
+export type WidgetSize = "compact" | "expanded";
+export type WidgetSurfaceAppearance =
+	| WidgetAppearance
+	| WeatherAppearance
+	| MusicAppearance;
 
 export function WidgetSurface({
 	appearance,
@@ -14,7 +22,7 @@ export function WidgetSurface({
 	children,
 	...props
 }: {
-	appearance: WidgetAppearance;
+	appearance: WidgetSurfaceAppearance;
 	name: WidgetName;
 	size: WidgetSize;
 	className?: string;
@@ -25,7 +33,7 @@ export function WidgetSurface({
 	return (
 		<GlassSurface
 			{...props}
-			appearanceOverride={appearance}
+			appearanceOverride={appearance === "glass" ? "glass" : "flat"}
 			variant="surface"
 			shape="section"
 			data-widget={name}
@@ -33,6 +41,11 @@ export function WidgetSurface({
 			data-widget-appearance={appearance}
 			className={cn(
 				"dashboard-widget-card isolate flex shrink-0 flex-col items-stretch",
+				appearance === "flat"
+					? "text-flat-ink"
+					: appearance === "glass"
+						? "text-[var(--ktab-glass-foreground-primary)]"
+						: "text-white",
 				className,
 			)}
 		>

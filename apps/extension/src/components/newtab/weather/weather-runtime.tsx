@@ -6,6 +6,7 @@ import {
 	weatherLocationKey,
 } from "../../../lib/weather-conditions";
 import { scheduleWeatherIdleTask } from "../../../lib/weather-idle";
+import { resolveWeatherLocation } from "../../../lib/weather-location";
 import { fetchCurrentWeather } from "../../../services/open-meteo";
 import { useSetupStore } from "../../../stores/setup-store";
 import { useWeatherRuntimeStore } from "../../../stores/weather-runtime-store";
@@ -13,9 +14,8 @@ import { useWeatherRuntimeStore } from "../../../stores/weather-runtime-store";
 /** Runs one cache-first, idle-scheduled refresh loop for the selected city. */
 export function WeatherRuntime() {
 	const enabled = useSetupStore((state) => state.settings.weather.enabled);
-	const latitude = useSetupStore((state) => state.settings.weather.latitude);
-	const longitude = useSetupStore((state) => state.settings.weather.longitude);
-	const place = useSetupStore((state) => state.settings.weather.place);
+	const weather = useSetupStore((state) => state.settings.weather);
+	const { latitude, longitude, place } = resolveWeatherLocation(weather);
 	const retryToken = useWeatherRuntimeStore((state) => state.retryToken);
 	const key = weatherLocationKey(latitude, longitude);
 
@@ -53,9 +53,13 @@ export function WeatherRuntime() {
 			error: null,
 		});
 
-		function scheduleRefresh(delay: number) {
+		function scheduleRefresh(delay: number, idle = true) {
 			if (disposed) return;
 			const queueIdle = () => {
+				if (!idle) {
+					void refresh();
+					return;
+				}
 				idleCancel = scheduleWeatherIdleTask(() => {
 					idleCancel = null;
 					void refresh();
@@ -123,7 +127,9 @@ export function WeatherRuntime() {
 			});
 
 			if (retryToken > 0 || !matching || !fresh) {
-				scheduleRefresh(0);
+				// A cold start should show a forecast as soon as IndexedDB has been
+				// checked. Idle scheduling is reserved for later background refreshes.
+				scheduleRefresh(0, false);
 			} else {
 				const age = Date.now() - matching.fetchedAt;
 				scheduleRefresh(Math.max(0, WEATHER_CACHE_TTL_MS - age));

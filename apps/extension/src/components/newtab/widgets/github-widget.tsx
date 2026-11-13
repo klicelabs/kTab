@@ -1,12 +1,16 @@
 import { Icon } from "@ktab/ui/icons/icon";
 import { useEffect, useState } from "react";
-import { formatCompactCount } from "../../../lib/widget-format";
 import { getWidgetCache, putWidgetCache } from "../../../lib/idb";
+import { formatCompactCount } from "../../../lib/widget-format";
 import {
 	fetchGitHubWidgetData,
 	type GitHubWidgetData,
 } from "../../../services/github-widget-data";
 import { useSetupStore } from "../../../stores/setup-store";
+import type {
+	GitHubHeatmapPalette,
+	WidgetSizePreference,
+} from "../../../types";
 import { WidgetSurface } from "./widget-surface";
 
 const CACHE_AGE = 60 * 60 * 1000;
@@ -45,7 +49,13 @@ function metricFraction(value: number): number {
 	return 0.1 + (Math.log10(normalized) / 4) * 0.9;
 }
 
-function RadarChart({ data }: { data: GitHubWidgetData["radars"] }) {
+function RadarChart({
+	data,
+	color,
+}: {
+	data: GitHubWidgetData["radars"];
+	color: string;
+}) {
 	const values = [
 		data.commits,
 		data.issues,
@@ -65,7 +75,12 @@ function RadarChart({ data }: { data: GitHubWidgetData["radars"] }) {
 			role="img"
 			aria-label={`GitHub activity radar: commits ${data.commits}, issues ${data.issues}, pull requests ${data.pullRequests}, reviews ${data.reviews}, repositories ${data.repositories}`}
 		>
-			<g fill="none" stroke="rgba(255,255,255,.23)" strokeWidth=".65">
+			<g
+				fill="none"
+				stroke="currentColor"
+				strokeOpacity=".24"
+				strokeWidth=".65"
+			>
 				{[0.2, 0.4, 0.6, 0.8, 1].map((fraction) => (
 					<polygon key={fraction} points={polygonPoints(fraction, 38)} />
 				))}
@@ -76,8 +91,9 @@ function RadarChart({ data }: { data: GitHubWidgetData["radars"] }) {
 			</g>
 			<polygon
 				points={points}
-				fill="rgba(255,48,44,.27)"
-				stroke="#ff5b55"
+				fill={color}
+				fillOpacity=".22"
+				stroke={color}
 				strokeWidth="1.5"
 			/>
 			{["1", "10", "100", "1K", "10K"].map((label, index) => (
@@ -85,13 +101,14 @@ function RadarChart({ data }: { data: GitHubWidgetData["radars"] }) {
 					key={label}
 					x="83"
 					y={68 - (index + 1) * 7.5}
-					fill="rgba(255,255,255,.66)"
+					fill="currentColor"
+					fillOpacity=".66"
 					fontSize="5.5"
 				>
 					{label}
 				</text>
 			))}
-			<g fill="rgba(255,255,255,.88)" fontSize="7" fontWeight="600">
+			<g fill="currentColor" fontSize="7" fontWeight="600">
 				<text x="80" y="13" textAnchor="middle">
 					Commit
 				</text>
@@ -109,6 +126,51 @@ function RadarChart({ data }: { data: GitHubWidgetData["radars"] }) {
 				</text>
 			</g>
 		</svg>
+	);
+}
+
+const PALETTE_RGB: Record<GitHubHeatmapPalette, [number, number, number]> = {
+	github: [35, 134, 54],
+	blue: [56, 139, 253],
+	purple: [163, 113, 247],
+	orange: [218, 129, 35],
+	monochrome: [150, 150, 150],
+};
+
+function ContributionHeatmap({
+	data,
+	compact,
+	palette,
+}: {
+	data: GitHubWidgetData;
+	compact: boolean;
+	palette: GitHubHeatmapPalette;
+}) {
+	const rgb = PALETTE_RGB[palette];
+	const maximum = Math.max(1, data.best);
+	return (
+		<div
+			role="img"
+			aria-label="Last 70 days of GitHub contributions"
+			className={
+				compact
+					? "grid h-[74px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[3px]"
+					: "grid h-[132px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[4px]"
+			}
+		>
+			{data.contributions.slice(-70).map((day) => {
+				const intensity = Math.log1p(day.count) / Math.log1p(maximum);
+				const alpha = day.count === 0 ? 0.12 : 0.28 + intensity * 0.68;
+				return (
+					<span
+						key={day.date}
+						title={`${day.count} contributions on ${day.date}`}
+						className="rounded-[2px]"
+						style={{ backgroundColor: `rgba(${rgb.join(",")}, ${alpha})` }}
+					/>
+				);
+			})}
+		</div>
 	);
 }
 
@@ -166,6 +228,8 @@ export function GitHubWidget() {
 	return (
 		<GitHubWidgetView
 			appearance={settings.appearance}
+			size={settings.size}
+			palette={settings.palette}
 			username={username}
 			data={data}
 			status={status}
@@ -176,12 +240,16 @@ export function GitHubWidget() {
 
 export function GitHubWidgetView({
 	appearance,
+	size = "expanded",
+	palette = "github",
 	username,
 	data,
 	status,
 	onRefresh,
 }: {
 	appearance: "flat" | "glass";
+	size?: WidgetSizePreference;
+	palette?: GitHubHeatmapPalette;
 	username: string;
 	data: GitHubWidgetData | null;
 	status: "loading" | "ready" | "error";
@@ -191,18 +259,18 @@ export function GitHubWidgetView({
 		return (
 			<WidgetSurface
 				name="github"
-				size="wide"
+				size={size}
 				appearance={appearance}
-				className="items-center justify-center text-center"
+				className="items-center justify-center p-3 text-center"
 			>
 				<Icon
 					name="github"
 					size={23}
-					className="mb-2 text-white/75"
+					className="dashboard-widget-muted mb-2"
 					aria-hidden="true"
 				/>
 				<p className="font-semibold text-[13px]">GitHub activity</p>
-				<p className="mt-1 text-[10px] text-white/60">
+				<p className="dashboard-widget-muted mt-1 text-[10px]">
 					Add a username in Settings to show your contributions.
 				</p>
 			</WidgetSurface>
@@ -211,13 +279,13 @@ export function GitHubWidgetView({
 	return (
 		<WidgetSurface
 			name="github"
-			size="wide"
+			size={size}
 			appearance={appearance}
 			className="p-3"
 		>
 			{data ? (
-				<div className="grid h-full min-h-0 grid-cols-[1fr_1fr] gap-1.5">
-					<div className="flex min-w-0 flex-col justify-between">
+				size === "compact" ? (
+					<div className="flex h-full min-h-0 flex-col justify-between">
 						<div className="grid grid-cols-3 gap-1">
 							{[
 								["Today", data.today],
@@ -228,43 +296,51 @@ export function GitHubWidgetView({
 									<p className="truncate font-semibold text-[13px] leading-none">
 										{formatCompactCount(Number(value))}
 									</p>
-									<p className="mt-1 text-[8px] text-white/65 leading-none">
+									<p className="dashboard-widget-muted mt-1 text-[8px] leading-none">
 										{label}
 									</p>
 								</div>
 							))}
 						</div>
-						<div
-							role="img"
-							aria-label="Last 70 days of GitHub contributions"
-							className="grid h-[78px] w-full grid-flow-col grid-cols-10 grid-rows-7 gap-[4px]"
-						>
-							{data.contributions.map((day) => {
-								const intensity =
-									data.best > 0
-										? Math.log1p(day.count) / Math.log1p(data.best)
-										: 0;
-								const alpha = day.count === 0 ? 0.12 : 0.2 + intensity * 0.72;
-								return (
-									<span
-										key={day.date}
-										title={`${day.count} contributions on ${day.date}`}
-										className="rounded-[2px] border border-white/10"
-										style={{ backgroundColor: `rgba(255, 235, 228, ${alpha})` }}
-									/>
-								);
-							})}
+						<ContributionHeatmap data={data} compact palette={palette} />
+					</div>
+				) : (
+					<div className="grid h-full min-h-0 grid-cols-[1fr_1fr] gap-1.5">
+						<div className="flex min-w-0 flex-col justify-between">
+							<div className="grid grid-cols-3 gap-1">
+								{[
+									["Today", data.today],
+									["Best", data.best],
+									["Total", data.total],
+								].map(([label, value]) => (
+									<div key={label} className="min-w-0">
+										<p className="truncate font-semibold text-[13px] leading-none">
+											{formatCompactCount(Number(value))}
+										</p>
+										<p className="dashboard-widget-muted mt-1 text-[8px] leading-none">
+											{label}
+										</p>
+									</div>
+								))}
+							</div>
+							<ContributionHeatmap
+								data={data}
+								compact={false}
+								palette={palette}
+							/>
+						</div>
+						<div className="min-w-0 pl-1">
+							<RadarChart data={data.radars} color="var(--ktab-accent)" />
+							{data.dataScope === "public" ? (
+								<p className="sr-only">
+									Metrics use publicly visible activity.
+								</p>
+							) : null}
 						</div>
 					</div>
-					<div className="min-w-0 pl-1">
-						<RadarChart data={data.radars} />
-						{data.dataScope === "public" ? (
-							<p className="sr-only">Metrics use publicly visible activity.</p>
-						) : null}
-					</div>
-				</div>
+				)
 			) : (
-				<div className="flex h-full items-center justify-center gap-2 text-[11px] text-white/75">
+				<div className="dashboard-widget-muted flex h-full items-center justify-center gap-2 text-[11px]">
 					{status === "error"
 						? "GitHub data unavailable"
 						: `Loading @${username}…`}

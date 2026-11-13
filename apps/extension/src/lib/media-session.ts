@@ -16,6 +16,16 @@ export interface MediaSessionSnapshot {
 
 export type MediaControlAction = "play" | "pause" | "next" | "previous";
 
+export interface MediaOutputResult {
+	ok: boolean;
+	reason?: "unsupported" | "no-media" | "blocked" | "failed";
+}
+
+export interface MediaAudioOutputDevice {
+	deviceId: string;
+	label: string;
+}
+
 function isSnapshot(value: unknown): value is MediaSessionSnapshot {
 	return (
 		typeof value === "object" &&
@@ -117,5 +127,82 @@ export async function controlMediaSession(
 		);
 	} catch {
 		return false;
+	}
+}
+
+/** Route only the selected tab's HTML media elements after the user chooses an output. */
+export async function setMediaSessionOutput(
+	tabId: number,
+	deviceId: string,
+): Promise<MediaOutputResult> {
+	try {
+		const result: unknown = await ext.tabs.sendMessage(tabId, {
+			type: "ktab:media:set-output",
+			deviceId,
+		});
+		if (
+			typeof result === "object" &&
+			result !== null &&
+			"ok" in result &&
+			typeof result.ok === "boolean"
+		) {
+			const reason = "reason" in result ? result.reason : undefined;
+			return {
+				ok: result.ok,
+				reason:
+					reason === "unsupported" ||
+					reason === "no-media" ||
+					reason === "blocked" ||
+					reason === "failed"
+						? reason
+						: undefined,
+			};
+		}
+		return { ok: false, reason: "failed" };
+	} catch {
+		return { ok: false, reason: "failed" };
+	}
+}
+
+/** Ask the active media tab for its own origin-scoped output device IDs. */
+export async function enumerateMediaSessionOutputs(tabId: number): Promise<{
+	ok: boolean;
+	devices: MediaAudioOutputDevice[];
+	reason?: string;
+}> {
+	try {
+		const result: unknown = await ext.tabs.sendMessage(tabId, {
+			type: "ktab:media:list-outputs",
+		});
+		if (
+			typeof result !== "object" ||
+			result === null ||
+			!("devices" in result)
+		) {
+			return { ok: false, devices: [], reason: "failed" };
+		}
+		const record = result as {
+			ok?: unknown;
+			devices?: unknown;
+			reason?: unknown;
+		};
+		const devices = Array.isArray(record.devices)
+			? record.devices.filter(
+					(device): device is MediaAudioOutputDevice =>
+						typeof device === "object" &&
+						device !== null &&
+						"deviceId" in device &&
+						typeof device.deviceId === "string" &&
+						"label" in device &&
+						typeof device.label === "string",
+				)
+			: [];
+		return {
+			ok: record.ok === true,
+			devices,
+			reason: typeof record.reason === "string" ? record.reason : undefined,
+		};
+	} catch {
+		return { ok: false, devices: [], reason: "failed" };
 	}
 }

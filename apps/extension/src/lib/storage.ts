@@ -264,6 +264,18 @@ function normalizeSettings(
 		value: unknown,
 		fallback: "glass" | "flat",
 	) => (value === "glass" || value === "flat" ? value : fallback);
+	const normalizeMusicAppearance = (value: unknown) =>
+		value === "glass" || value === "flat" || value === "album-blur"
+			? value
+			: defaults.widgets.music.appearance;
+	const normalizeWeatherAppearance = (value: unknown) =>
+		value === "glass" || value === "flat" || value === "atmospheric"
+			? value
+			: defaults.weather.appearance;
+	const normalizeWidgetSize = (
+		value: unknown,
+		fallback: "compact" | "expanded",
+	) => (value === "compact" || value === "expanded" ? value : fallback);
 	const marketTickers = Array.isArray(market.tickers)
 		? market.tickers
 				.filter((ticker): ticker is string => typeof ticker === "string")
@@ -285,6 +297,11 @@ function normalizeSettings(
 		weather.longitude <= 180
 			? weather.longitude
 			: null;
+	const hasSavedWeatherLocation =
+		weatherLatitude !== null &&
+		weatherLongitude !== null &&
+		typeof weather.place === "string" &&
+		weather.place.trim().length > 0;
 	return {
 		tileSize:
 			raw.tileSize === "small" ||
@@ -414,18 +431,18 @@ function normalizeSettings(
 					: weather.display === "widget"
 						? "expanded"
 						: defaults.weather.display,
-			appearance: normalizeWidgetAppearance(
-				weather.appearance,
-				defaults.weather.appearance,
-			),
-			place:
-				weatherLatitude !== null && weatherLongitude !== null
-					? normalizeString(weather.place, defaults.weather.place)
-							.trim()
-							.slice(0, 160)
-					: "",
-			latitude: weatherLatitude,
-			longitude: weatherLongitude,
+			appearance: normalizeWeatherAppearance(weather.appearance),
+			place: hasSavedWeatherLocation
+				? normalizeString(weather.place, defaults.weather.place)
+						.trim()
+						.slice(0, 160)
+				: defaults.weather.place,
+			latitude: hasSavedWeatherLocation
+				? weatherLatitude
+				: defaults.weather.latitude,
+			longitude: hasSavedWeatherLocation
+				? weatherLongitude
+				: defaults.weather.longitude,
 			dynamicAtmosphere: normalizeBoolean(
 				weather.dynamicAtmosphere,
 				defaults.weather.dynamicAtmosphere,
@@ -437,10 +454,8 @@ function normalizeSettings(
 					music.enabled,
 					defaults.widgets.music.enabled,
 				),
-				appearance: normalizeWidgetAppearance(
-					music.appearance,
-					defaults.widgets.music.appearance,
-				),
+				appearance: normalizeMusicAppearance(music.appearance),
+				size: normalizeWidgetSize(music.size, defaults.widgets.music.size),
 			},
 			market: {
 				enabled: normalizeBoolean(
@@ -451,6 +466,7 @@ function normalizeSettings(
 					market.appearance,
 					defaults.widgets.market.appearance,
 				),
+				size: normalizeWidgetSize(market.size, defaults.widgets.market.size),
 				tickers: marketTickers,
 			},
 			github: {
@@ -462,6 +478,15 @@ function normalizeSettings(
 					github.appearance,
 					defaults.widgets.github.appearance,
 				),
+				size: normalizeWidgetSize(github.size, defaults.widgets.github.size),
+				palette:
+					github.palette === "github" ||
+					github.palette === "blue" ||
+					github.palette === "purple" ||
+					github.palette === "orange" ||
+					github.palette === "monochrome"
+						? github.palette
+						: defaults.widgets.github.palette,
 				username: normalizeString(github.username, "")
 					.trim()
 					.replace(/[^a-zA-Z0-9-]/g, "")

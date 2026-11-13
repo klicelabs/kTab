@@ -1,6 +1,6 @@
 import { ChartContainer } from "@ktab/ui/components/chart";
-import { Area, AreaChart, ReferenceLine, YAxis } from "recharts";
 import { useId } from "react";
+import { Area, AreaChart, ReferenceLine, YAxis } from "recharts";
 import type { MarketQuote } from "../../../services/market-data";
 
 export function MarketChart({ quote }: { quote: MarketQuote }) {
@@ -9,7 +9,7 @@ export function MarketChart({ quote }: { quote: MarketQuote }) {
 	const color = positive ? "#39d98a" : "#ff334f";
 	if (quote.points.length < 2) {
 		return (
-			<div className="grid h-[54px] place-items-center text-[10px] text-white/50">
+			<div className="dashboard-widget-muted grid h-[54px] place-items-center text-[10px]">
 				Intraday chart unavailable
 			</div>
 		);
