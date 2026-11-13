@@ -26,183 +26,283 @@ export interface MediaAudioOutputDevice {
 	label: string;
 }
 
-function isSnapshot(value: unknown): value is MediaSessionSnapshot {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"tabId" in value &&
-		typeof value.tabId === "number" &&
-		"title" in value &&
-		typeof value.title === "string" &&
-		"playing" in value &&
-		typeof value.playing === "boolean"
+type MediaPageRequest =
+	| { type: "control"; action: MediaControlAction }
+	| { type: "list-outputs" }
+	| { type: "set-output"; deviceId: string };
+
+/**
+ * This function is serialized into one tab only after a direct user action:
+ * transport click, opening the output picker, or choosing an output.
+ * Keep it self-contained so executeScript can run it in the page's MAIN world.
+ */
+export async function mediaPageRequest(
+	request: MediaPageRequest,
+): Promise<unknown> {
+	const mediaElements = Array.from(
+		document.querySelectorAll<HTMLMediaElement>("audio,video"),
 	);
+	const media =
+		mediaElements.find((element) => !element.paused && !element.ended) ??
+		mediaElements.find(
+			(element) =>
+				Boolean(element.currentSrc) || Number.isFinite(element.duration),
+		) ??
+		null;
+
+	if (request.type === "list-outputs") {
+		const mediaDevices = navigator.mediaDevices;
+		if (!mediaDevices || typeof mediaDevices.enumerateDevices !== "function") {
+			return { ok: false, devices: [], reason: "unsupported" };
+		}
+		try {
+			const devices = (await mediaDevices.enumerateDevices())
+				.filter((device) => device.kind === "audiooutput")
+				.map((device) => ({
+					deviceId: device.deviceId,
+					label: device.label.trim(),
+				}));
+			return { ok: true, devices };
+		} catch {
+			return { ok: false, devices: [], reason: "failed" };
+		}
+	}
+
+	if (request.type === "set-output") {
+		if (!media) return { ok: false, reason: "no-media" };
+		const sinkable = media as HTMLMediaElement & {
+			setSinkId?: (deviceId: string) => Promise<void>;
+			sinkId?: string;
+		};
+		if (typeof sinkable.setSinkId !== "function") {
+			return { ok: false, reason: "unsupported" };
+		}
+		if (
+			sinkable.sinkId === request.deviceId ||
+			(request.deviceId === "" &&
+				(!sinkable.sinkId || sinkable.sinkId === "default"))
+		) {
+			return { ok: true };
+		}
+		try {
+			await sinkable.setSinkId(request.deviceId);
+			return { ok: true };
+		} catch (error) {
+			const name =
+				typeof error === "object" &&
+				error !== null &&
+				"name" in error &&
+				typeof error.name === "string"
+					? error.name
+					: "";
+			return {
+				ok: false,
+				reason: name === "NotAllowedError" ? "blocked" : "failed",
+			};
+		}
+	}
+
+	if (request.action === "play" || request.action === "pause") {
+		if (media) {
+			if (request.action === "play") {
+				try {
+					await media.play();
+				} catch {
+					return false;
+				}
+			} else {
+				media.pause();
+			}
+			return true;
+		}
+		const selector =
+			request.action === "play"
+				? "button[aria-label*='play' i]"
+				: "button[aria-label*='pause' i]";
+		const button = document.querySelector<HTMLElement>(selector);
+		button?.click();
+		return Boolean(button);
+	}
+
+	const selectors =
+		request.action === "next"
+			? [
+					"#movie_player .ytp-next-button",
+					"button[data-testid='control-button-skip-forward']",
+					"button[aria-label*='next track' i]",
+					"button[aria-label*='next song' i]",
+					"button[title*='next track' i]",
+					"button[aria-label='Next' i]",
+				]
+			: [
+					"#movie_player .ytp-prev-button",
+					"button[data-testid='control-button-skip-back']",
+					"button[aria-label*='previous track' i]",
+					"button[aria-label*='previous song' i]",
+					"button[title*='previous track' i]",
+					"button[aria-label='Previous' i]",
+				];
+	const button = selectors
+		.flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+		.find((candidate) => !candidate.hasAttribute("disabled"));
+	if (!(button instanceof HTMLElement)) return false;
+	button.click();
+	return true;
 }
 
-function liveSnapshot(
-	value: unknown,
-	tabId: number,
-): MediaSessionSnapshot | null {
-	if (
-		typeof value !== "object" ||
-		value === null ||
-		!("title" in value) ||
-		typeof value.title !== "string" ||
-		!("playing" in value) ||
-		typeof value.playing !== "boolean"
-	)
+interface MediaTab {
+	id?: number;
+	title?: string;
+	url?: string;
+	favIconUrl?: string;
+	audible?: boolean;
+	lastAccessed?: number;
+}
+
+function hostForTab(url: string | undefined): string {
+	if (!url) return "";
+	try {
+		return new URL(url).hostname.replace(/^www\./, "");
+	} catch {
+		return "";
+	}
+}
+
+function safeArtwork(value: string | undefined): string | null {
+	if (!value || value.length > 2048) return null;
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" || url.protocol === "http:"
+			? url.href
+			: null;
+	} catch {
 		return null;
-	const record = value as Record<string, unknown>;
+	}
+}
+
+function snapshotFromTab(
+	tab: MediaTab,
+	playing: boolean,
+): MediaSessionSnapshot | null {
+	if (typeof tab.id !== "number") return null;
+	const host = hostForTab(tab.url);
 	return {
-		tabId,
+		tabId: tab.id,
 		updatedAt: Date.now(),
-		title: typeof record.title === "string" ? record.title : "",
-		artist: typeof record.artist === "string" ? record.artist : "",
-		album: typeof record.album === "string" ? record.album : "",
-		artwork: typeof record.artwork === "string" ? record.artwork : null,
-		playing: record.playing === true,
-		currentTime:
-			typeof record.currentTime === "number" ? record.currentTime : 0,
-		duration: typeof record.duration === "number" ? record.duration : 0,
-		canNext: record.canNext === true,
-		canPrevious: record.canPrevious === true,
+		title: tab.title?.trim() || host || "Media playing",
+		artist: host || "Browser tab",
+		album: "",
+		artwork: safeArtwork(tab.favIconUrl),
+		playing,
+		currentTime: 0,
+		duration: 0,
+		// Capabilities are attempted only after an explicit transport click.
+		canNext: true,
+		canPrevious: true,
 	};
 }
 
-/** Prefer live audible tabs, then the most recently reported paused session. */
-export async function queryMediaSessions(): Promise<MediaSessionSnapshot[]> {
-	let saved: unknown = [];
+async function executeMediaPage(
+	tabId: number,
+	request: MediaPageRequest,
+): Promise<unknown> {
 	try {
-		saved = await ext.runtime.sendMessage({ type: "ktab:media:list" });
+		const results = await ext.scripting.executeScript({
+			target: { tabId },
+			world: "MAIN",
+			func: mediaPageRequest,
+			args: [request],
+		});
+		return results[0]?.result ?? null;
 	} catch {
-		// The widget still works from audible tabs if the worker is restarting.
+		return null;
 	}
-	const sessions = Array.isArray(saved) ? saved.filter(isSnapshot) : [];
-	let audibleTabs: Array<{ id?: number }> = [];
+}
+
+/** Read titles and favicons from the browser API without messaging into tabs. */
+export async function queryMediaSessions(
+	preferredTabId?: number,
+): Promise<MediaSessionSnapshot[]> {
+	let audibleTabs: MediaTab[] = [];
 	try {
 		audibleTabs = await ext.tabs.query({ audible: true });
 	} catch {
-		return sessions.sort(
-			(a, b) =>
-				Number(b.playing) - Number(a.playing) || b.updatedAt - a.updatedAt,
-		);
+		return [];
 	}
-	const live = await Promise.all(
-		audibleTabs
-			.filter(
-				(tab): tab is typeof tab & { id: number } => typeof tab.id === "number",
-			)
-			.map(async (tab) => {
-				try {
-					const response = await ext.tabs.sendMessage(tab.id, {
-						type: "ktab:media:snapshot",
-					});
-					return liveSnapshot(response, tab.id);
-				} catch {
-					return null;
-				}
-			}),
-	);
-	const merged = new Map<number, MediaSessionSnapshot>();
-	for (const session of sessions) merged.set(session.tabId, session);
-	for (const session of live) {
-		if (session) merged.set(session.tabId, session);
+	audibleTabs.sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0));
+	const sessions = audibleTabs
+		.map((tab) => snapshotFromTab(tab, true))
+		.filter((session): session is MediaSessionSnapshot => session !== null);
+	if (sessions.length > 0 || preferredTabId === undefined) return sessions;
+
+	try {
+		const pausedTab = (await ext.tabs.get(preferredTabId)) as MediaTab;
+		const pausedSession = snapshotFromTab(pausedTab, false);
+		return pausedSession ? [pausedSession] : [];
+	} catch {
+		return [];
 	}
-	return [...merged.values()].sort(
-		(a, b) =>
-			Number(b.playing) - Number(a.playing) || b.updatedAt - a.updatedAt,
-	);
 }
 
 export async function controlMediaSession(
 	tabId: number,
 	action: MediaControlAction,
 ): Promise<boolean> {
-	try {
-		return (
-			(await ext.tabs.sendMessage(tabId, {
-				type: "ktab:media:control",
-				action,
-			})) === true
-		);
-	} catch {
-		return false;
-	}
+	return (await executeMediaPage(tabId, { type: "control", action })) === true;
 }
 
-/** Route only the selected tab's HTML media elements after the user chooses an output. */
+/** Inject once, and only after the user chooses a device in the output picker. */
 export async function setMediaSessionOutput(
 	tabId: number,
 	deviceId: string,
 ): Promise<MediaOutputResult> {
-	try {
-		const result: unknown = await ext.tabs.sendMessage(tabId, {
-			type: "ktab:media:set-output",
-			deviceId,
-		});
-		if (
-			typeof result === "object" &&
-			result !== null &&
-			"ok" in result &&
-			typeof result.ok === "boolean"
-		) {
-			const reason = "reason" in result ? result.reason : undefined;
-			return {
-				ok: result.ok,
-				reason:
-					reason === "unsupported" ||
-					reason === "no-media" ||
-					reason === "blocked" ||
-					reason === "failed"
-						? reason
-						: undefined,
-			};
-		}
-		return { ok: false, reason: "failed" };
-	} catch {
-		return { ok: false, reason: "failed" };
-	}
+	const result: unknown = await executeMediaPage(tabId, {
+		type: "set-output",
+		deviceId,
+	});
+	return isMediaOutputResult(result) ? result : { ok: false, reason: "failed" };
 }
 
-/** Ask the active media tab for its own origin-scoped output device IDs. */
+/** Enumerate devices once when the user opens the output picker. */
 export async function enumerateMediaSessionOutputs(tabId: number): Promise<{
 	ok: boolean;
 	devices: MediaAudioOutputDevice[];
 	reason?: string;
 }> {
-	try {
-		const result: unknown = await ext.tabs.sendMessage(tabId, {
-			type: "ktab:media:list-outputs",
-		});
-		if (
-			typeof result !== "object" ||
-			result === null ||
-			!("devices" in result)
-		) {
-			return { ok: false, devices: [], reason: "failed" };
-		}
-		const record = result as {
-			ok?: unknown;
-			devices?: unknown;
-			reason?: unknown;
-		};
-		const devices = Array.isArray(record.devices)
-			? record.devices.filter(
-					(device): device is MediaAudioOutputDevice =>
-						typeof device === "object" &&
-						device !== null &&
-						"deviceId" in device &&
-						typeof device.deviceId === "string" &&
-						"label" in device &&
-						typeof device.label === "string",
-				)
-			: [];
-		return {
-			ok: record.ok === true,
-			devices,
-			reason: typeof record.reason === "string" ? record.reason : undefined,
-		};
-	} catch {
+	const result: unknown = await executeMediaPage(tabId, {
+		type: "list-outputs",
+	});
+	if (typeof result !== "object" || result === null || !("devices" in result)) {
 		return { ok: false, devices: [], reason: "failed" };
 	}
+	const record = result as {
+		ok?: unknown;
+		devices?: unknown;
+		reason?: unknown;
+	};
+	const devices = Array.isArray(record.devices)
+		? record.devices.filter(
+				(device): device is MediaAudioOutputDevice =>
+					typeof device === "object" &&
+					device !== null &&
+					"deviceId" in device &&
+					typeof device.deviceId === "string" &&
+					"label" in device &&
+					typeof device.label === "string",
+			)
+		: [];
+	return {
+		ok: record.ok === true,
+		devices,
+		reason: typeof record.reason === "string" ? record.reason : undefined,
+	};
+}
+
+function isMediaOutputResult(value: unknown): value is MediaOutputResult {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"ok" in value &&
+		typeof value.ok === "boolean"
+	);
 }

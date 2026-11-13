@@ -30,6 +30,7 @@ export default defineConfig({
 			"storage",
 			"activeTab",
 			"tabs",
+			"scripting",
 			"contextMenus",
 			"bookmarks",
 			// Auto-capturing thumbnails for saved-but-thumbless bookmarks needs

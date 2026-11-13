@@ -34,7 +34,6 @@ import {
 	type TabSwitcherSession,
 } from "../src/lib/tab-switcher";
 import { hasThumbnailCapturePermission } from "../src/lib/thumbnail-permission";
-import { registerMediaSessionBackground } from "../src/lib/media-session-background";
 import {
 	emptyRefreshState,
 	isRefreshMessage,
@@ -758,7 +757,19 @@ function tabCanBeCaptured(
 }
 
 export default defineBackground(() => {
-	registerMediaSessionBackground();
+	// Drop page-polling media snapshots saved by older widget builds.
+	void ext.storage.local
+		.remove?.("ktab.media-sessions.v1")
+		?.catch(() => undefined);
+	// Older dev builds registered these MAIN-world scripts dynamically.
+	void ext.scripting
+		?.unregisterContentScripts?.({
+			ids: [
+				"wxt:content-scripts/media-session-bridge.js",
+				"wxt:content-scripts/media-session-main.js",
+			],
+		})
+		?.catch(() => undefined);
 	ext.windows.onFocusChanged?.addListener((windowId) => {
 		refreshFocusEventSequence += 1;
 		refreshFocusEventLog.push({

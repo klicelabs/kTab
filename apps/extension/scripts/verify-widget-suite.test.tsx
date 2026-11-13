@@ -227,6 +227,34 @@ test("compact music shows artwork, track details, and play control without expan
 	expect(markup).not.toContain('aria-label="Choose audio output for this tab"');
 });
 
+test("passive media tab data does not pretend to have track progress", () => {
+	const session: MediaSessionSnapshot = {
+		tabId: 8,
+		updatedAt: 1,
+		title: "A video is playing",
+		artist: "youtube.com",
+		album: "",
+		artwork: "https://www.youtube.com/favicon.ico",
+		playing: true,
+		currentTime: 0,
+		duration: 0,
+		canNext: true,
+		canPrevious: true,
+	};
+	const markup = renderToStaticMarkup(
+		createElement(MusicWidgetView, {
+			appearance: "flat",
+			session,
+			busyAction: null,
+			onControl: () => undefined,
+		}),
+	);
+
+	expect(markup).toContain("Playing in youtube.com");
+	expect(markup).not.toContain('aria-label="Track progress"');
+	expect(markup).not.toContain("−0:00");
+});
+
 test("compact market features one asset and a mini trend line", () => {
 	const markup = renderToStaticMarkup(
 		createElement(MarketWidgetView, {

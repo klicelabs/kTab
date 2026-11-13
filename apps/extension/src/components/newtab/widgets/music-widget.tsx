@@ -9,6 +9,7 @@ import {
 } from "@ktab/ui/components/popover";
 import { Icon } from "@ktab/ui/icons/icon";
 import { useEffect, useMemo, useState } from "react";
+import { ext } from "../../../lib/extension-api";
 import {
 	controlMediaSession,
 	enumerateMediaSessionOutputs,
@@ -222,33 +223,51 @@ export function MusicWidget() {
 	const settings = useSetupStore((state) => state.settings.widgets.music);
 	const [session, setSession] = useState<MediaSessionSnapshot | null>(null);
 	const [busyAction, setBusyAction] = useState<MediaControlAction | null>(null);
-	const [refreshKey, setRefreshKey] = useState(0);
+	const sessionTabId = session?.tabId;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-query after a media control reports its result.
 	useEffect(() => {
 		if (!settings.enabled) return;
 		let active = true;
 		const update = async () => {
-			const sessions = await queryMediaSessions();
+			const sessions = await queryMediaSessions(sessionTabId);
 			if (active) setSession(sessions[0] ?? null);
 		};
+		const handleTabUpdated = (
+			_tabId: number,
+			changeInfo: { audible?: boolean; title?: string; favIconUrl?: string },
+		) => {
+			if (
+				changeInfo.audible !== undefined ||
+				changeInfo.title !== undefined ||
+				changeInfo.favIconUrl !== undefined
+			) {
+				void update();
+			}
+		};
+		const handleTabActivated = () => void update();
+		const handleTabRemoved = () => void update();
+
 		void update();
-		const interval = window.setInterval(() => void update(), 1200);
+		ext.tabs.onUpdated.addListener(handleTabUpdated);
+		ext.tabs.onActivated.addListener(handleTabActivated);
+		ext.tabs.onRemoved.addListener(handleTabRemoved);
 		return () => {
 			active = false;
-			window.clearInterval(interval);
+			ext.tabs.onUpdated.removeListener(handleTabUpdated);
+			ext.tabs.onActivated.removeListener(handleTabActivated);
+			ext.tabs.onRemoved.removeListener(handleTabRemoved);
 		};
-	}, [refreshKey, settings.enabled]);
+	}, [sessionTabId, settings.enabled]);
 
 	if (!settings.enabled) return null;
 
 	async function control(action: MediaControlAction) {
 		if (!session || busyAction) return;
 		setBusyAction(action);
-		const ok = await controlMediaSession(session.tabId, action);
-		if (!ok) setSession(null);
+		await controlMediaSession(session.tabId, action);
+		const sessions = await queryMediaSessions(session.tabId);
+		setSession(sessions[0] ?? null);
 		setBusyAction(null);
-		setRefreshKey((key) => key + 1);
 	}
 	return (
 		<MusicWidgetView
@@ -289,8 +308,8 @@ export function MusicWidgetView({
 	const currentTime = session?.currentTime ?? 0;
 	const progress =
 		duration > 0 ? Math.min(1, Math.max(0, currentTime / duration)) : 0;
+	const hasProgress = duration > 0;
 	const playing = session?.playing === true;
-	const isActive = Boolean(session);
 	const compact = size === "compact";
 
 	return (
@@ -373,35 +392,41 @@ export function MusicWidgetView({
 				{compact ? (
 					<div className="dashboard-widget-muted flex min-w-0 items-center justify-between gap-2 text-[10px] tabular-nums">
 						<span className="truncate">
-							{session?.album ?? "Ready when you are"}
+							{session?.album || session?.artist || "Ready when you are"}
 						</span>
-						{isActive ? (
+						{hasProgress ? (
 							<span className="shrink-0">{formatTime(currentTime)}</span>
 						) : null}
 					</div>
 				) : (
 					<>
-						<div className="dashboard-widget-muted grid grid-cols-[34px_1fr_40px] items-center gap-2 text-[10px] tabular-nums">
-							<span>{isActive ? formatTime(currentTime) : "0:00"}</span>
-							<div
-								className="dashboard-widget-track h-[4px] overflow-hidden rounded-full"
-								role="progressbar"
-								aria-label="Track progress"
-								aria-valuemin={0}
-								aria-valuemax={100}
-								aria-valuenow={Math.round(progress * 100)}
-							>
+						{hasProgress ? (
+							<div className="dashboard-widget-muted grid grid-cols-[34px_1fr_40px] items-center gap-2 text-[10px] tabular-nums">
+								<span>{formatTime(currentTime)}</span>
 								<div
-									className="dashboard-widget-progress-fill h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-									style={{ width: `${progress * 100}%` }}
-								/>
+									className="dashboard-widget-track h-[4px] overflow-hidden rounded-full"
+									role="progressbar"
+									aria-label="Track progress"
+									aria-valuemin={0}
+									aria-valuemax={100}
+									aria-valuenow={Math.round(progress * 100)}
+								>
+									<div
+										className="dashboard-widget-progress-fill h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+										style={{ width: `${progress * 100}%` }}
+									/>
+								</div>
+								<span className="text-right">
+									{`−${formatTime(duration - currentTime)}`}
+								</span>
 							</div>
-							<span className="text-right">
-								{duration > 0
-									? `−${formatTime(duration - currentTime)}`
-									: "−0:00"}
-							</span>
-						</div>
+						) : (
+							<p className="dashboard-widget-muted flex h-[14px] items-center text-[10px]">
+								{session
+									? `${playing ? "Playing" : "Paused"} in ${session.artist}`
+									: "Play audio in another tab"}
+							</p>
+						)}
 
 						<div className="relative flex h-[42px] items-center justify-center gap-7">
 							<button
